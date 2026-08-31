@@ -2,20 +2,14 @@ import { fetchAdjacentEpisodes } from "@/lib/series-episodes";
 import type { Meta } from "@/lib/cinemeta";
 import {
   episodeFromVideoId,
-  isAnimeCwItem,
   isCwMember,
   libraryMetaType,
   type LibraryItem,
-} from "@/lib/stremio";
+} from "@/lib/library-item";
 import { isCwDismissed } from "@/lib/cw-dismiss";
 
-const ANIME_ID = /^(kitsu|mal|anilist|anidb):/;
-
-export type AnimeMode = "all" | "exclude" | "only";
-
-export function isNextAired(isAnime: boolean, airDate: string | undefined): boolean {
+export function isNextAired(airDate: string | undefined): boolean {
   const t = airDate ? Date.parse(airDate) : NaN;
-  if (isAnime) return Number.isFinite(t) && t <= Date.now();
   return !airDate || !Number.isFinite(t) || t <= Date.now();
 }
 
@@ -28,12 +22,7 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   const season = i.state?.season;
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
-  const vid = i.state?.video_id ?? "";
-  if (ANIME_ID.test(i._id) && vid.split(":").length === 3) {
-    const ep = Number(vid.split(":")[2]);
-    return Number.isFinite(ep) && ep > 0 ? { season: 1, episode: ep } : null;
-  }
-  return episodeFromVideoId(vid);
+  return episodeFromVideoId(i.state?.video_id);
 }
 
 const RESURFACE_TTL = 6 * 3600 * 1000;
@@ -46,32 +35,22 @@ export function clearResurfaceCache(): void {
   cache.clear();
 }
 
-type WatchedFor = (
-  i: LibraryItem,
-  cur: { season: number; episode: number },
-) => (season: number, episode: number) => boolean;
-
 export async function resurfaceCandidates(
   library: LibraryItem[],
   inCw: Set<string>,
-  opts: { tmdbKey: string; animeMode: AnimeMode },
-  watchedFor?: WatchedFor,
+  opts: { tmdbKey: string },
 ): Promise<Map<string, { season: number; episode: number }>> {
   const now = Date.now();
   const out = new Map<string, { season: number; episode: number }>();
   const candidates = library.filter((i) => {
-    if (i.type !== "series" && !ANIME_ID.test(i._id)) return false;
+    if (i.type !== "series") return false;
     if (!i.state || (i.removed && !i.temp)) return false;
     if (inCw.has(i._id) || isCwMember(i) || isCwDismissed(i)) return false;
-    const anime = isAnimeCwItem(i);
-    if (opts.animeMode === "exclude" && anime) return false;
-    if (opts.animeMode === "only" && !anime) return false;
     const lw = Date.parse(i.state.lastWatched ?? "");
     if (!Number.isFinite(lw) || now - lw > RECENT_MS) return false;
     const cur = currentEpisode(i);
     if (cur == null) return false;
-    if ((i.state.flaggedWatched ?? 0) > 0) return true;
-    return anime && !!watchedFor && watchedFor(i, cur)(cur.season, cur.episode);
+    return (i.state.flaggedWatched ?? 0) > 0;
   });
   for (const i of candidates) {
     const cur = currentEpisode(i)!;
@@ -97,7 +76,6 @@ export async function resurfaceCandidates(
         .catch(() => null);
       cache.set(key, { next: nx, t: now });
     }
-    if (nx && watchedFor && watchedFor(i, cur)(nx.season, nx.episode)) nx = null;
     if (nx) out.set(i._id, nx);
   }
   return out;

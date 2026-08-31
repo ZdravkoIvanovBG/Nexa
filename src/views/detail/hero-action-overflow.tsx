@@ -1,4 +1,14 @@
-import { ArrowDownToLine, Bookmark, Check, Layers, MoreHorizontal, RotateCw, Star, X } from "lucide-react";
+import {
+  ArrowDownToLine,
+  Bookmark,
+  Check,
+  Layers,
+  Eye,
+  MoreHorizontal,
+  RotateCw,
+  Star,
+  X,
+} from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
@@ -7,7 +17,7 @@ import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
 import type { ListItemInput } from "@/lib/custom-lists";
-import { AnilistMenuItems, SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
+import { SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
 import { PreviewIcon } from "./preview-icon";
 
 const CIRCLES_SAVED_ESTIMATE = 132;
@@ -69,9 +79,13 @@ export function HeroActionOverflow({
   showSync = false,
   inWatchlist = false,
   onToggleWatchlist,
+  isTierWatched = false,
+  onToggleTierWatched,
+  showWatching = false,
+  isWatching = false,
+  onToggleWatching,
   listItem = null,
   simkl = null,
-  anilist = null,
 }: {
   meta: Meta;
   isFav: boolean;
@@ -85,9 +99,13 @@ export function HeroActionOverflow({
   showSync?: boolean;
   inWatchlist?: boolean;
   onToggleWatchlist?: () => void;
+  isTierWatched?: boolean;
+  onToggleTierWatched?: () => void;
+  showWatching?: boolean;
+  isWatching?: boolean;
+  onToggleWatching?: () => void;
   listItem?: ListItemInput | null;
   simkl?: { harborId: string; type: "movie" | "series" } | null;
-  anilist?: { harborId: string } | null;
 }) {
   const t = useT();
   const { openPicker } = useView();
@@ -173,9 +191,6 @@ export function HeroActionOverflow({
                     onAction={() => setMenu(null)}
                   />
                 )}
-                {anilist && (
-                  <AnilistMenuItems harborId={anilist.harborId} onAction={() => setMenu(null)} />
-                )}
                 <TraktMenuItems
                   harborId={meta.id}
                   type={meta.type === "series" ? "series" : "movie"}
@@ -183,6 +198,26 @@ export function HeroActionOverflow({
                 />
                 <div className="my-1 h-px bg-edge-soft" />
               </>
+            )}
+            <Item
+              icon={<Check size={14} strokeWidth={2.4} />}
+              label={isTierWatched ? t("Watched") : t("Mark as watched")}
+              active={isTierWatched}
+              onClick={() => {
+                onToggleTierWatched?.();
+                setMenu(null);
+              }}
+            />
+            {showWatching && (
+              <Item
+                icon={<Eye size={14} strokeWidth={2} />}
+                label={isWatching ? t("Currently Watching") : t("Track progress")}
+                active={isWatching}
+                onClick={() => {
+                  onToggleWatching?.();
+                  setMenu(null);
+                }}
+              />
             )}
             <Item
               icon={

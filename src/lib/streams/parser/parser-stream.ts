@@ -10,7 +10,6 @@ import { parseCacheFlags } from "./parser-cache-flags";
 import { extractFilenameLine } from "./parser-filename";
 import {
   computeScamScore,
-  parseAnimeHash,
   parseContainer,
   parseDisc,
   parseEdition,
@@ -40,7 +39,12 @@ export function parseStream(stream: Stream): ParsedStream {
   const audioLanguages = parseLanguages(text);
   const size = parseSize(text, stream.behaviorHints?.videoSize);
   const seeders = parseSeeders(text);
-  const cached = parseCacheFlags(text, stream.behaviorHints?.bingeGroup, stream.addonName, stream.url);
+  const cached = parseCacheFlags(
+    text,
+    stream.behaviorHints?.bingeGroup,
+    stream.addonName,
+    stream.url,
+  );
   const inLibrary: Partial<Record<DebridSlug, boolean>> = {};
   const container = parseContainer(stream.behaviorHints?.filename, filenameLine, text);
   const releaseGroup = ptt.group ?? null;
@@ -58,7 +62,6 @@ export function parseStream(stream: Stream): ParsedStream {
   const repackIteration = parseRepackIteration(text, ptt);
   const proper = ptt.proper === true;
   const hardcoded = HARDCODED_RX.test(text) || ptt.hardcoded === true;
-  const animeHash = parseAnimeHash(text);
   const scamScore = computeScamScore(source, resolution, size);
 
   return {
@@ -89,7 +92,6 @@ export function parseStream(stream: Stream): ParsedStream {
     repackIteration,
     proper,
     hardcoded,
-    animeHash,
     scamScore,
   };
 }

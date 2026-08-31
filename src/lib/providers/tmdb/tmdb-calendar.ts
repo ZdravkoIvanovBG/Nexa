@@ -4,8 +4,6 @@ const poster = (p: string | null | undefined) => (p ? `${IMG}/w342${p}` : null);
 const still = (p: string | null | undefined) => (p ? `${IMG}/w780${p}` : null);
 const backdrop = (p: string | null | undefined) => (p ? `${IMG}/w780${p}` : null);
 
-const ANIMATION_GENRE_ID = 16;
-
 export type TmdbUpcomingEpisode = {
   season: number;
   number: number;
@@ -19,7 +17,6 @@ export type TmdbUpcomingEpisode = {
 export type TmdbTvUpcoming = {
   name: string;
   poster: string | null;
-  isAnime: boolean;
   episodes: TmdbUpcomingEpisode[];
 };
 
@@ -28,7 +25,6 @@ export type TmdbMovieRelease = {
   poster: string | null;
   background: string | null;
   releaseDate: string;
-  isAnime: boolean;
   overview: string;
   voteAverage: number;
 };
@@ -50,7 +46,6 @@ export async function tmdbFindByImdb(
 type TvDetail = {
   name?: string;
   poster_path?: string | null;
-  genres?: Array<{ id: number }>;
   next_episode_to_air?: { season_number?: number } | null;
   last_episode_to_air?: { season_number?: number } | null;
   seasons?: Array<{ season_number?: number; air_date?: string | null }>;
@@ -75,7 +70,6 @@ export async function tmdbTvUpcoming(
 ): Promise<TmdbTvUpcoming | null> {
   const tv = await get<TvDetail>(key, `tv/${tvId}`);
   if (!tv) return null;
-  const isAnime = (tv.genres ?? []).some((g) => g.id === ANIMATION_GENRE_ID);
   const seasons = new Set<number>();
   if (typeof tv.next_episode_to_air?.season_number === "number") {
     seasons.add(tv.next_episode_to_air.season_number);
@@ -105,7 +99,7 @@ export async function tmdbTvUpcoming(
       });
     }
   }
-  return { name: tv.name ?? "", poster: poster(tv.poster_path), isAnime, episodes };
+  return { name: tv.name ?? "", poster: poster(tv.poster_path), episodes };
 }
 
 export async function tmdbMovieRelease(
@@ -117,7 +111,6 @@ export async function tmdbMovieRelease(
     poster_path?: string | null;
     backdrop_path?: string | null;
     release_date?: string | null;
-    genres?: Array<{ id: number }>;
     overview?: string;
     vote_average?: number;
   }>(key, `movie/${movieId}`);
@@ -127,7 +120,6 @@ export async function tmdbMovieRelease(
     poster: poster(m.poster_path),
     background: backdrop(m.backdrop_path),
     releaseDate: (m.release_date ?? "").slice(0, 10),
-    isAnime: (m.genres ?? []).some((g) => g.id === ANIMATION_GENRE_ID),
     overview: m.overview ?? "",
     voteAverage: m.vote_average ?? 0,
   };

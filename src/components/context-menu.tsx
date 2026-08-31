@@ -1,4 +1,21 @@
-import { Bookmark, BookmarkCheck, CheckCheck, ClipboardPaste, Copy, Download, EyeOff, Info, ListChecks, ListPlus, Maximize, Navigation, RotateCcw, Star, UserPlus, Wallpaper } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  CheckCheck,
+  ClipboardPaste,
+  Copy,
+  Download,
+  EyeOff,
+  Info,
+  ListChecks,
+  ListPlus,
+  Maximize,
+  Navigation,
+  RotateCcw,
+  Star,
+  UserPlus,
+  Wallpaper,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useActiveAddon } from "@/lib/active-addon";
 import { useContextMenu, type ViewSummonable } from "@/lib/context-menu";
@@ -29,7 +46,6 @@ function isEditableTarget(el: EventTarget | null): el is HTMLElement {
 const VIEW_LABELS: Record<ViewSummonable, string> = {
   home: "Home",
   discover: "Discover",
-  anime: "Anime",
   queue: "My Library",
   addons: "Addons",
 };
@@ -172,7 +188,13 @@ export function ContextMenu() {
       close();
     };
     const handleWatchlist = () => {
-      toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster, imdbId: targetImdb });
+      toggleWatchlist({
+        id: meta.id,
+        type: meta.type,
+        name: meta.name,
+        poster: meta.poster,
+        imdbId: targetImdb,
+      });
       close();
     };
     const handleBring = () => {
@@ -189,13 +211,24 @@ export function ContextMenu() {
     };
     if (!playerActions) {
       items.push(
-        <Item key="details" icon={<Info size={14} strokeWidth={2} />} label="View details" onClick={handleDetails} />,
+        <Item
+          key="details"
+          icon={<Info size={14} strokeWidth={2} />}
+          label="View details"
+          onClick={handleDetails}
+        />,
       );
     }
     items.push(
       <Item
         key="watchlist"
-        icon={isWatchlisted ? <BookmarkCheck size={14} strokeWidth={2} /> : <Bookmark size={14} strokeWidth={2} />}
+        icon={
+          isWatchlisted ? (
+            <BookmarkCheck size={14} strokeWidth={2} />
+          ) : (
+            <Bookmark size={14} strokeWidth={2} />
+          )
+        }
         label={isWatchlisted ? "In watchlist" : "Add to watchlist"}
         onClick={handleWatchlist}
         accent={isWatchlisted}
@@ -216,7 +249,13 @@ export function ContextMenu() {
     items.push(
       <Item
         key="local-list"
-        icon={isLocal ? <ListChecks size={14} strokeWidth={2} /> : <ListPlus size={14} strokeWidth={2} />}
+        icon={
+          isLocal ? (
+            <ListChecks size={14} strokeWidth={2} />
+          ) : (
+            <ListPlus size={14} strokeWidth={2} />
+          )
+        }
         label={isLocal ? "In my list" : "Add to my list"}
         onClick={() => {
           toggleLocalList({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster });
@@ -229,7 +268,13 @@ export function ContextMenu() {
       items.push(
         <Item
           key="watched"
-          icon={isWatched ? <EyeOff size={14} strokeWidth={2} /> : <CheckCheck size={14} strokeWidth={2} />}
+          icon={
+            isWatched ? (
+              <EyeOff size={14} strokeWidth={2} />
+            ) : (
+              <CheckCheck size={14} strokeWidth={2} />
+            )
+          }
           label={
             isWatched
               ? "Mark as unwatched"
@@ -436,7 +481,7 @@ export function ContextMenu() {
 }
 
 function topKindToView(topKind: string): ViewSummonable | null {
-  if (topKind === "home" || topKind === "discover" || topKind === "anime" || topKind === "queue") {
+  if (topKind === "home" || topKind === "discover" || topKind === "queue") {
     return topKind;
   }
   if (topKind === "addons" || topKind === "addon-detail") return "addons";
@@ -458,7 +503,6 @@ function navigateToLocation(loc: ParticipantLocation, nav: LocationNavigators) {
   switch (loc.kind) {
     case "home":
     case "discover":
-    case "anime":
     case "addons":
       nav.setView(loc.kind);
       return;
@@ -513,15 +557,7 @@ function Item({
             : "text-ink hover:bg-raised"
       }`}
     >
-      <span
-        className={
-          disabled
-            ? "text-ink-subtle/40"
-            : accent
-              ? "text-accent"
-              : "text-ink-muted"
-        }
-      >
+      <span className={disabled ? "text-ink-subtle/40" : accent ? "text-accent" : "text-ink-muted"}>
         {icon}
       </span>
       {label}

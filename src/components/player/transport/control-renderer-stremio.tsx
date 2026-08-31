@@ -32,10 +32,8 @@ import { Tooltip } from "./tooltip";
 import { DvrButton } from "./dvr-button";
 import { SpeedMenu } from "./speed-menu";
 import { AspectMenu } from "./aspect-menu";
-import { Anime4kMenu } from "./anime4k-menu";
 import { HdrToggleStremioBtn } from "./hdr-toggle-btn";
 import { RtxHdrToggleStremioBtn } from "./rtx-hdr-toggle-btn";
-import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
 import { DrawToggle } from "./draw-toggle";
 import { CastButton } from "./cast-button";
 import { TimeStart } from "./time-display";
@@ -103,10 +101,6 @@ export type StremioRenderCtx = {
   setAspectMenuOpen: (v: boolean) => void;
   cropMode?: string;
   onCropMode?: (id: string) => void;
-  setAnime4kMenuOpen: (v: boolean) => void;
-  anime4kMode?: string;
-  onAnime4kMode?: (id: string) => void;
-  anime4kAvailable?: boolean;
   onPlayPause: () => void;
   onMute: () => void;
   onVolume: (v: number) => void;
@@ -367,21 +361,12 @@ export function RenderedStremioControl({
           onOpenChange={ctx.setAspectMenuOpen}
         />
       );
-    case "anime4k-menu":
-      if (ctx.engine === "html5" || !ctx.onAnime4kMode || !ctx.anime4kAvailable) return null;
-      return (
-        <Anime4kMenu
-          mode={(ctx.anime4kMode as Anime4kChoice) ?? "auto"}
-          onMode={ctx.onAnime4kMode}
-          onOpenChange={ctx.setAnime4kMenuOpen}
-        />
-      );
     case "hdr-toggle":
       if (ctx.engine === "html5") return null;
       return <HdrToggleStremioBtn />;
     case "rtx-hdr-toggle":
       if (ctx.engine === "html5") return null;
-      return <RtxHdrToggleStremioBtn meta={ctx.meta} />;
+      return <RtxHdrToggleStremioBtn />;
     case "cast":
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
     case "subtitle-menu":

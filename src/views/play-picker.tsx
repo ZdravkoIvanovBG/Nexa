@@ -3,14 +3,12 @@ import { ArrowUp, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { resolveAddonLogo } from "@/components/addon-logo";
 import { torrentEngineStatus } from "@/lib/torrent/local-engine";
-import { useAuth } from "@/lib/auth";
 import type { Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { consumeRecentStubEvent } from "@/lib/dead-streams";
-import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import {
   readPlayback,
   readLastSeriesPlayback,
@@ -91,7 +89,6 @@ export function PlayPicker({
   };
   const { settings, update } = useSettings();
   const fs = useWindowFullscreen();
-  const { authKey } = useAuth();
   const debrids = useDebridClients();
   const {
     snapshot: roomSnapshot,
@@ -123,28 +120,8 @@ export function PlayPicker({
       ? findLocalEpisodeByIds(episode.season, episode.episode, tmdbId, imdbId)
       : findLocalMovie(tmdbId, imdbId);
   }, [meta.id, imdbId, episode]);
-  const { addons, discovering: discoveringAddons } = useAddons(authKey, settings);
-  const [seasonLogo, setSeasonLogo] = useState<string | undefined>(() =>
-    peekCachedLogo(settings.tmdbKey, meta, { preferOwn: true }),
-  );
-  useEffect(() => {
-    if (!/^(kitsu|mal|anilist|anidb):/.test(meta.id)) return;
-    const seed = peekCachedLogo(settings.tmdbKey, meta, { preferOwn: true });
-    if (seed) setSeasonLogo(seed);
-    let cancelled = false;
-    resolveLogo(settings.tmdbKey, meta, { preferOwn: true })
-      .then((u) => {
-        if (!cancelled && u) setSeasonLogo(u);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [meta, settings.tmdbKey]);
-  const metaForDisplay = useMemo(
-    () => (seasonLogo ? { ...meta, logo: seasonLogo } : meta),
-    [meta, seasonLogo],
-  );
+  const { addons, discovering: discoveringAddons } = useAddons(settings);
+  const metaForDisplay = meta;
   const [resolving, setResolving] = useState<{ stream: ScoredStream } | null>(null);
   const [failedStreams, setFailedStreams] = useState<Set<ScoredStream>>(new Set());
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
@@ -174,25 +151,20 @@ export function PlayPicker({
     filterDisabled,
   });
   const baseLangs = settings.preferredLanguages;
-  const isAnimeRequest = useMemo(
-    () => (streamIds ?? []).some((id) => id.startsWith("kitsu:") || id.startsWith("mal:")),
-    [streamIds],
-  );
   const preferredLangs = useMemo(() => {
     const codes = settings.preferredAudioLangs ?? [];
-    const animeAdd = isAnimeRequest ? ["Japanese"] : [];
-    const all = [...(baseLangs ?? []), ...codes, ...animeAdd];
+    const all = [...(baseLangs ?? []), ...codes];
     const seen = new Set<string>();
     const out: string[] = [];
     for (const lang of all) {
       const code = normalizeLangCode(lang);
-      if (!isAnimeRequest && code === "ja") continue;
+      if (code === "ja") continue;
       if (seen.has(code)) continue;
       seen.add(code);
       out.push(lang);
     }
     return out;
-  }, [baseLangs, settings.preferredAudioLangs, isAnimeRequest]);
+  }, [baseLangs, settings.preferredAudioLangs]);
   const [langFilter, setLangFilter] = useState(
     settings.requirePreferredLanguage === true && (baseLangs?.length ?? 0) > 0,
   );
@@ -301,14 +273,13 @@ export function PlayPicker({
     setSelectedTier((s) => s ?? filteredPicker.primary!.tier);
   }, [filteredPicker]);
 
-  const isAnimeMetaId = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const previousPlayback = useMemo(
     () =>
       settings.rememberLastStream ? readPlayback(meta.id, episode?.season, episode?.episode) : null,
     [meta.id, episode?.season, episode?.episode, settings.rememberLastStream],
   );
 
-  const seasonLock = settings.seasonSourceLock && meta.type === "series" && !isAnimeMetaId;
+  const seasonLock = settings.seasonSourceLock && meta.type === "series";
   const seasonLockEntry = useMemo(
     () => (seasonLock ? readSeasonLock(meta.id, episode?.season ?? null) : null),
     [seasonLock, meta.id, episode?.season],
@@ -336,8 +307,8 @@ export function PlayPicker({
     hostSource: hostSourceForMedia,
     prefer1080: !!kidProfile,
     preferPacks: seasonLock,
-    season: !isAnimeMetaId ? (episode?.season ?? null) : null,
-    episode: !isAnimeMetaId ? (episode?.episode ?? null) : null,
+    season: episode?.season ?? null,
+    episode: episode?.episode ?? null,
   });
 
   const autoFiredRef = useRef(false);
@@ -362,7 +333,7 @@ export function PlayPicker({
   const previousMatch: ScoredStream | null = useMemo(() => {
     if (!filteredPicker || !previousPlayback) return null;
     const m = filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null;
-    if (!m || isAnimeMetaId || !episode) return m;
+    if (!m || !episode) return m;
     if (m.episode != null && m.episode !== episode.episode) return null;
     if (
       m.episode != null &&
@@ -372,7 +343,7 @@ export function PlayPicker({
     )
       return null;
     return m;
-  }, [filteredPicker, previousPlayback, episode, isAnimeMetaId]);
+  }, [filteredPicker, previousPlayback, episode]);
 
   const sameSourceMatch: ScoredStream | null = useMemo(() => {
     if (!filteredPicker || !lastSeriesSource || previousMatch) return null;
@@ -494,8 +465,8 @@ export function PlayPicker({
     isTorrentioStream,
     expectHostSource,
     hostSource: hostSourceForMedia,
-    season: !isAnimeMetaId ? (episode?.season ?? null) : null,
-    episode: !isAnimeMetaId ? (episode?.episode ?? null) : null,
+    season: episode?.season ?? null,
+    episode: episode?.episode ?? null,
     autoFiredRef,
     setAutoSettleReady,
     setAutoCancelled,
@@ -778,7 +749,6 @@ export function PlayPicker({
             matchFor={hostMatch ? matchFor : undefined}
             onPlay={playManually}
             download={isDownload}
-            isAnime={isAnimeMetaId}
           />
         ) : (
           <>
@@ -823,7 +793,6 @@ export function PlayPicker({
                         on={langFilter}
                         hiddenCount={langHiddenCount}
                         onToggle={() => setLangFilter((v) => !v)}
-                        isAnime={isAnimeRequest}
                       />
                     )}
                   </div>

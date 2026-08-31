@@ -1,14 +1,18 @@
 /** Stable query-key factory so cache entries stay consistent across views. */
 export const queryKeys = {
   catalog: {
-    list: (authKey: string | null) => ["harbor", "catalog", "list", authKey ?? "anon"] as const,
-    rows: (authKey: string | null) => ["harbor", "catalog", "rows", authKey ?? "anon"] as const,
+    // Keyed by profile, not by account: addons are per-profile, so a bare key
+    // would serve one profile's catalog rows to another.
+    list: (profileId: string | null) =>
+      ["harbor", "catalog", "list", profileId ?? "default"] as const,
+    rows: (profileId: string | null) =>
+      ["harbor", "catalog", "rows", profileId ?? "default"] as const,
     shelf: (base: string, type: string, id: string) =>
       ["harbor", "catalog", "shelf", base, type, id, 1] as const,
   },
   addons: {
-    installed: (authKey: string | null) =>
-      ["harbor", "addons", "installed", authKey ?? "anon"] as const,
+    installed: (profileId: string | null) =>
+      ["harbor", "addons", "installed", profileId ?? "default"] as const,
     directory: () => ["harbor", "addons", "directory"] as const,
     manifest: (transportUrl: string) => ["harbor", "addons", "manifest", transportUrl] as const,
   },

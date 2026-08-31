@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "@/lib/auth";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
 import { buildStreamIds } from "@/lib/streams/stream-ids";
@@ -18,10 +17,9 @@ export function useSwitcherRefresh(params: {
   active: boolean;
 }) {
   const { meta, episode, imdbId, active } = params;
-  const { authKey } = useAuth();
   const { settings } = useSettings();
   const debrids = useDebridClients();
-  const { addons } = useAddons(active ? authKey : null, settings);
+  const { addons } = useAddons(settings);
   const [refreshing, setRefreshing] = useState(false);
   const acRef = useRef<AbortController | null>(null);
 

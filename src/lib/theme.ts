@@ -61,7 +61,6 @@ export type ChromeNavId =
   | "home"
   | "movies"
   | "shows"
-  | "anime"
   | "library"
   | "live"
   | "discover"
@@ -417,7 +416,7 @@ aside[data-harbor-sidebar] [data-tauri-drag-region] > span > span {
   background-color: color-mix(in srgb, var(--color-accent) 24%, transparent) !important;
   color: var(--color-accent) !important;
 }
-aside[data-harbor-sidebar].w-\[72px\] [data-harbor-nav][data-active],
+aside[data-harbor-sidebar].w-[72px] [data-harbor-nav][data-active],
 html:not(.lg) [data-harbor-nav][data-active] {
   box-shadow: inset 0 0 0 var(--ef-border-w) color-mix(in srgb, var(--color-accent) 55%, transparent) !important;
 }
@@ -430,7 +429,7 @@ aside[data-harbor-sidebar] .h-px.bg-gradient-to-r {
   ) !important;
 }
 aside[data-harbor-sidebar] > div:last-child .rounded-full.border,
-aside[data-harbor-sidebar] > div:last-child .bg-elevated\/50 {
+aside[data-harbor-sidebar] > div:last-child .bg-elevated/50 {
   background-color: color-mix(in srgb, var(--color-raised) 40%, transparent) !important;
   border-color: color-mix(in srgb, var(--ef-hairline) 80%, transparent) !important;
 }
@@ -527,11 +526,11 @@ h3.truncate.font-medium.tracking-tight {
   letter-spacing: -0.018em !important;
   color: var(--color-ink) !important;
 }
-.group\/va {
+.group/va {
   color: var(--color-ink-subtle) !important;
   transition: color 125ms ease !important;
 }
-.group\/va:hover {
+.group/va:hover {
   color: var(--color-accent) !important;
 }
 .harbor-row-arrow {
@@ -600,7 +599,7 @@ button.group > p.line-clamp-2 {
   font-weight: 500 !important;
   color: var(--color-ink) !important;
 }
-.harbor-poster > .absolute.rounded-md.bg-canvas\/95 {
+.harbor-poster > .absolute.rounded-md.bg-canvas/95 {
   background-color: color-mix(in srgb, var(--ef-panel-glass) 95%, transparent) !important;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -609,7 +608,7 @@ button.group > p.line-clamp-2 {
   color: var(--color-accent) !important;
   border: var(--ef-border-w) solid color-mix(in srgb, var(--color-accent) 45%, transparent) !important;
 }
-.harbor-poster .rounded-full.bg-canvas\/85 {
+.harbor-poster .rounded-full.bg-canvas/85 {
   background-color: color-mix(in srgb, var(--ef-panel-glass) 85%, transparent) !important;
 }
 
@@ -933,9 +932,6 @@ main.absolute.inset-0 .rounded-xl.border.bg-elevated\\/70 {
 [data-scroll-anchor="hero"] .overflow-hidden {
   border-radius: 0 !important;
 }
-[data-scroll-anchor="hero"].harbor-anime-hero {
-  margin: 0 !important;
-}
 
 /* ==========================================================================
    HOVER PREVIEW GLASS
@@ -1102,7 +1098,6 @@ const feishinCss = `/* ===== FEISHIN THEME FOR HARBOR ===== */
   --font-display: "Inter", "Noto Sans JP", system-ui, sans-serif;
   --font-sans: "Inter", "Noto Sans JP", system-ui, sans-serif;
   --font-channel: "Inter", system-ui, sans-serif;
-  --font-anime: "Inter", system-ui, sans-serif;
   --poster-radius: 5px;
   font-variant-numeric: tabular-nums;
 }
@@ -1331,10 +1326,6 @@ const feishinHtml = `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-re
         <button data-harbor-nav="shows" onclick="window.harbor.navigate('shows')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"></rect><path d="m8 3 4 4 4-4"></path></svg>
           <span>Shows</span>
-        </button>
-        <button data-harbor-nav="anime" onclick="window.harbor.navigate('anime')">
-          <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4.5 0 8 3 8 7 0 3-2 5-5 6l1 4-4-2.5L8 20l1-4c-3-1-5-3-5-6 0-4 3.5-7 8-7z"></path></svg>
-          <span>Anime</span>
         </button>
         <button data-harbor-nav="live" onclick="window.harbor.navigate('live')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="m8 7 4-4 4 4"></path></svg>

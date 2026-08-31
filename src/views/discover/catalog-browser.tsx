@@ -1,11 +1,15 @@
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth";
+import { useProfiles } from "@/lib/profiles";
 import { browseFetcher, listBrowseCatalogs } from "@/lib/catalog-browse";
 import { queryKeys } from "@/lib/query";
 import { useT } from "@/lib/i18n";
-import { useView } from "@/lib/view";
+import { useSettings } from "@/lib/settings";
+import type { GridSpec } from "@/lib/view";
+
+/** Stable empty fallback so memo deps do not churn every render. */
+const NO_KEYS: string[] = [];
 
 const TYPE_LABELS: Record<string, string> = {
   movie: "Movies",
@@ -142,20 +146,37 @@ function PillSelect({
   );
 }
 
-export function CatalogBrowser() {
+export function CatalogBrowser({
+  onBrowse,
+  onManage,
+}: {
+  onBrowse: (title: string, spec: GridSpec) => void;
+  onManage: () => void;
+}) {
   const t = useT();
-  const { authKey } = useAuth();
-  const { openGrid } = useView();
+  const { activeId: profileId } = useProfiles();
+  const { settings } = useSettings();
   const [type, setType] = useState("");
   const [catKey, setCatKey] = useState("");
   const [genre, setGenre] = useState<string | null>(null);
 
   // Shares the TanStack Query entry the catalogs prefetch already warms.
-  const { data: catalogs = [] } = useQuery({
-    queryKey: queryKeys.catalog.list(authKey),
-    queryFn: () => listBrowseCatalogs(authKey),
+  const { data: all = [] } = useQuery({
+    queryKey: queryKeys.catalog.list(profileId),
+    queryFn: () => listBrowseCatalogs(),
     staleTime: 5 * 60_000,
   });
+
+  const pinned = settings.catalogsPinned ?? NO_KEYS;
+  const hidden = settings.catalogsHidden ?? NO_KEYS;
+
+  // Hidden catalogs drop out of the picker entirely; pinned ones sort to the top.
+  const catalogs = useMemo(() => {
+    const hiddenSet = new Set(hidden);
+    const rank = new Map(pinned.map((k, i) => [k, i] as const));
+    const at = (k: string) => rank.get(k) ?? Number.MAX_SAFE_INTEGER;
+    return all.filter((c) => !hiddenSet.has(c.key)).sort((a, b) => at(a.key) - at(b.key));
+  }, [all, pinned, hidden]);
 
   const types = useMemo(() => {
     const seen = new Set<string>();
@@ -169,7 +190,7 @@ export function CatalogBrowser() {
   }, [catalogs]);
 
   useEffect(() => {
-    if (!type && types.length) setType(types[0]);
+    if (types.length && !types.includes(type)) setType(types[0]);
   }, [types, type]);
 
   const ofType = useMemo(() => catalogs.filter((c) => c.type === type), [catalogs, type]);
@@ -186,12 +207,12 @@ export function CatalogBrowser() {
     [catalogs, catKey],
   );
 
-  if (catalogs.length === 0 || types.length === 0) return null;
+  if (all.length === 0) return null;
 
   const browse = () => {
     if (!selected) return;
-    openGrid({
-      title: genre ? `${selected.name} · ${genre}` : selected.name,
+    onBrowse(genre ? `${selected.name} · ${genre}` : selected.name, {
+      title: selected.name,
       fetcher: browseFetcher(selected, genre),
     });
   };
@@ -204,7 +225,7 @@ export function CatalogBrowser() {
       <div className="flex w-fit max-w-full flex-wrap items-center gap-2 rounded-2xl bg-elevated/30 p-2 ring-1 ring-edge-soft/50">
         <PillSelect
           label={t("Type")}
-          value={typeLabel(type)}
+          value={type ? typeLabel(type) : "—"}
           options={types.map((ty) => ({ value: ty, label: typeLabel(ty) }))}
           onChange={(v) => setType(v)}
         />
@@ -242,6 +263,14 @@ export function CatalogBrowser() {
           className="flex h-10 items-center gap-2 rounded-full bg-ink px-5 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
         >
           {t("Browse")}
+        </button>
+        <button
+          onClick={onManage}
+          aria-label={t("Manage catalogs")}
+          title={t("Manage catalogs")}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-soft bg-canvas/50 text-ink-muted transition-colors hover:border-edge hover:text-ink"
+        >
+          <SlidersHorizontal size={16} />
         </button>
       </div>
     </div>

@@ -1,23 +1,11 @@
 import { useEffect, useState } from "react";
-import {
-  fetchInstalledAddons,
-  fetchManifestAt,
-  filterEnabled,
-  loadInstalled,
-} from "@/lib/addon-store";
-import { torboxAddonFor, userAddons, withDebridKeys, type Addon } from "@/lib/addons";
-import { applyOrderToItems, loadDisplayOrder } from "@/lib/addons-store/reorder";
+import { fetchManifestAt, installedAddons, installedAddonsResolved } from "@/lib/addon-store";
+import { torboxAddonFor, withDebridKeys, type Addon } from "@/lib/addons";
 import { withTimeout } from "@/lib/progressive-rows";
 import type { useSettings } from "@/lib/settings";
 
 type Settings = ReturnType<typeof useSettings>["settings"];
 const ADDON_DISCOVERY_TIMEOUT_MS = 10_000;
-
-function savedAddons(): Addon[] {
-  return filterEnabled(loadInstalled()).flatMap((entry) =>
-    entry.manifest ? [{ manifest: entry.manifest, transportUrl: entry.transportUrl }] : [],
-  );
-}
 
 function hasAnyResources(a: Addon): boolean {
   return (a.manifest.resources ?? []).length > 0;
@@ -42,15 +30,12 @@ async function resolveManifests(addons: Addon[]): Promise<Addon[]> {
   );
 }
 
-export function useAddons(
-  authKey: string | null,
-  settings: Settings,
-): {
+export function useAddons(settings: Settings): {
   addons: Addon[];
   discovering: boolean;
   userHasStreamAddons: boolean;
 } {
-  const [addons, setAddons] = useState<Addon[]>(() => savedAddons());
+  const [addons, setAddons] = useState<Addon[]>(() => installedAddons());
   const [discovering, setDiscovering] = useState(true);
   const [userHasStreamAddons, setUserHasStreamAddons] = useState(false);
   useEffect(() => {
@@ -67,38 +52,15 @@ export function useAddons(
       if (!cancelled) setDiscovering(true);
     });
     (async () => {
-      const [stremioResult, installedResult] = await Promise.all([
-        authKey
-          ? withTimeout(userAddons(authKey), ADDON_DISCOVERY_TIMEOUT_MS).catch(() => [] as Addon[])
-          : Promise.resolve([] as Addon[]),
-        withTimeout(fetchInstalledAddons(), ADDON_DISCOVERY_TIMEOUT_MS).catch(() => []),
-      ]);
-      const stremioAddons = filterEnabled(stremioResult);
-      const installed = filterEnabled([...savedAddons(), ...installedResult]);
+      const discovered = await withTimeout(
+        installedAddonsResolved(),
+        ADDON_DISCOVERY_TIMEOUT_MS,
+      ).catch(() => installedAddons());
       if (cancelled) return;
-      const merged: Addon[] = [];
-      const idxByUrl = new Map<string, number>();
-      for (const a of [...stremioAddons, ...installed]) {
-        const existingIdx = idxByUrl.get(a.transportUrl);
-        if (existingIdx === undefined) {
-          idxByUrl.set(a.transportUrl, merged.length);
-          merged.push(a);
-          continue;
-        }
-        if (!hasAnyResources(merged[existingIdx]) && hasAnyResources(a)) {
-          merged[existingIdx] = a;
-        }
-      }
-      const resolved = await resolveManifests(merged);
+      // installedAddonsResolved already filters to enabled and applies display
+      // order; this only backfills manifests that arrived without resources.
+      const merged = await resolveManifests(discovered);
       if (cancelled) return;
-      merged.length = 0;
-      merged.push(...resolved);
-      const savedOrder = loadDisplayOrder();
-      if (savedOrder.length > 0) {
-        const ordered = applyOrderToItems(merged, savedOrder);
-        merged.length = 0;
-        merged.push(...ordered);
-      }
       const userStreamCount = merged.filter(declaresStream).length;
       setUserHasStreamAddons(userStreamCount > 0);
       const list = withDebridKeys(merged, debridKeys);
@@ -107,7 +69,7 @@ export function useAddons(
           a.manifest.id === "app.torbox.stremio" || a.transportUrl?.includes("stremio.torbox.app"),
       );
       console.info(
-        `[picker] authKey=${authKey ? "yes" : "no"} tbKey=${settings.tbKey ? `set(${settings.tbKey.slice(0, 8)}…)` : "EMPTY"} stremioAddons=${stremioAddons.length} installed=${installed.length} merged=${merged.length} userStreamCount=${userStreamCount} hasTorbox=${existingTorboxIdx >= 0} torboxAutoAddable=${!!torbox}`,
+        `[picker] tbKey=${settings.tbKey ? `set(${settings.tbKey.slice(0, 8)}…)` : "EMPTY"} installed=${merged.length} userStreamCount=${userStreamCount} hasTorbox=${existingTorboxIdx >= 0} torboxAutoAddable=${!!torbox}`,
       );
       if (torbox) {
         if (existingTorboxIdx >= 0) {
@@ -133,7 +95,7 @@ export function useAddons(
     return () => {
       cancelled = true;
     };
-  }, [authKey, settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey]);
+  }, [settings.rdKey, settings.tbKey, settings.adKey, settings.pmKey, settings.dlKey]);
 
   return { addons, discovering, userHasStreamAddons };
 }

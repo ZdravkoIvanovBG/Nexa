@@ -1,6 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Meta } from "./cinemeta";
-import { fetchManifestAt, filterEnabled, loadInstalled } from "./addon-store";
+import { installedAddonsResolved } from "./addon-store";
 
 const STREMIO_API = "https://api.strem.io/api";
 const MAX_ROWS = 24;
@@ -12,9 +12,7 @@ export type CatalogDef = {
   extra?: Array<{ name: string; isRequired?: boolean; options?: string[] }>;
 };
 
-export type AddonResource =
-  | string
-  | { name: string; types?: string[]; idPrefixes?: string[] };
+export type AddonResource = string | { name: string; types?: string[]; idPrefixes?: string[] };
 
 export type Addon = {
   manifest: {
@@ -250,19 +248,8 @@ export function withDebridKeys(addons: Addon[], keys: DebridKeySet): Addon[] {
   });
 }
 
-export async function gatherCatalogAddons(authKey: string | null): Promise<Addon[]> {
-  const stremioRaw = authKey ? await userAddons(authKey).catch(() => [] as Addon[]) : [];
-  const stremio = filterEnabled(stremioRaw);
-  const seen = new Set(stremio.map((a) => a.transportUrl));
-  const localOnly = filterEnabled(loadInstalled()).filter((l) => !seen.has(l.transportUrl));
-  const localFull = await Promise.all(
-    localOnly.map(async (l): Promise<Addon | null> => {
-      if (l.manifest?.catalogs?.length) return { manifest: l.manifest, transportUrl: l.transportUrl };
-      const manifest = await fetchManifestAt(l.transportUrl).catch(() => l.manifest ?? null);
-      return manifest ? { manifest, transportUrl: l.transportUrl } : null;
-    }),
-  );
-  return [...stremio, ...localFull.filter((a): a is Addon => a != null)];
+export async function gatherCatalogAddons(): Promise<Addon[]> {
+  return installedAddonsResolved();
 }
 
 const NON_CONTENT_TYPES = new Set(["addon_catalog"]);
@@ -288,12 +275,11 @@ function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
 }
 
 export async function loadAddonRows(
-  authKey: string | null,
   opts: { dedup?: boolean; cap?: number } = {},
 ): Promise<AddonRow[]> {
   const dedup = opts.dedup ?? true;
   const cap = opts.cap ?? (dedup ? MAX_ROWS : 200);
-  const addons = await gatherCatalogAddons(authKey);
+  const addons = await gatherCatalogAddons();
   const tasks = addons.flatMap((addon) =>
     (addon.manifest.catalogs ?? [])
       .filter((c) => c && c.name && c.type && c.id && !NON_CONTENT_TYPES.has(c.type.toLowerCase()))
@@ -319,7 +305,12 @@ export async function loadAddonRows(
             type: cat.type,
             name: cat.name,
             metas,
-            more: { base, type: cat.type, id: cat.id, extras: requiredCatalogExtras(cat) ?? undefined },
+            more: {
+              base,
+              type: cat.type,
+              id: cat.id,
+              extras: requiredCatalogExtras(cat) ?? undefined,
+            },
           };
         } catch {
           return null;
@@ -365,7 +356,8 @@ export async function fetchAddonCatalogPage(
   extras?: Array<{ name: string; value: string }>,
 ): Promise<Meta[]> {
   const parts: string[] = [];
-  for (const e of extras ?? []) parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
+  for (const e of extras ?? [])
+    parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
   if (skip > 0) parts.push(`skip=${skip}`);
   const seg = parts.length ? `/${parts.join("&")}` : "";
   const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
@@ -388,7 +380,13 @@ export function createAddonCatalogFetcher(
   return async (page: number): Promise<Meta[]> => {
     const step = pageSize ?? DEFAULT_CATALOG_PAGE_SIZE;
     const skip = page <= 1 ? 0 : (page - 1) * step;
-    const metas = await fetchAddonCatalogPage(cursor.base, cursor.type, cursor.id, skip, cursor.extras);
+    const metas = await fetchAddonCatalogPage(
+      cursor.base,
+      cursor.type,
+      cursor.id,
+      skip,
+      cursor.extras,
+    );
     if (metas.length > 0 && pageSize == null) pageSize = metas.length;
     return opts.mapMeta ? metas.map(opts.mapMeta) : metas;
   };

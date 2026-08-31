@@ -17,11 +17,9 @@ export function buildStreamIds(
   if (episode?.videoId) push(episode.videoId);
   if (!episode && defaultVideoId) push(defaultVideoId);
 
-  const animeMeta = /^(kitsu|mal|anilist|anidb):/.test(metaId) || episode?.kitsuStreamId != null;
   if (episode?.imdbSeason != null && episode.imdbEpisode != null) {
     const mappedImdb = episode.imdbId ?? imdbId;
-    const imdbEpAligned = !animeMeta || episode.episode === episode.imdbEpisode;
-    if (mappedImdb?.startsWith("tt") && imdbEpAligned) {
+    if (mappedImdb?.startsWith("tt")) {
       push(`${mappedImdb}:${episode.imdbSeason}:${episode.imdbEpisode}`);
     }
   }
@@ -33,12 +31,12 @@ export function buildStreamIds(
   } else if ((metaId.startsWith("kitsu:") || metaId.startsWith("mal:")) && !episode) {
     push(metaId);
   } else if (metaId.startsWith("tt") && episode) {
-    if (!animeMeta) push(`${metaId}:${episode.season}:${episode.episode}`);
+    push(`${metaId}:${episode.season}:${episode.episode}`);
   } else if (metaId.startsWith("tt") && !episode) {
     push(metaId);
   } else if (metaId.startsWith("tmdb:")) {
     if (episode) {
-      if (!animeMeta) push(`${metaId}:${episode.season}:${episode.episode}`);
+      push(`${metaId}:${episode.season}:${episode.episode}`);
     } else {
       push(metaId);
     }
@@ -49,7 +47,7 @@ export function buildStreamIds(
 
   if (imdbId && imdbId.startsWith("tt")) {
     if (!episode) push(imdbId);
-    else if (!animeMeta) push(`${imdbId}:${episode.season}:${episode.episode}`);
+    else push(`${imdbId}:${episode.season}:${episode.episode}`);
   }
 
   return out;

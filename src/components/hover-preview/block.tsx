@@ -4,16 +4,13 @@ import type { PreviewData } from "@/lib/hover-preview/preview-data";
 import { tmdbImdbCached } from "@/lib/providers/tmdb";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
 import { ImdbIcon } from "../icons/imdb-icon";
-import { MalLogo } from "../icons/mal-logo";
 
 function DecisionLine({ data }: { data: PreviewData }) {
   const parts: ReactNode[] = [];
   if (data.rating) {
     parts.push(
       <span key="rating" className="inline-flex items-center gap-1 align-middle">
-        {data.rating.kind === "mal" ? (
-          <MalLogo className="h-[11px] w-auto text-ink-muted" />
-        ) : data.rating.kind === "tmdb" ? (
+        {data.rating.kind === "tmdb" ? (
           <Star className="h-[11px] w-[11px] text-amber-400" fill="currentColor" strokeWidth={0} />
         ) : (
           <ImdbIcon className="h-[11px] w-auto rounded-[2px]" />
@@ -27,7 +24,10 @@ function DecisionLine({ data }: { data: PreviewData }) {
   if (data.genre) parts.push(<span key="genre">{data.genre}</span>);
   if (parts.length === 0) return null;
   return (
-    <div data-stagger="1" className="truncate text-[12.5px] font-medium tabular-nums text-ink-muted">
+    <div
+      data-stagger="1"
+      className="truncate text-[12.5px] font-medium tabular-nums text-ink-muted"
+    >
       {parts.flatMap((p, i) =>
         i === 0
           ? [p]
@@ -56,7 +56,13 @@ function WatchlistToggle({ data }: { data: PreviewData }) {
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.stopPropagation();
-        toggleWatchlist({ id: meta.id, type: meta.type, name: meta.name, poster: meta.poster, imdbId: alt ?? undefined });
+        toggleWatchlist({
+          id: meta.id,
+          type: meta.type,
+          name: meta.name,
+          poster: meta.poster,
+          imdbId: alt ?? undefined,
+        });
       }}
       className="flex h-7 w-7 items-center justify-center rounded-md text-ink-subtle transition-colors duration-150 hover:bg-raised hover:text-ink"
     >

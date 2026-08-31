@@ -71,7 +71,6 @@ import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useVideoFill } from "./player/hooks/use-video-fill";
 import { useLivePictureEq } from "./player/hooks/use-live-picture-eq";
-import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
@@ -611,7 +610,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
 
   const videoFill = useVideoFill(bridgeRef, src.url, playing);
   useLivePictureEq(bridgeRef, src.url);
-  const anime4k = useAnime4k(bridgeRef, src.url, src, snap.videoWidth);
   const { holdSpeedActive, showStats } = usePlayerHotkeys({
     bridgeRef,
     snap,
@@ -637,23 +635,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     sleep,
     quickToolsEnabled,
     frameGrab,
-    onToggleAnime4k: () => {
-      if (!anime4k.available) {
-        showSyncToast("error", t("Anime4K isn't set up yet. Turn it on in Settings under Anime."));
-        return;
-      }
-      anime4k.setMode(anime4k.mode === "off" ? "auto" : "off");
-    },
-    onAnime4kOn: () => {
-      if (!anime4k.available) {
-        showSyncToast("error", t("Anime4K isn't set up yet. Turn it on in Settings under Anime."));
-        return;
-      }
-      anime4k.setMode("auto");
-    },
-    onAnime4kOff: () => {
-      anime4k.setMode("off");
-    },
     gif,
     clip,
     videoFill,
@@ -862,9 +843,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     videoFillPill: videoFill.pill,
     cropMode: videoFill.mode,
     onCropMode: videoFill.setMode,
-    anime4kMode: anime4k.mode,
-    onAnime4kMode: anime4k.setMode,
-    anime4kAvailable: anime4k.available,
     subDropToast: svpToast ?? subDropToast,
     pipMode,
     drawMode,

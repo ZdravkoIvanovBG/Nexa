@@ -1,6 +1,12 @@
 import type { ControlContext } from "@/components/player/transport/control-renderer";
 import type { StremioRenderCtx } from "@/components/player/transport/control-renderer-stremio";
-import type { ControlVariant, CustomIconMap, PlayerControlId, TimeFormat, VolumeStyle } from "@/lib/player-chrome";
+import type {
+  ControlVariant,
+  CustomIconMap,
+  PlayerControlId,
+  TimeFormat,
+  VolumeStyle,
+} from "@/lib/player-chrome";
 import { emptySnapshot, type PlayerCapabilities } from "@/lib/player/bridge";
 
 const NOOP = () => {};
@@ -110,12 +116,8 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     setSubtitleMenuOpen: NOOP_BOOL,
     setSpeedMenuOpen: NOOP_BOOL,
     setAspectMenuOpen: NOOP_BOOL,
-    setAnime4kMenuOpen: NOOP_BOOL,
     cropMode: "fit",
     onCropMode: NOOP_STR,
-    anime4kMode: "auto",
-    onAnime4kMode: NOOP_STR,
-    anime4kAvailable: true,
     editing: true,
   };
 }

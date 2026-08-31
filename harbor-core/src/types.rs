@@ -244,7 +244,6 @@ pub struct ParsedStream {
     pub repack_iteration: i32,
     pub proper: bool,
     pub hardcoded: bool,
-    pub anime_hash: Option<String>,
     pub scam_score: i32,
 }
 
@@ -318,8 +317,6 @@ pub struct TrustOptions {
     pub preferred_audio_langs: Vec<String>,
     #[serde(default)]
     pub require_preferred_language: bool,
-    #[serde(default)]
-    pub is_anime: bool,
 }
 
 fn default_true() -> bool {

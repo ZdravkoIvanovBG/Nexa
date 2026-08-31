@@ -18,7 +18,6 @@ export type StreamingService =
 export type WebhookTrigger =
   | { event: "newMovie" }
   | { event: "newSeries" }
-  | { event: "newAnime" }
   | { event: "fromTrackedPerson"; personIds?: number[] }
   | { event: "fromGenre"; genreIds: number[]; mediaType: "movie" | "tv" }
   | { event: "fromProvider"; providerIds: number[] }
@@ -27,7 +26,7 @@ export type WebhookTrigger =
   | { event: "fromTraktWatchlist" }
   | { event: "liveTvEvent"; channelIds?: string[]; favoritesOnly?: boolean; leadMinutes?: number };
 
-export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
+export type ContentCategory = "liveTv" | "sports" | "adult";
 
 export type ContentFilters = Record<ContentCategory, boolean>;
 export type LetterboxdSettings = {
@@ -47,10 +46,6 @@ export interface SimklGranularFilters {
     plantowatch: boolean;
   };
   shows: {
-    watching: boolean;
-    plantowatch: boolean;
-  };
-  anime: {
     watching: boolean;
     plantowatch: boolean;
   };
@@ -87,8 +82,6 @@ export type Settings = {
   showImdbBadge: boolean;
   showTmdbBadge: boolean;
   showRtBadge: boolean;
-  showMalBadge: boolean;
-  animeCardRating: "mal" | "imdb";
   showMetacriticBadge: boolean;
   showLetterboxdBadge: boolean;
   showMdblistBadge: boolean;
@@ -96,7 +89,6 @@ export type Settings = {
   showDetailRatings: boolean;
   showImdbDetail: boolean;
   showTmdbDetail: boolean;
-  showMalDetail: boolean;
   showRtDetail: boolean;
   showRtAudienceDetail: boolean;
   showLetterboxdDetail: boolean;
@@ -161,14 +153,8 @@ export type Settings = {
   tvdbPin: string;
   harborAvatar: string | null;
   harborColor: string;
-  anilistAutoSync: boolean;
-  malAutoSync: boolean;
-  anilistBlurComments: boolean;
-  showAnilistComments: boolean;
-  useAnilistAvatar: boolean;
   useTraktAvatar: boolean;
   useSimklAvatar: boolean;
-  useMalAvatar: boolean;
   traktClientId: string;
   traktClientSecret: string;
   traktAccessToken: string | null;
@@ -204,9 +190,6 @@ export type Settings = {
   playerMacEdr: boolean;
   playerDisplayPanel: "auto" | "oled" | "lcd";
   playerMotionInterp: boolean;
-  playerAnime4k: boolean;
-  playerAnime4kAnimeOnly: boolean;
-  playerAnime4kIndicator: boolean;
   playerMpvEmbed: boolean;
   playerP2pChip: boolean;
   showQualityInfo: boolean;
@@ -222,11 +205,6 @@ export type Settings = {
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
   castAlwaysTranscode: boolean;
-  playerAnime4kShaders: string[];
-  playerAnime4kMode: string;
-  playerAnime4kTier: string;
-  playerAnime4kFolder: string;
-  playerAnime4kOverride: string;
   preferredSubLangs: string[];
   preferredAudioLangs: string[];
   subFontSize: number;
@@ -292,7 +270,6 @@ export type Settings = {
   mpvTweaks: Record<string, string>;
   playerSvp: boolean;
   svpVpyPath: string;
-  svpScope: "all" | "anime" | "non-anime";
   seekBackStepSec: number;
   seekForwardStepSec: number;
   playerHdrOpaqueWindow: boolean;
@@ -337,7 +314,6 @@ export type Settings = {
   libraryBookmarkedOnly: boolean;
   librarySort: "recent" | "title" | "year";
   preferCustomMetaAddon: boolean;
-  animeOnlyInAnimeRoom: boolean;
   cwAdvanceNext: boolean;
   useNativeTitleBar: boolean;
   closeToTray: boolean;
@@ -363,12 +339,6 @@ export type Settings = {
     renamed: Record<string, string>;
   };
   hotkeys: Record<string, string>;
-  animeFavoriteGenres: number[];
-  animeExcludeOrigins: string[];
-  animeHideWatchedPicks: boolean;
-  animePicksDismissedAt: number;
-  animeAnilistRowsHidden: string[];
-  animeMalRowsHidden: string[];
   pickerLayout: "condensed" | "stremio";
   streamSort: "harbor" | "addon";
   fullStreamDescription: boolean;
@@ -392,7 +362,6 @@ export type Settings = {
     telegramUrl: string;
     notifyMovies: boolean;
     notifyTv: boolean;
-    notifyAnime: boolean;
     sources: {
       library: boolean;
       all: boolean;
@@ -413,7 +382,6 @@ export type Settings = {
   simklUpNextRailEnabled: boolean;
   simklTrendingRailEnabled: boolean;
   simklScrobbleEnabled: boolean;
-  simklAnimeTitleLanguage: "english" | "romaji" | "native";
   weekStartsMonday: boolean;
   customCalendar: {
     trackedPeople: Array<{
@@ -427,7 +395,7 @@ export type Settings = {
     genres: Array<{ id: number; name: string; mediaType: "movie" | "tv" }>;
     watchProviders: Array<{ id: number; name: string }>;
     originCountries: string[];
-    mediaTypes: { movie: boolean; tv: boolean; anime: boolean };
+    mediaTypes: { movie: boolean; tv: boolean };
   };
   webhookRules: Array<{
     id: string;
@@ -455,7 +423,6 @@ export type Settings = {
   iptvForceProxy: boolean;
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
-  wrappedButton: boolean;
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;
   cropMode: string;

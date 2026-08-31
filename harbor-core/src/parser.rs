@@ -10,11 +10,7 @@ static TRUSTED_GROUPS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     for g in [
         "FRDS", "FRAMESTOR", "FORM", "EVO", "RARBG", "ETHEL", "FLUX", "QXR", "MEGUSTA",
         "ION10", "PSA", "AMIABLE", "GALAXYRG", "WEBDV", "RZEROX", "SIC", "TGX", "NTB",
-        "NTG", "TEPES", "GECKOS", "SUCCESSFULCRAB", "SUBSPLEASE", "ERAI", "ERAIRAWS",
-        "JUDAS", "ASW", "EMBER", "ANE", "CLEO", "BEATRICERAWS", "AKIHITO", "VODES",
-        "NANDESUKA", "SMOL", "TENRAISENSEI", "GST", "ANIMEKAIZOKU", "REINFORCE", "RAWS",
-        "OZR", "PURGATORY", "SHK", "KOTUWA", "KIRION", "COMMIE", "DAMEDESUYO", "MTBB",
-        "GJM", "SOFCJ",
+        "NTG", "TEPES", "GECKOS", "SUCCESSFULCRAB",
     ] {
         s.insert(g);
     }
@@ -171,9 +167,6 @@ static SIZE_RX: Lazy<Regex> =
 static SEEDERS_RX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)(?:\x{1F465}|\x{1F464}|S:|seeds?:?|\bS\s*=\s*)\s*(\d+)").unwrap()
 });
-
-static ANIME_HASH_RX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\[([0-9A-F]{8})\]").unwrap());
 
 static RD_CACHE_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\[RD[+\x{26A1}]\]").unwrap());
 static TB_CACHE_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\[TB[+\x{26A1}]\]").unwrap());
@@ -844,7 +837,6 @@ pub fn parse_stream(stream: Stream) -> ParsedStream {
     let repack_iteration = parse_repack_iteration(&text, &ptt);
     let proper = ptt.proper;
     let hardcoded = HARDCODED_RX.is_match(&text) || ptt.hardcoded;
-    let anime_hash = parse_anime_hash(&text);
     let scam_score = compute_scam_score(source, resolution, size);
 
     let parsed_title = if !ptt.title.is_empty() {
@@ -884,7 +876,6 @@ pub fn parse_stream(stream: Stream) -> ParsedStream {
         repack_iteration,
         proper,
         hardcoded,
-        anime_hash,
         scam_score,
     }
 }
@@ -1603,11 +1594,6 @@ fn parse_repack_iteration(text: &str, ptt: &PttResult) -> i32 {
     } else {
         0
     }
-}
-
-fn parse_anime_hash(text: &str) -> Option<String> {
-    let c = ANIME_HASH_RX.captures(text)?;
-    Some(c.get(1)?.as_str().to_uppercase())
 }
 
 fn compute_scam_score(source: Source, resolution: Resolution, size: Option<u64>) -> i32 {

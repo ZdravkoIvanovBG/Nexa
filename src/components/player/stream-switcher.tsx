@@ -3,9 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { resolveAddonLogo } from "@/components/addon-logo";
 import { HostSourceBanner } from "@/components/host-source-banner";
 import { Tooltip } from "./transport/tooltip";
-import { fetchInstalledAddons } from "@/lib/addon-store";
-import { userAddons, type Addon } from "@/lib/addons";
-import { useAuth } from "@/lib/auth";
+import { installedAddonsResolved } from "@/lib/addon-store";
+import type { Addon } from "@/lib/addons";
 import { peekPickerCache, subscribePickerCache } from "@/lib/picker-cache";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -17,11 +16,25 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode, PlayerStreamRef } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
-import { AddonFilterMenu, QualityFilterMenu, SourceFilterMenu } from "./stream-switcher/filter-dropdowns";
+import {
+  AddonFilterMenu,
+  QualityFilterMenu,
+  SourceFilterMenu,
+} from "./stream-switcher/filter-dropdowns";
 import { sourceGroup } from "@/views/play-picker/quality-filter";
 import { KidsStreamSwitcher } from "./stream-switcher/kids-switcher";
-import { abbreviateLanguages, normalizeLangCode, streamMatchesLangs } from "./stream-switcher/lang-utils";
-import { QUALITY_BADGE, QUALITY_LABEL, QUALITY_ORDER, qualityKey, type QualityKey } from "./stream-switcher/quality";
+import {
+  abbreviateLanguages,
+  normalizeLangCode,
+  streamMatchesLangs,
+} from "./stream-switcher/lang-utils";
+import {
+  QUALITY_BADGE,
+  QUALITY_LABEL,
+  QUALITY_ORDER,
+  qualityKey,
+  type QualityKey,
+} from "./stream-switcher/quality";
 import { isCurrentStream, streamKey, SwitcherRow } from "./stream-switcher/switcher-row";
 import { useSwitcherRefresh } from "./stream-switcher/use-switcher-refresh";
 
@@ -62,7 +75,6 @@ export function StreamSwitcher({
 }) {
   const t = useT();
   const kid = useActiveKid();
-  const { authKey } = useAuth();
   const { settings } = useSettings();
   const baseLangs = settings.preferredLanguages ?? [];
   const isAnimeRequest =
@@ -93,18 +105,21 @@ export function StreamSwitcher({
     [meta, episode],
   );
 
-  const { refreshing, refresh } = useSwitcherRefresh({ meta, episode, imdbId: imdbId ?? null, active: open });
+  const { refreshing, refresh } = useSwitcherRefresh({
+    meta,
+    episode,
+    imdbId: imdbId ?? null,
+    active: open,
+  });
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      const installed = await fetchInstalledAddons().catch(() => [] as Addon[]);
-      const stremio = authKey ? await userAddons(authKey).catch(() => [] as Addon[]) : [];
+      const installed = await installedAddonsResolved().catch(() => [] as Addon[]);
       if (cancelled) return;
       const m = new Map<string, string | null>();
-      const merged = [...installed, ...stremio];
-      for (const a of merged) {
+      for (const a of installed) {
         const id = a.manifest?.id;
         if (!id) continue;
         m.set(id, resolveAddonLogo(a.manifest.logo, a.transportUrl));
@@ -114,7 +129,7 @@ export function StreamSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [open, authKey]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -150,14 +165,17 @@ export function StreamSwitcher({
         (s) =>
           s.url != null ||
           debridSlugs.some(
-            (slug) => s.cached[slug as keyof typeof s.cached] || s.inLibrary[slug as keyof typeof s.inLibrary],
+            (slug) =>
+              s.cached[slug as keyof typeof s.cached] ||
+              s.inLibrary[slug as keyof typeof s.inLibrary],
           ) ||
           hasCachedMarker(s),
       ),
     [allStreams, debridSlugs],
   );
   const [cachedOnly, setCachedOnly] = useState(false);
-  const baseList = cachedOnly && debridSlugs.length > 0 && cachedStreams.length > 0 ? cachedStreams : allStreams;
+  const baseList =
+    cachedOnly && debridSlugs.length > 0 && cachedStreams.length > 0 ? cachedStreams : allStreams;
   const [addonFilter, setAddonFilter] = useState<string>("all");
   const [addonMenuOpen, setAddonMenuOpen] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityKey>("all");
@@ -234,7 +252,8 @@ export function StreamSwitcher({
         : addonFilteredList.filter((s) => streamMatchesLangs(s, preferredLangs)),
     [addonFilteredList, preferredLangs],
   );
-  const filteredList = filterToPreferred && preferredLangs.length > 0 ? matchedStreams : addonFilteredList;
+  const filteredList =
+    filterToPreferred && preferredLangs.length > 0 ? matchedStreams : addonFilteredList;
   const matchCurrent = useMemo(() => {
     const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
     return (s: ScoredStream): boolean => {
@@ -266,7 +285,9 @@ export function StreamSwitcher({
   const hiddenCount = addonFilteredList.length - matchedStreams.length;
   const uncachedHidden = allStreams.length - cachedStreams.length;
   const activeAddonName =
-    addonFilter === "all" ? t("All addons") : addonOptions.find((o) => o.id === addonFilter)?.name ?? addonFilter;
+    addonFilter === "all"
+      ? t("All addons")
+      : (addonOptions.find((o) => o.id === addonFilter)?.name ?? addonFilter);
   void cache?.meta.name;
   void cache?.episode;
 
@@ -306,7 +327,11 @@ export function StreamSwitcher({
                 className="flex h-9 w-9 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-default disabled:opacity-70"
                 aria-label={t("Refresh sources")}
               >
-                <RefreshCw size={15} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={15}
+                  strokeWidth={2.2}
+                  className={refreshing ? "animate-spin" : ""}
+                />
               </button>
             </Tooltip>
             <span className="text-[13px] font-semibold tracking-[0.01em] text-ink-muted whitespace-nowrap">
@@ -330,7 +355,9 @@ export function StreamSwitcher({
                   aria-pressed={showFiltered}
                 >
                   <Filter size={11} strokeWidth={2.2} />
-                  {showFiltered ? t("Flagged shown") : t("Flagged ({n})", { n: rejectedStreams.length })}
+                  {showFiltered
+                    ? t("Flagged shown")
+                    : t("Flagged ({n})", { n: rejectedStreams.length })}
                 </button>
               </Tooltip>
             )}
@@ -392,7 +419,10 @@ export function StreamSwitcher({
               >
                 <Languages size={13} strokeWidth={2.2} />
                 {filterToPreferred
-                  ? t("{langs} only · {n} hidden", { langs: abbreviateLanguages(preferredLangs), n: hiddenCount })
+                  ? t("{langs} only · {n} hidden", {
+                      langs: abbreviateLanguages(preferredLangs),
+                      n: hiddenCount,
+                    })
                   : t("{langs} only", { langs: abbreviateLanguages(preferredLangs) })}
               </button>
             )}
@@ -469,4 +499,3 @@ export function StreamSwitcher({
     </div>
   );
 }
-

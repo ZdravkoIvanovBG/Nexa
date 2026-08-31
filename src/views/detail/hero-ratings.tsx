@@ -1,7 +1,6 @@
 import { Popcorn } from "lucide-react";
 import type { ReactNode } from "react";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
-import { MalLogo } from "@/components/icons/mal-logo";
 import { RtBadge } from "@/components/rt-badge";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
@@ -59,26 +58,22 @@ function metacriticBand(value: number): string {
 
 export function HeroRatings({
   rating,
-  isAnime,
   scores,
   mdblist,
   imdbId,
   mediaType,
   onOpenUrl,
   ratingSource = "imdb",
-  animeImdbRating,
   bare = false,
   tmdbRating,
 }: {
   rating?: string;
-  isAnime: boolean;
   scores: OmdbScores | null;
   mdblist: MdblistScores | null;
   imdbId: string | null;
   mediaType: "movie" | "show";
   onOpenUrl: (url: string) => void;
   ratingSource?: "imdb" | "tmdb";
-  animeImdbRating?: string | null;
   bare?: boolean;
   tmdbRating?: string | null;
 }) {
@@ -86,11 +81,8 @@ export function HeroRatings({
   const { settings } = useSettings();
   const metacritic = mdblist?.metacritic ?? scores?.metascore ?? null;
   const showPrimary = settings.showDetailRatings;
-  const primaryProviderOn = isAnime
-    ? settings.showMalDetail
-    : ratingSource === "tmdb"
-      ? settings.showTmdbDetail
-      : settings.showImdbDetail;
+  const primaryProviderOn =
+    ratingSource === "tmdb" ? settings.showTmdbDetail : settings.showImdbDetail;
 
   const { rating: simklCommunityRating } = useSimklCommunityRating(imdbId);
 
@@ -100,17 +92,15 @@ export function HeroRatings({
     items.push(
       <ScoreItem
         key="imdb"
-        label={isAnime ? t("MyAnimeList") : ratingSource === "tmdb" ? t("TMDB") : t("IMDb")}
-        sublabel={isAnime ? t("Score /10") : t("Rating /10")}
+        label={ratingSource === "tmdb" ? t("TMDB") : t("IMDb")}
+        sublabel={t("Rating /10")}
         onClick={
-          !isAnime && ratingSource !== "tmdb" && imdbId
+          ratingSource !== "tmdb" && imdbId
             ? () => onOpenUrl(`https://www.imdb.com/title/${imdbId}/`)
             : undefined
         }
       >
-        {isAnime ? (
-          <MalLogo className="h-[14px] w-auto text-ink-muted" />
-        ) : ratingSource === "tmdb" ? (
+        {ratingSource === "tmdb" ? (
           <span className="text-[10px] font-bold tracking-tight text-ink-muted">TMDB</span>
         ) : (
           <ImdbIcon className="h-[15px] w-auto rounded-[3px]" />
@@ -120,21 +110,7 @@ export function HeroRatings({
     );
   }
 
-  if (isAnime && animeImdbRating && showPrimary && settings.showImdbDetail) {
-    items.push(
-      <ScoreItem
-        key="anime-imdb"
-        label={t("IMDb")}
-        sublabel={t("Rating /10")}
-        onClick={imdbId ? () => onOpenUrl(`https://www.imdb.com/title/${imdbId}/`) : undefined}
-      >
-        <ImdbIcon className="h-[15px] w-auto rounded-[3px]" />
-        <span>{animeImdbRating}</span>
-      </ScoreItem>,
-    );
-  }
-
-  if (tmdbRating && showPrimary && settings.showTmdbDetail && ratingSource !== "tmdb" && !isAnime) {
+  if (tmdbRating && showPrimary && settings.showTmdbDetail && ratingSource !== "tmdb") {
     items.push(
       <ScoreItem key="tmdb" label={t("TMDB")} sublabel={t("Rating /10")}>
         <span className="text-[10px] font-bold tracking-tight text-ink-muted">TMDB</span>
@@ -154,7 +130,11 @@ export function HeroRatings({
 
   if (settings.showDetailRatings && settings.showRtAudienceDetail && mdblist?.rtAudience != null) {
     items.push(
-      <ScoreItem key="rt-audience" label={t("Rotten Tomatoes Audience")} sublabel={t("Popcornmeter")}>
+      <ScoreItem
+        key="rt-audience"
+        label={t("Rotten Tomatoes Audience")}
+        sublabel={t("Popcornmeter")}
+      >
         <Popcorn
           size={15}
           strokeWidth={2}
@@ -173,11 +153,7 @@ export function HeroRatings({
         sublabel={t("Average /5")}
         onClick={imdbId ? () => onOpenUrl(`https://letterboxd.com/imdb/${imdbId}/`) : undefined}
       >
-        <img
-          src={letterboxdLogo}
-          alt=""
-          className="h-[14px] w-[14px] rounded-[3px] object-cover"
-        />
+        <img src={letterboxdLogo} alt="" className="h-[14px] w-[14px] rounded-[3px] object-cover" />
         <span>{mdblist.letterboxd.toFixed(1)}</span>
       </ScoreItem>,
     );
@@ -210,7 +186,11 @@ export function HeroRatings({
 
   const effectiveSimklRating = simklCommunityRating ?? mdblist?.simkl ?? null;
 
-  if (settings.showSimklBadge && settings.simklShowCommunityRatings && effectiveSimklRating != null) {
+  if (
+    settings.showSimklBadge &&
+    settings.simklShowCommunityRatings &&
+    effectiveSimklRating != null
+  ) {
     items.push(
       <ScoreItem
         key="simkl"
@@ -218,11 +198,7 @@ export function HeroRatings({
         sublabel={t("Average /10")}
         onClick={imdbId ? () => onOpenUrl(`https://simkl.com/search/id/?i=${imdbId}`) : undefined}
       >
-        <img
-          src={simklLogo}
-          alt=""
-          className="h-[14px] w-[14px] rounded-[3px] object-contain"
-        />
+        <img src={simklLogo} alt="" className="h-[14px] w-[14px] rounded-[3px] object-contain" />
         <span>{effectiveSimklRating.toFixed(1)}</span>
       </ScoreItem>,
     );
@@ -235,11 +211,7 @@ export function HeroRatings({
         label={t("MDBList")}
         onClick={imdbId ? () => onOpenUrl(`https://mdblist.com/${mediaType}/${imdbId}`) : undefined}
       >
-        <img
-          src={mdblistLogo}
-          alt=""
-          className="h-[14px] w-[14px] rounded-[3px] object-contain"
-        />
+        <img src={mdblistLogo} alt="" className="h-[14px] w-[14px] rounded-[3px] object-contain" />
         <span>{Math.round(mdblist.score)}</span>
       </ScoreItem>,
     );

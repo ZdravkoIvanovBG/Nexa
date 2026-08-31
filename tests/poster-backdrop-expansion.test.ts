@@ -251,7 +251,6 @@ test("wide artwork is prepared before the row is allowed to expand", () => {
     artworkSource.indexOf("const immediate") < artworkSource.indexOf("await artworkCandidates"),
     "the existing backdrop must be decoded before remote artwork fallbacks are requested",
   );
-  assert.match(artworkSource, /\|simkl\)/);
   assert.doesNotMatch(hookSource, /meta\.background/);
 });
 

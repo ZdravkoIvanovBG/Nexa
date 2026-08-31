@@ -22,9 +22,9 @@ import { TopRankCard } from "@/components/top-rank-card";
 import { useQueryClient } from "@tanstack/react-query";
 import { hasTmdbProviderAddon, loadAddonRows, userAddons, type AddonRow } from "@/lib/addons";
 import { queryKeys } from "@/lib/query";
-import { isAnimeRow } from "@/lib/is-anime-row";
 import { buildArabicHomeRows } from "@/lib/arabic/home-rows";
 import { useAuth } from "@/lib/auth";
+import { useProfiles } from "@/lib/profiles";
 import { type Meta } from "@/lib/cinemeta";
 import { t, useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings, type StreamingService } from "@/lib/settings";
@@ -40,19 +40,12 @@ import {
   subscribeManualWatched,
 } from "@/lib/manual-watched";
 import { repairLibraryNames } from "@/lib/stremio-repair";
-import {
-  cwSortKey,
-  episodeFromVideoId,
-  isAnimeCwItem,
-  isCwMember,
-  library,
-  type LibraryItem,
-} from "@/lib/stremio";
+import { cwSortKey, episodeFromVideoId, isCwMember, type LibraryItem } from "@/lib/library-item";
+import { library } from "@/lib/stremio";
 import { useTrakt } from "@/lib/trakt/provider";
 import { buildTraktHomeRows } from "@/lib/trakt/home-rails";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
 import { recentlyPlayed, subscribePlayback, type WatchedSet } from "@/lib/playback-history";
-import { detectAnimeForCw, useDetectedAnimeVersion } from "@/lib/anime-detect";
 import { buildSimklHomeRows } from "@/lib/simkl/home-rails";
 import {
   loadSimklWatchedMap,
@@ -61,8 +54,6 @@ import {
 } from "@/lib/simkl/list-status";
 import { fetchSimklPlaybackItems } from "@/lib/simkl/playback";
 import { useSimkl } from "@/lib/simkl/provider";
-import { useAnilist } from "@/lib/anilist/provider";
-import { loadAnilistWatchedMap } from "@/lib/anilist/watched-map";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { useMediaFavorites, type MediaEntry } from "@/lib/media-favorites";
@@ -74,7 +65,6 @@ import { CWSection } from "./home/cw-section";
 import { useCwAdvance } from "./home/hooks/use-cw-advance";
 import { usePinnedRows } from "./home/hooks/use-pinned-rows";
 import {
-  buildAnimeHomeRows,
   buildCinemetaRows,
   buildTmdbRows,
   isStreamingServiceRow,
@@ -88,6 +78,7 @@ import type { SourceRow } from "@/lib/custom-sources";
 
 export function Home({ active = true, onReady }: { active?: boolean; onReady?: () => void }) {
   const { authKey, user } = useAuth();
+  const { activeId: profileId } = useProfiles();
   const { settings, update } = useSettings();
   const queryClient = useQueryClient();
   const t = useT();
@@ -95,7 +86,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
   const [editMode, setEditMode] = useState(false);
   const [isAddSourceModalOpen, setAddSourceModalOpen] = useState(false);
   const [rows, setRows] = useState<HomeRow[]>([]);
-  const [animeRows, setAnimeRows] = useState<HomeRow[]>([]);
   const [arabicRows, setArabicRows] = useState<HomeRow[]>([]);
   const [traktRows, setTraktRows] = useState<HomeRow[]>([]);
   const [simklRows, setSimklRows] = useState<HomeRow[]>([]);
@@ -104,9 +94,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
   const [traktWatched, setTraktWatched] = useState<Set<string>>(() => new Set());
   const [simklWatchedMap, setSimklWatchedMap] = useState<Map<string, Set<string>>>(() => new Map());
   const [simklStatusMap, setSimklStatusMap] = useState<Map<string, WatchlistStatus>>(
-    () => new Map(),
-  );
-  const [anilistWatchedMap, setAnilistWatchedMap] = useState<Map<string, Set<string>>>(
     () => new Map(),
   );
   const [localWatched, setLocalWatched] = useState<WatchedSet>(() => recentlyPlayed());
@@ -123,7 +110,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
   const [addonsTick, setAddonsTick] = useState(0);
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
-  const { isConnected: anilistConnected } = useAnilist();
   const letterboxd = useLetterboxd();
   const rowsRef = useRef<HomeRow[]>([]);
   const loadingRef = useRef<Set<string>>(new Set());
@@ -198,15 +184,13 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       // TanStack Query cache so revisiting home reuses addon catalog rows.
       const addons = await queryClient
         .fetchQuery({
-          queryKey: [...queryKeys.catalog.rows(authKey), { dedup: dedupRows }] as const,
-          queryFn: () => loadAddonRows(authKey, { dedup: dedupRows }),
+          queryKey: [...queryKeys.catalog.rows(profileId), { dedup: dedupRows }] as const,
+          queryFn: () => loadAddonRows({ dedup: dedupRows }),
           staleTime: 3 * 60_000,
         })
         .catch(() => [] as AddonRow[]);
       if (cancelled) return;
-      const filtered = isClassic
-        ? addons
-        : addons.filter((a) => !isAnimeRow(a) && !isStreamingServiceRow(a.name));
+      const filtered = isClassic ? addons : addons.filter((a) => !isStreamingServiceRow(a.name));
       setRows(mergeRows(built.rows, filtered, { dedup: dedupRows }));
 
       if (authKey) {
@@ -220,6 +204,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     };
   }, [
     authKey,
+    profileId,
     queryClient,
     settings.tmdbKey,
     settings.tmdbLanguage,
@@ -228,22 +213,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     settings.homeShowAllAddonRows,
     addonsTick,
   ]);
-
-  useEffect(() => {
-    if (settings.hideContent.anime || settings.homeMode === "classic") {
-      setAnimeRows([]);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const built = await buildAnimeHomeRows();
-      if (cancelled) return;
-      setAnimeRows(built);
-    })().catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [settings.hideContent.anime, settings.homeMode]);
 
   useEffect(() => {
     if (uiLang !== "ar" || settings.homeMode === "classic" || !settings.tmdbKey) {
@@ -412,13 +381,9 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
           for (const i of libItems) {
             const mt = Date.parse(i._mtime ?? "");
             if (i.state?.timeOffset && i.state.timeOffset > 0) {
-              const vid = i.state.video_id ?? "";
-              const kitsuThreeSeg =
-                /^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3;
-              const se = kitsuThreeSeg ? null : episodeFromVideoId(i.state.video_id);
-              const s = i.state.season ?? (kitsuThreeSeg ? 1 : se?.season);
-              const e =
-                i.state.episode ?? (kitsuThreeSeg ? Number(vid.split(":")[2]) : se?.episode);
+              const se = episodeFromVideoId(i.state.video_id);
+              const s = i.state.season ?? se?.season;
+              const e = i.state.episode ?? se?.episode;
               const local = readResumeEntry(i._id, s, e);
               if (!local || (Number.isFinite(mt) && mt > local.t)) {
                 resumeEntries.push({
@@ -474,7 +439,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
 
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
-  const animeDetectVer = useDetectedAnimeVersion();
   const stremioWatchedIds = useMemo(() => {
     const s = new Set<string>();
     for (const i of items) if ((i.state?.flaggedWatched ?? 0) > 0) s.add(i._id);
@@ -510,8 +474,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
           (i.type as string) !== "other" &&
           !i._id.startsWith("iptv:") &&
           !isCwDismissed(i) &&
-          isCwMember(i) &&
-          !(settings.animeOnlyInAnimeRoom && isAnimeCwItem(i)),
+          isCwMember(i),
       )
       .map((i) => ({ i, k: cwSortKey(i) }))
       .sort((a, b) => b.k - a.k)
@@ -535,7 +498,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       if (out.length >= 100) break;
     }
     return out;
-  }, [items, simklCw, localCwVer, cwVersion, settings.animeOnlyInAnimeRoom, animeDetectVer]);
+  }, [items, simklCw, localCwVer, cwVersion]);
   const resurfaceLibrary = useMemo(() => {
     const manual = manualWatchedLibraryItems();
     if (manual.length === 0) return items;
@@ -545,42 +508,18 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     const overrideIds = new Set(usable.map((i) => i._id));
     return [...items.filter((i) => !overrideIds.has(i._id)), ...usable];
   }, [items, manualWatchedVer]);
-  useEffect(() => {
-    if (!anilistConnected) {
-      setAnilistWatchedMap((prev) => (prev.size ? new Map() : prev));
-      return;
-    }
-    let cancelled = false;
-    const ids = continueWatching
-      .filter((i) => /^(kitsu|mal|anilist):/.test(i._id))
-      .map((i) => i._id);
-    loadAnilistWatchedMap(ids)
-      .then((m) => {
-        if (!cancelled) setAnilistWatchedMap(m);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [anilistConnected, continueWatching]);
 
   const cwItems = useCwAdvance(
     continueWatching,
     settings.tmdbKey,
     settings.cwAdvanceNext,
     resurfaceLibrary,
-    settings.animeOnlyInAnimeRoom ? "exclude" : "all",
     manualWatchedVer,
     traktWatched,
     simklWatchedMap,
-    anilistWatchedMap,
+    undefined,
     simklStatusMap,
-    animeDetectVer,
   );
-
-  useEffect(() => {
-    void detectAnimeForCw(items);
-  }, [items]);
 
   useEffect(() => {
     publishResumeStates(cwItems);
@@ -631,25 +570,10 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
   const heroSourceRow = useMemo<HomeRow | null>(() => {
     const key = settings.homeRows.heroSource;
     if (!key) return null;
-    const all = [
-      ...personalRows,
-      ...traktRows,
-      ...simklRows,
-      ...letterboxdRows,
-      ...rows,
-      ...animeRows,
-    ];
+    const all = [...personalRows, ...traktRows, ...simklRows, ...letterboxdRows, ...rows];
     const hit = all.find((r) => r.key === key);
     return hit && hit.metas.some((m) => m.background || m.poster) ? hit : null;
-  }, [
-    settings.homeRows.heroSource,
-    personalRows,
-    traktRows,
-    simklRows,
-    letterboxdRows,
-    rows,
-    animeRows,
-  ]);
+  }, [settings.homeRows.heroSource, personalRows, traktRows, simklRows, letterboxdRows, rows]);
 
   const heroSlides = useMemo<Slide[]>(() => {
     const pool = (
@@ -785,7 +709,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       ...simklRows,
       ...letterboxdRows,
       ...restRows,
-      ...animeRows,
     ],
     [
       sourceRows,
@@ -797,7 +720,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       simklRows,
       letterboxdRows,
       restRows,
-      animeRows,
     ],
   );
   const visibleRows = useMemo(
@@ -1056,7 +978,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
           {rows.length === 0 &&
           traktRows.length === 0 &&
           simklRows.length === 0 &&
-          animeRows.length === 0 &&
           arabicRows.length === 0 ? (
             Array.from({ length: 7 }).map((_, i) => <RowSkeleton key={`skel-${i}`} />)
           ) : (

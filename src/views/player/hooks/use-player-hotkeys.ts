@@ -37,9 +37,6 @@ export function usePlayerHotkeys(params: {
   gif: ReturnType<typeof useGifRecorder>;
   clip: ReturnType<typeof useClipRecorder>;
   videoFill: ReturnType<typeof useVideoFill>;
-  onToggleAnime4k?: () => void;
-  onAnime4kOn?: () => void;
-  onAnime4kOff?: () => void;
   onVolumeFeedback?: (volume: number, muted: boolean) => void;
 }) {
   const {
@@ -70,9 +67,6 @@ export function usePlayerHotkeys(params: {
     gif,
     clip,
     videoFill,
-    onToggleAnime4k,
-    onAnime4kOn,
-    onAnime4kOff,
     onVolumeFeedback,
   } = params;
 
@@ -114,9 +108,6 @@ export function usePlayerHotkeys(params: {
     onPanscanUp: () => videoFill.step(0.1),
     onPanscanDown: () => videoFill.step(-0.1),
     onPrevChannel: liveOverlay.isLive ? liveOverlay.goPrevChannel : undefined,
-    onToggleAnime4k,
-    onAnime4kOn,
-    onAnime4kOff,
     onFrameStep: (dir) => bridgeRef.current?.frameStep?.(dir),
     onVolumeFeedback,
   });

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { getLocalCache, syncWatchlistCache, type SimklCacheItem, type SimklCache } from "@/lib/simkl/activities";
 import {
-  groupAnimeByFranchise,
-  enhanceGroupsWithRelations,
-  type AnimeFranchise,
-  formatYearRange,
-} from "@/lib/simkl/anime-grouping";
+  getLocalCache,
+  syncWatchlistCache,
+  type SimklCacheItem,
+  type SimklCache,
+} from "@/lib/simkl/activities";
 import type { Meta } from "@/lib/cinemeta";
 import {
   FilterBar,
@@ -72,41 +71,6 @@ export function SimklTab() {
   const { settings } = useSettings();
   const [cache, setCache] = useState<SimklCache | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [enhancedFranchises, setEnhancedFranchises] = useState<AnimeFranchise[]>([]);
-
-  useEffect(() => {
-    if (!cache) {
-      setEnhancedFranchises([]);
-      return;
-    }
-
-    const animeItems = Object.values(cache.items).filter((item) => {
-      if (item.type === "anime") return true;
-      if (item.type === "movie") {
-        const simklId = item.simklId;
-        const hasMal = Object.values(cache.malToSimkl).includes(simklId);
-        const hasKitsu = Object.values(cache.kitsuToSimkl).includes(simklId);
-        return hasMal || hasKitsu;
-      }
-      return false;
-    });
-    const syncFranchises = groupAnimeByFranchise(animeItems);
-    setEnhancedFranchises(syncFranchises);
-
-    let cancelled = false;
-    enhanceGroupsWithRelations(syncFranchises)
-      .then((enhanced) => {
-        if (cancelled) return;
-        setEnhancedFranchises(enhanced);
-      })
-      .catch((err) => {
-        console.error("Failed to enhance groups with relations:", err);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cache]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +98,7 @@ export function SimklTab() {
     };
   }, []);
 
-  const [subTab, setSubTab] = useState<"movies" | "shows" | "anime">("movies");
+  const [subTab, setSubTab] = useState<"movies" | "shows">("movies");
 
   const allowedStatuses = useMemo(() => {
     if (subTab === "movies") {
@@ -155,34 +119,7 @@ export function SimklTab() {
     const counts: Record<string, number> = {};
     if (!cache) return counts;
 
-    if (subTab === "anime") {
-      for (const franchise of enhancedFranchises) {
-        const statuses = new Set(franchise.items.map((i) => i.status));
-        for (const st of statuses) {
-          const hasValidMeta = franchise.items.some((item) => cacheItemToMeta(item, cache));
-          if (hasValidMeta) {
-            counts[st] = (counts[st] ?? 0) + 1;
-          }
-        }
-      }
-      return counts;
-    }
-
-    if (subTab === "movies") {
-      for (const item of Object.values(cache.items)) {
-        if (item.type !== "movie") continue;
-        const hasMal = Object.values(cache.malToSimkl).includes(item.simklId);
-        const hasKitsu = Object.values(cache.kitsuToSimkl).includes(item.simklId);
-        if (hasMal || hasKitsu) continue;
-        const meta = cacheItemToMeta(item, cache);
-        if (!meta) continue;
-
-        counts[item.status] = (counts[item.status] ?? 0) + 1;
-      }
-      return counts;
-    }
-
-    const targetType = "show";
+    const targetType = subTab === "movies" ? "movie" : "show";
     for (const item of Object.values(cache.items)) {
       if (item.type !== targetType) continue;
       const meta = cacheItemToMeta(item, cache);
@@ -191,7 +128,7 @@ export function SimklTab() {
       counts[item.status] = (counts[item.status] ?? 0) + 1;
     }
     return counts;
-  }, [cache, subTab, enhancedFranchises]);
+  }, [cache, subTab]);
 
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
@@ -199,80 +136,7 @@ export function SimklTab() {
   const filteredItems = useMemo<WatchlistMerged[]>(() => {
     if (!cache) return [];
 
-    if (subTab === "anime") {
-      return enhancedFranchises
-        .filter((franchise) => franchise.items.some((item) => item.status === statusFilter))
-        .map((franchise) => {
-          const representativeItem = (() => {
-            const watching = franchise.items.filter(
-              (item) => item.status === "watching" && cacheItemToMeta(item, cache) !== null,
-            );
-            if (watching.length > 0) {
-              watching.sort((a, b) => {
-                const tA = a.watchedAt ? new Date(a.watchedAt).getTime() : 0;
-                const tB = b.watchedAt ? new Date(b.watchedAt).getTime() : 0;
-                return tB - tA;
-              });
-              return watching[0];
-            }
-            return franchise.items.find((item) => cacheItemToMeta(item, cache) !== null);
-          })();
-
-          if (!representativeItem) return null;
-          const meta = cacheItemToMeta(representativeItem, cache);
-          if (!meta) return null;
-
-          meta.name = franchise.name;
-          if (franchise.yearStart != null) {
-            meta.releaseInfo = formatYearRange(franchise.yearStart, franchise.yearEnd);
-          }
-
-          if (!meta.poster) {
-            const fallbackItem = franchise.items.find(
-              (it) => it.poster && cacheItemToMeta(it, cache) !== null,
-            );
-            if (fallbackItem?.poster) {
-              meta.poster = `https://simkl.in/posters/${fallbackItem.poster}_m.jpg`;
-            }
-          }
-
-          const dates = franchise.items
-            .map((i) => i.watchedAt)
-            .filter((d): d is string => d != null)
-            .sort((a, b) => b.localeCompare(a));
-
-          return {
-            key: `simkl-franchise-${franchise.key}`,
-            meta,
-            date: dates.length > 0 ? parseTs(dates[0]) : null,
-          };
-        })
-        .filter((x): x is WatchlistMerged => x !== null);
-    }
-
-    if (subTab === "movies") {
-      return Object.values(cache.items)
-        .filter((item) => {
-          if (item.type !== "movie") return false;
-          if (item.status !== statusFilter) return false;
-          const hasMal = Object.values(cache.malToSimkl).includes(item.simklId);
-          const hasKitsu = Object.values(cache.kitsuToSimkl).includes(item.simklId);
-          if (hasMal || hasKitsu) return false;
-          return true;
-        })
-        .map((item) => {
-          const meta = cacheItemToMeta(item, cache);
-          if (!meta) return null;
-          return {
-            key: `simkl-${item.simklId}`,
-            meta,
-            date: item.watchedAt ? parseTs(item.watchedAt) : null,
-          };
-        })
-        .filter((x): x is WatchlistMerged => x !== null);
-    }
-
-    const targetType = "show";
+    const targetType = subTab === "movies" ? "movie" : "show";
     return Object.values(cache.items)
       .filter((item) => {
         if (item.type !== targetType) return false;
@@ -289,10 +153,13 @@ export function SimklTab() {
         };
       })
       .filter((x): x is WatchlistMerged => x !== null);
-  }, [cache, subTab, statusFilter, enhancedFranchises]);
+  }, [cache, subTab, statusFilter]);
 
   const counts = useMemo(() => countByType(filteredItems), [filteredItems]);
-  const visible = useMemo(() => applyFilter(filteredItems, type, query), [filteredItems, type, query]);
+  const visible = useMemo(
+    () => applyFilter(filteredItems, type, query),
+    [filteredItems, type, query],
+  );
 
   return (
     <section className="flex flex-col gap-6">
@@ -318,17 +185,6 @@ export function SimklTab() {
           }`}
         >
           {tr("TV Shows")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSubTab("anime")}
-          className={`rounded-lg px-4 py-2 text-[14px] font-semibold transition-all ${
-            subTab === "anime"
-              ? "bg-accent/15 text-accent border border-accent/30"
-              : "text-ink-muted hover:text-ink border border-transparent hover:bg-canvas/50"
-          }`}
-        >
-          {tr("Anime")}
         </button>
       </div>
 

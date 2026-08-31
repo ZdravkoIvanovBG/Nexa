@@ -130,7 +130,7 @@ function IconVideoTune(p: IconProps) {
   );
 }
 
-function IconAnime(p: IconProps) {
+function IconSmoothing(p: IconProps) {
   return (
     <IconBase {...p}>
       <path
@@ -238,29 +238,6 @@ function IconTrakt(p: IconProps) {
   );
 }
 
-function IconAnilist(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
-      <path d="M8 16.5l3-9 3 9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 13.5h4" strokeLinecap="round" />
-      <path d="M15.5 7.5v9h2" strokeLinecap="round" strokeLinejoin="round" />
-    </IconBase>
-  );
-}
-
-function IconMal(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
-      <path d="M6 15V9l2.5 3 2.5-3v6" strokeLinejoin="round" />
-      <path d="M11.5 15 13.25 9 15 15" strokeLinejoin="round" />
-      <path d="M12.2 12.5h2.1" />
-      <path d="M15.5 9v6h3.8" strokeLinejoin="round" />
-    </IconBase>
-  );
-}
-
 function IconSimkl(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -346,22 +323,10 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         keywords: ["scrobble", "history", "sync", "watchlist"],
       },
       {
-        id: "anilist",
-        label: "AniList",
-        Icon: IconAnilist,
-        keywords: ["anime", "lists", "watching", "kitsu"],
-      },
-      {
-        id: "mal",
-        label: "MyAnimeList",
-        Icon: IconMal,
-        keywords: ["mal", "myanimelist", "anime", "lists", "watching", "jikan"],
-      },
-      {
         id: "simkl",
         label: "Simkl",
         Icon: IconSimkl,
-        keywords: ["scrobble", "sync", "watched", "history", "watchlist", "anime"],
+        keywords: ["scrobble", "sync", "watched", "history", "watchlist"],
       },
       {
         id: "letterboxd",
@@ -511,16 +476,10 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         ],
       },
       {
-        id: "anime",
-        label: "Anime tweaks",
-        Icon: IconAnime,
+        id: "smoothing",
+        label: "Smooth motion",
+        Icon: IconSmoothing,
         keywords: [
-          "anime",
-          "anime4k",
-          "anime 4k",
-          "upscale",
-          "upscaling",
-          "shaders",
           "smooth motion",
           "motion smoothing",
           "interpolation",
@@ -667,10 +626,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "transcode",
       "cast",
       "dlna",
-      "anime4k",
       "upscale",
       "upscaling",
-      "anime4k indicator",
       "fps",
       "av1",
       "dts-hd",
@@ -885,7 +842,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "skip opening",
       "auto-skip",
       "auto skip",
-      "aniskip",
       "theintroodb",
       "skip button",
     ],
@@ -989,25 +945,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "vpn",
       "home server",
       "stremio service",
-    ],
-  },
-  {
-    label: "Anime4K presets & modes",
-    section: "player",
-    anchorTitle: "Anime4K presets",
-    keywords: [
-      "anime4k",
-      "setup",
-      "download shaders",
-      "install anime4k",
-      "re-download",
-      "quality",
-      "performance",
-      "mode a",
-      "mode b",
-      "mode c",
-      "apply to anime only",
-      "anime detection",
     ],
   },
   {
@@ -1181,25 +1118,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Anime4K upscaling",
-    section: "anime",
-    anchorTitle: "Anime4K upscaling",
-    keywords: [
-      "anime4k",
-      "anime 4k",
-      "upscale",
-      "upscaling",
-      "shaders",
-      "sharper anime",
-      "anime only",
-      "anime4k indicator",
-      "fps badge",
-      "gpu upscale",
-    ],
-  },
-  {
     label: "Smooth motion (interpolation) & SVP",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "Smooth motion",
     keywords: [
       "smooth motion",
@@ -1231,7 +1151,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "playlists tab",
       "m3u",
       "xtream",
-      "keep anime in anime room",
       "continue watching advance",
       "advance next episode",
     ],
@@ -1293,25 +1212,16 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "hide titles under posters",
       "imdb score",
       "rotten tomatoes",
-      "mal score",
       "hover preview",
       "peek",
       "badge position",
     ],
   },
   {
-    label: "Content filters (hide anime / live tv / sports / adult)",
+    label: "Content filters (hide live tv / sports / adult)",
     section: "library",
     anchorTitle: "Content filters",
-    keywords: [
-      "content filters",
-      "hide anime",
-      "hide live tv",
-      "hide sports",
-      "hide adult",
-      "age",
-      "filter",
-    ],
+    keywords: ["content filters", "hide live tv", "hide sports", "hide adult", "age", "filter"],
   },
 
   {
@@ -1662,25 +1572,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "AniList connection",
-    section: "anilist",
-    keywords: [
-      "anilist",
-      "anime",
-      "lists",
-      "sync",
-      "connect",
-      "disconnect",
-      "avatar",
-      "watch progress",
-      "mal",
-      "kitsu",
-    ],
-  },
-  {
     label: "Simkl connection",
     section: "simkl",
-    keywords: ["simkl", "sync", "watched", "watchlist", "connect", "disconnect", "avatar", "anime"],
+    keywords: ["simkl", "sync", "watched", "watchlist", "connect", "disconnect", "avatar"],
   },
   {
     label: "Letterboxd connection",
@@ -1934,12 +1828,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "library",
     anchorTitle: "Home layout",
     keywords: ["playlists", "m3u", "xtream", "iptv", "nav tab", "sidebar"],
-  },
-  {
-    label: "Keep anime in the Anime room only",
-    section: "library",
-    anchorTitle: "Home layout",
-    keywords: ["anime", "continue watching", "anime tab", "hide anime on home", "anime room"],
   },
   {
     label: "Advance Continue Watching to the next episode",
@@ -2243,7 +2131,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Fanart.tv · logos and backdrops",
     section: "library",
     anchorTitle: "Metadata providers",
-    keywords: ["fanart", "logos", "backdrops", "artwork", "personal key", "anime art"],
+    keywords: ["fanart", "logos", "backdrops", "artwork", "personal key"],
   },
   {
     label: "TheTVDB · episode data",
@@ -2293,18 +2181,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "library",
     anchorTitle: "Metadata providers",
     keywords: ["popcornmeter", "audience score", "popcorn", "rt audience", "percent"],
-  },
-  {
-    label: "Show MAL score on cards",
-    section: "library",
-    anchorTitle: "Metadata providers",
-    keywords: ["mal", "myanimelist", "anime score", "anime badge", "anime rating"],
-  },
-  {
-    label: "Anime card rating source",
-    section: "library",
-    anchorTitle: "Metadata providers",
-    keywords: ["mal vs imdb", "anime rating source", "mal", "imdb", "anime cards", "fallback"],
   },
   {
     label: "Show Metacritic score on cards",
@@ -2410,12 +2286,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Hide anime",
-    section: "library",
-    anchorTitle: "Content filters",
-    keywords: ["hide anime", "no anime", "remove anime tab", "anime rows"],
-  },
-  {
     label: "Hide Live TV",
     section: "library",
     anchorTitle: "Content filters",
@@ -2488,102 +2358,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "hide reviews",
       "reveal",
     ],
-  },
-  {
-    label: "Connect your AniList account",
-    section: "anilist",
-    keywords: ["anilist", "connect", "anime lists", "link account", "anime tracking", "rails"],
-  },
-  {
-    label: "Connect AniList",
-    section: "anilist",
-    keywords: ["anilist login", "authorize", "oauth", "link"],
-  },
-  {
-    label: "About AniList",
-    section: "anilist",
-    keywords: ["anilist.co", "info", "website", "what is anilist"],
-  },
-  {
-    label: "Open AniList profile",
-    section: "anilist",
-    keywords: ["open profile", "anilist profile", "view profile", "profile page", "my anilist"],
-  },
-  {
-    label: "Sync watch progress",
-    section: "anilist",
-    keywords: ["anilist sync", "episode progress", "auto update", "forward only", "tracking"],
-  },
-  {
-    label: "Use my AniList avatar as my Harbor avatar",
-    section: "anilist",
-    keywords: ["anilist avatar", "profile picture", "avatar", "wear avatar"],
-  },
-  {
-    label: "Show AniList comments",
-    section: "anilist",
-    keywords: ["anilist comments", "forum threads", "anime discussion", "detail pages"],
-  },
-  {
-    label: "Blur AniList comments by default",
-    section: "anilist",
-    keywords: [
-      "blur comments by default",
-      "blur comments",
-      "spoilers",
-      "hide comments",
-      "reveal",
-      "anime pages",
-    ],
-  },
-  {
-    label: "Disconnect from AniList",
-    section: "anilist",
-    keywords: ["disconnect", "unlink", "remove anilist", "stop sync"],
-  },
-  {
-    label: "Connect your MyAnimeList account",
-    section: "mal",
-    keywords: [
-      "mal",
-      "myanimelist",
-      "connect",
-      "anime lists",
-      "link account",
-      "anime tracking",
-      "oauth",
-    ],
-  },
-  {
-    label: "MAL Client ID",
-    section: "mal",
-    keywords: ["mal client id", "api key", "myanimelist api", "client id", "register app"],
-  },
-  {
-    label: "Connect MyAnimeList",
-    section: "mal",
-    keywords: ["mal login", "authorize", "oauth", "pin code", "link"],
-  },
-  {
-    label: "About MyAnimeList",
-    section: "mal",
-    keywords: ["myanimelist.net", "info", "website", "what is mal"],
-  },
-  {
-    label: "Open MAL profile",
-    section: "mal",
-    keywords: [
-      "open profile",
-      "mal profile",
-      "view profile",
-      "profile page",
-      "myanimelist profile",
-    ],
-  },
-  {
-    label: "Disconnect from MyAnimeList",
-    section: "mal",
-    keywords: ["disconnect", "unlink", "remove mal", "stop sync"],
   },
   {
     label: "Connect your Simkl account",
@@ -3224,7 +2998,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "resize only",
       "use my style",
       "karaoke",
-      "anime subs",
       "boxes instead of letters",
     ],
   },
@@ -3945,57 +3718,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Enable Anime4K",
-    section: "anime",
-    anchorTitle: "Anime4K upscaling",
-    keywords: [
-      "anime4k on",
-      "upscale anime",
-      "sharper lines",
-      "cleaner gradients",
-      "real time upscale",
-    ],
-  },
-  {
-    label: "Show Anime4K indicator",
-    section: "anime",
-    anchorTitle: "Anime4K upscaling",
-    keywords: ["anime4k badge", "fps indicator", "overlay badge", "status chip", "live fps"],
-  },
-  {
-    label: "Anime4K presets",
-    section: "anime",
-    keywords: [
-      "mode a",
-      "mode b",
-      "mode c",
-      "mode a+a",
-      "mode b+b",
-      "mode c+a",
-      "quality performance tier",
-      "shader modes",
-      "restore denoise",
-    ],
-  },
-  {
-    label: "Set up Anime4K",
-    section: "anime",
-    keywords: [
-      "download shaders",
-      "install anime4k",
-      "shader pack",
-      "one time setup",
-      "get shaders",
-    ],
-  },
-  {
-    label: "Re-download",
-    section: "anime",
-    keywords: ["redownload shaders", "update anime4k", "refresh shader pack", "reinstall shaders"],
-  },
-  {
     label: "Smooth motion",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "Smooth motion",
     keywords: [
       "frame interpolation",
@@ -4008,7 +3732,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Motion smoothing",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "Smooth motion",
     keywords: [
       "built in interpolation",
@@ -4021,12 +3745,12 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "SVP frame interpolation",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "SVP frame interpolation",
     keywords: [
       "svp",
       "smooth video project",
-      "60fps anime",
+      "60fps",
       "vapoursynth",
       "svpflow",
       "interpolation engine",
@@ -4034,19 +3758,19 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Get SVP (free)",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "SVP frame interpolation",
     keywords: ["install svp", "download svp", "svp free tier", "svp team"],
   },
   {
     label: "Open SVP",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "SVP frame interpolation",
     keywords: ["launch svp", "svp manager", "tray svp", "start svp"],
   },
   {
     label: "Enable SVP",
-    section: "anime",
+    section: "smoothing",
     anchorTitle: "SVP frame interpolation",
     keywords: [
       "svp on",
@@ -4055,19 +3779,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "60fps",
       "black screen svp",
       "restart playback",
-    ],
-  },
-  {
-    label: "Apply SVP to",
-    section: "anime",
-    anchorTitle: "SVP frame interpolation",
-    keywords: [
-      "svp scope",
-      "anime only",
-      "all content",
-      "movies and tv",
-      "limit svp",
-      "live action",
     ],
   },
   {
@@ -4341,24 +4052,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "hotkeys",
     anchorTitle: "Player",
     keywords: ["clip last 30 seconds", "save clip", "video capture", "c key", "clip with audio"],
-  },
-  {
-    label: "Toggle Anime4K",
-    section: "hotkeys",
-    anchorTitle: "Player",
-    keywords: ["anime4k hotkey", "a key", "upscale toggle", "shader toggle"],
-  },
-  {
-    label: "Anime4K on",
-    section: "hotkeys",
-    anchorTitle: "Player",
-    keywords: ["anime4k enable key", "ctrl 1", "upscaling on", "force anime4k"],
-  },
-  {
-    label: "Anime4K off",
-    section: "hotkeys",
-    anchorTitle: "Player",
-    keywords: ["anime4k disable key", "ctrl 0", "upscaling off", "stop shaders"],
   },
   {
     label: "Toggle RTX Video HDR",
@@ -4946,7 +4639,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Media types",
     section: "webhooks",
     anchorTitle: "Media types",
-    keywords: ["filter type", "movies tv anime filter", "type filter", "media filter"],
+    keywords: ["filter type", "movies tv filter", "type filter", "media filter"],
   },
   {
     label: "Movies",
@@ -4959,12 +4652,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "webhooks",
     anchorTitle: "Media types",
     keywords: ["tv alerts", "series only", "shows", "notify tv"],
-  },
-  {
-    label: "Anime",
-    section: "webhooks",
-    anchorTitle: "Media types",
-    keywords: ["anime alerts", "anime only", "notify anime", "anime filter"],
   },
   {
     label: "AUTOMATIONS",
@@ -5437,8 +5124,6 @@ export function SettingsNav({
     account: null,
     library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
     trakt: null,
-    anilist: null,
-    mal: null,
     simkl: null,
     letterboxd: settings.letterboxd.enabled
       ? settings.letterboxd.mode === "full"
@@ -5459,7 +5144,7 @@ export function SettingsNav({
         : settings.mpvQuality === "performance"
           ? "lite"
           : "max",
-    anime: settings.playerAnime4k ? "on" : null,
+    smoothing: settings.playerMotionInterp || settings.playerSvp ? "on" : null,
     playerLayout: null,
     theme:
       settings.theme.preset === "cool-grey" && settings.theme.fontPair === "sentient-switzer"

@@ -1,10 +1,7 @@
+import type { LibraryItem } from "@/lib/library-item";
 import { safeFetch as fetch } from "@/lib/safe-fetch";
-import { readResumeEntry } from "@/lib/resume";
-import { isDetectedAnime } from "./anime-detect";
 
 const API = "https://api.strem.io/api";
-
-const CW_FINISHED_RATIO = 0.9;
 
 export type User = {
   _id: string;
@@ -12,88 +9,6 @@ export type User = {
   fullname?: string;
   avatar?: string;
 };
-
-export type LibraryItem = {
-  _id: string;
-  type: string;
-  name: string;
-  poster?: string;
-  background?: string;
-  state?: {
-    timeOffset: number;
-    duration: number;
-    season?: number;
-    episode?: number;
-    timeWatched?: number;
-    flaggedWatched?: number;
-    watched?: string;
-    video_id?: string;
-    lastWatched?: string;
-  };
-  removed: boolean;
-  temp: boolean;
-  _ctime: string;
-  _mtime: string;
-  external?: "simkl";
-  isAnime?: boolean;
-  upNext?: boolean;
-  local?: boolean;
-  manualWatched?: boolean;
-};
-
-export function libraryMetaType(t: string): import("@/lib/cinemeta").MetaType {
-  return t === "series" || t === "channel" || t === "tv" || t === "anime" || t === "other"
-    ? t
-    : "movie";
-}
-
-export function isAnimeCwItem(i: LibraryItem): boolean {
-  return /^(kitsu|mal|anilist|anidb):/.test(i._id) || i.isAnime === true || isDetectedAnime(i._id);
-}
-
-export function episodeFromVideoId(
-  videoId: string | undefined | null,
-): { season: number; episode: number } | null {
-  if (!videoId) return null;
-  const parts = videoId.split(":");
-  if (parts.length < 3) return null;
-  const season = Number(parts[parts.length - 2]);
-  const episode = Number(parts[parts.length - 1]);
-  if (!Number.isInteger(season) || !Number.isInteger(episode) || season < 0 || episode < 0) {
-    return null;
-  }
-  return { season, episode };
-}
-
-function resumeForItem(i: LibraryItem): { ms: number; t: number } | null {
-  const vid = i.state?.video_id ?? "";
-  const kitsuThreeSeg = /^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3;
-  const se = kitsuThreeSeg ? null : episodeFromVideoId(i.state?.video_id);
-  const season = i.state?.season ?? (kitsuThreeSeg ? 1 : se?.season);
-  const episode = i.state?.episode ?? (kitsuThreeSeg ? Number(vid.split(":")[2]) : se?.episode);
-  return readResumeEntry(i._id, season, episode);
-}
-
-export function cwSortKey(i: LibraryItem): number {
-  const fromState = Date.parse(i.state?.lastWatched ?? i._mtime ?? "");
-  if (Number.isFinite(fromState)) return fromState;
-  return resumeForItem(i)?.t ?? 0;
-}
-
-export function isCwMember(i: LibraryItem): boolean {
-  if (i.removed && !i.temp) return false;
-  if (!i.state) {
-    const local = resumeForItem(i)?.ms ?? 0;
-    return local > 0;
-  }
-  if (i.state.timeOffset > 0) return true;
-  if ((i.state.flaggedWatched ?? 0) > 0) return false;
-  const local = resumeForItem(i)?.ms ?? 0;
-  if (local <= 0) return false;
-  const duration = i.state.duration ?? 0;
-  if (duration > 0 && local / duration >= CW_FINISHED_RATIO) return false;
-  return true;
-}
 
 async function call<T>(path: string, body: object): Promise<T> {
   const res = await fetch(`${API}/${path}`, {
@@ -169,14 +84,6 @@ export async function removeStremioLibraryItem(authKey: string, id: string): Pro
     temp: false,
     _mtime: new Date().toISOString(),
   });
-}
-
-export const CLOUD_OK = /^(tt\d|kitsu:|mal:|anilist:|anidb:|tmdb:)/;
-
-export function cloudWriteId(metaId: string, resolved: string | null, verified: boolean): string | null {
-  if (metaId.startsWith("tt")) return metaId;
-  if (verified && resolved && resolved.startsWith("tt")) return resolved;
-  return CLOUD_OK.test(metaId) ? metaId : null;
 }
 
 export async function saveStremioBookmark(

@@ -1,13 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { listLocalCw, subscribeLocalCw } from "@/lib/local-cw";
-import {
-  cwSortKey,
-  episodeFromVideoId,
-  isCwMember,
-  library,
-  type LibraryItem,
-} from "@/lib/stremio";
+import { cwSortKey, episodeFromVideoId, isCwMember, type LibraryItem } from "@/lib/library-item";
+import { library } from "@/lib/stremio";
 
 export type CwCard = {
   id: string;

@@ -42,16 +42,12 @@ const QualityPanel = lazy(() =>
 );
 const MpvPanel = lazy(() => import("./settings/mpv-panel").then((m) => ({ default: m.MpvPanel })));
 const P2PPanel = lazy(() => import("./settings/p2p-panel").then((m) => ({ default: m.P2PPanel })));
-const AnimePanel = lazy(() =>
-  import("./settings/anime-panel").then((m) => ({ default: m.AnimePanel })),
+const SmoothingPanel = lazy(() =>
+  import("./settings/smoothing-panel").then((m) => ({ default: m.SmoothingPanel })),
 );
 const TraktPanel = lazy(() =>
   import("./settings/trakt-panel").then((m) => ({ default: m.TraktPanel })),
 );
-const AnilistPanel = lazy(() =>
-  import("./settings/anilist-panel").then((m) => ({ default: m.AnilistPanel })),
-);
-const MalPanel = lazy(() => import("./settings/mal-panel").then((m) => ({ default: m.MalPanel })));
 const SimklPanel = lazy(() =>
   import("./settings/simkl-panel").then((m) => ({ default: m.SimklPanel })),
 );
@@ -97,14 +93,6 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
     label: "Trakt",
     sub: "Connect your Trakt account to scrobble playback, sync your watchlist, and pull personalized recommendations.",
   },
-  anilist: {
-    label: "AniList",
-    sub: "Connect your AniList account to show your anime lists as rails on the Anime page.",
-  },
-  mal: {
-    label: "MyAnimeList",
-    sub: "Connect your MyAnimeList account to sync your watch progress and browse your list.",
-  },
   simkl: {
     label: "Simkl",
     sub: "Connect your Simkl account to mark what you finish as watched and sync your plan-to-watch list across apps.",
@@ -143,9 +131,9 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
     label: "Video tuning",
     sub: "Match the picture quality to your computer, smooth out weak connections, and fine-tune the mpv engine with plain-language controls.",
   },
-  anime: {
-    label: "Anime tweaks",
-    sub: "Anime4K real-time upscaling, smooth motion, and where SVP fits in. All the anime-specific picture enhancements in one place.",
+  smoothing: {
+    label: "Smooth motion",
+    sub: "Harbor's built-in frame interpolation and where SVP fits in.",
   },
   playerLayout: {
     label: "Player layout",
@@ -350,17 +338,13 @@ export function Settings() {
 
               {active === "mpv" && <MpvPanel />}
 
-              {active === "anime" && <AnimePanel />}
+              {active === "smoothing" && <SmoothingPanel />}
 
               {active === "playerLayout" && <PlayerLayoutPanel />}
 
               {active === "hotkeys" && <HotkeysPanel />}
 
               {active === "trakt" && <TraktPanel />}
-
-              {active === "anilist" && <AnilistPanel />}
-
-              {active === "mal" && <MalPanel />}
 
               {active === "simkl" && <SimklPanel />}
 

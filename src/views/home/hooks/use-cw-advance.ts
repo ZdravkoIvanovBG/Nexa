@@ -4,11 +4,10 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode } from "@/lib/view";
 import { getEpisodeProgress } from "@/lib/episode-progress";
 import { simklWatchedForId, statusForId, type WatchlistStatus } from "@/lib/simkl/list-status";
-import { episodeFromVideoId, isAnimeCwItem, libraryMetaType, type LibraryItem } from "@/lib/stremio";
-import { isNextAired, resurfaceCandidates, type AnimeMode } from "@/lib/cw-resurface";
+import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/library-item";
+import { isNextAired, resurfaceCandidates } from "@/lib/cw-resurface";
 
 const FINISHED_RATIO = 0.9;
-const ANIME_ID = /^(kitsu|mal|anilist|anidb):/;
 
 const EMPTY_TRAKT_WATCHED: Set<string> = new Set();
 const EMPTY_SIMKL_WATCHED: Map<string, Set<string>> = new Map();
@@ -27,27 +26,11 @@ function currentEpisode(i: LibraryItem): { season: number; episode: number } | n
   const season = i.state?.season;
   const episode = i.state?.episode;
   if (season && episode) return { season, episode };
-  const vid = i.state?.video_id ?? "";
-  if (/^(kitsu|mal|anilist|anidb):/.test(i._id) && vid.split(":").length === 3) {
-    const ep = Number(vid.split(":")[2]);
-    return Number.isFinite(ep) && ep > 0 ? { season: 1, episode: ep } : null;
-  }
-  return episodeFromVideoId(vid);
+  return episodeFromVideoId(i.state?.video_id);
 }
 
-function nextEpAired(list: PlayEpisode[], nextEp: PlayEpisode, isAnime: boolean): boolean {
-  if (isNextAired(isAnime, nextEp.airDate)) return true;
-  if (!isAnime || nextEp.airDate) return false;
-  const now = Date.now();
-  let boundary = -1;
-  for (let k = 0; k < list.length; k++) {
-    const raw = list[k].airDate;
-    const t = raw ? Date.parse(raw) : NaN;
-    if (Number.isFinite(t) && t <= now) boundary = k;
-  }
-  if (boundary < 0) return false;
-  const idx = list.findIndex((e) => e.season === nextEp.season && e.episode === nextEp.episode);
-  return idx >= 0 && idx <= boundary;
+function nextEpAired(nextEp: PlayEpisode): boolean {
+  return isNextAired(nextEp.airDate);
 }
 
 function watchedPredicate(
@@ -108,13 +91,11 @@ export function useCwAdvance(
   tmdbKey: string,
   enabled: boolean,
   library?: LibraryItem[],
-  animeMode: AnimeMode = "all",
   watchedVersion = 0,
   traktWatched: Set<string> = EMPTY_TRAKT_WATCHED,
   simklWatched: Map<string, Set<string>> = EMPTY_SIMKL_WATCHED,
   anilistWatched: Map<string, Set<string>> = EMPTY_ANILIST_WATCHED,
   simklStatus: Map<string, WatchlistStatus> = EMPTY_SIMKL_STATUS,
-  animeVersion = 0,
 ): LibraryItem[] {
   const [advanced, setAdvanced] = useState<Map<string, LibraryItem>>(new Map());
   const [extra, setExtra] = useState<LibraryItem[]>([]);
@@ -133,10 +114,14 @@ export function useCwAdvance(
       const cur = currentEpisode(i);
       return (
         cur != null &&
-        watchedPredicate(i, cur, traktWatched, simklWatched, anilistWatched, simklStatus)(
-          cur.season,
-          cur.episode,
-        )
+        watchedPredicate(
+          i,
+          cur,
+          traktWatched,
+          simklWatched,
+          anilistWatched,
+          simklStatus,
+        )(cur.season, cur.episode)
       );
     });
     void (async () => {
@@ -170,7 +155,7 @@ export function useCwAdvance(
           cur,
           watchedPredicate(i, cur, traktWatched, simklWatched, anilistWatched, simklStatus),
         );
-        if (nextEp && nextEpAired(list, nextEp, isAnimeCwItem(i) || ANIME_ID.test(i._id))) {
+        if (nextEp && nextEpAired(nextEp)) {
           next.set(i._id, {
             ...i,
             state: {
@@ -184,23 +169,12 @@ export function useCwAdvance(
             upNext: true,
           });
         } else if (fetchOk && list.length > 0) {
-          const finaleEp = list[list.length - 1];
-          const dur = i.state?.duration ?? 0;
-          const off = i.state?.timeOffset ?? 0;
-          const midEpisode = off > 0 && dur > 0 && off / dur < FINISHED_RATIO;
-          const freshMidResume =
-            animeMode === "only" &&
-            midEpisode &&
-            finaleEp != null &&
-            cur.episode < finaleEp.episode;
-          if (!freshMidResume) remove.add(i._id);
+          remove.add(i._id);
         }
       }
       const lib = library ?? items;
       const inCw = new Set(items.map((i) => i._id));
-      const watchedFor = (item: LibraryItem, c: { season: number; episode: number }) =>
-        watchedPredicate(item, c, traktWatched, simklWatched, anilistWatched, simklStatus);
-      const resurfaced = await resurfaceCandidates(lib, inCw, { tmdbKey, animeMode }, watchedFor).catch(
+      const resurfaced = await resurfaceCandidates(lib, inCw, { tmdbKey }).catch(
         () => new Map<string, { season: number; episode: number }>(),
       );
       if (cancelled) return;
@@ -231,7 +205,17 @@ export function useCwAdvance(
     return () => {
       cancelled = true;
     };
-  }, [items, tmdbKey, enabled, library, animeMode, watchedVersion, traktWatched, simklWatched, anilistWatched, simklStatus, animeVersion]);
+  }, [
+    items,
+    tmdbKey,
+    enabled,
+    library,
+    watchedVersion,
+    traktWatched,
+    simklWatched,
+    anilistWatched,
+    simklStatus,
+  ]);
 
   if (!enabled) return items;
   const base =

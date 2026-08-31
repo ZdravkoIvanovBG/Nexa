@@ -1,5 +1,4 @@
 import type { Meta } from "../cinemeta";
-import { animeKitsuMeta } from "../providers/anime-kitsu-addon";
 import { omdbScoresCached } from "../providers/omdb";
 import { tmdbImdbCached } from "../providers/tmdb";
 import { tmdbLiteMeta } from "../providers/tmdb/tmdb-lite";
@@ -13,7 +12,7 @@ export type PreviewData = {
   meta: Meta;
   art: PreviewArt;
   chip: "In Cinema" | "New" | null;
-  rating: { kind: "mal" | "imdb" | "tmdb"; value: string } | null;
+  rating: { kind: "imdb" | "tmdb"; value: string } | null;
   year: string | null;
   length: string | null;
   genre: string | null;
@@ -29,8 +28,6 @@ export type PreviewAssembly = {
   markOpened: (onUpgrade: (art: PreviewArt) => void) => void;
   cancel: () => void;
 };
-
-const ANIME_ID = /^(kitsu|mal|anilist|anidb):/;
 
 let previewTmdbKey = "";
 
@@ -99,11 +96,8 @@ function deriveLength(meta: Meta): string | null {
   return meta.runtime?.trim() ? meta.runtime.trim() : null;
 }
 
-function deriveRating(meta: Meta, isAnime: boolean): PreviewData["rating"] {
-  if (isAnime) {
-    return meta.imdbRating ? { kind: "mal", value: meta.imdbRating } : null;
-  }
-  const imdbId = meta.id.startsWith("tt") ? meta.id : tmdbImdbCached(meta.id) ?? undefined;
+function deriveRating(meta: Meta): PreviewData["rating"] {
+  const imdbId = meta.id.startsWith("tt") ? meta.id : (tmdbImdbCached(meta.id) ?? undefined);
   const real = imdbId ? omdbScoresCached(imdbId)?.imdbRating : undefined;
   if (real) return { kind: "imdb", value: real };
   if (meta.imdbRating) {
@@ -119,13 +113,12 @@ export function assemblePreviewData(meta: Meta): PreviewAssembly {
   let upgradeCb: ((art: PreviewArt) => void) | null = null;
   const finalCbs: Array<() => void> = [];
 
-  const isAnime = ANIME_ID.test(meta.id);
   const isTmdb = meta.id.startsWith("tmdb:");
   const isTt = meta.id.startsWith("tt");
 
   const resume = resolveResume(meta);
   const chip = deriveChip(meta);
-  const rating = deriveRating(meta, isAnime);
+  const rating = deriveRating(meta);
   const year = meta.releaseInfo?.trim() ? meta.releaseInfo.trim() : null;
   const length = deriveLength(meta);
   const genre = meta.genres?.[0] ?? null;
@@ -188,18 +181,9 @@ export function assemblePreviewData(meta: Meta): PreviewAssembly {
     });
   };
 
-  const kitsuFetch =
-    isAnime && (!meta.background || !synopsis) ? animeKitsuMeta(meta.id).catch(() => null) : null;
   const ttFetch = isTt && !synopsis ? previewMeta(meta.type, meta.id) : null;
 
-  if (!synopsis && kitsuFetch) {
-    synopsisFinal = false;
-    void kitsuFetch.then((m) => {
-      if (m?.description?.trim()) synopsis = m.description.trim();
-      synopsisFinal = true;
-      settle();
-    });
-  } else if (!synopsis && ttFetch) {
+  if (!synopsis && ttFetch) {
     synopsisFinal = false;
     void ttFetch.then((pm) => {
       if (pm?.description?.trim()) synopsis = pm.description.trim();
@@ -210,9 +194,6 @@ export function assemblePreviewData(meta: Meta): PreviewAssembly {
 
   if (meta.background) {
     tryBackdrop(meta.background);
-  } else if (kitsuFetch) {
-    backdropPending = true;
-    void kitsuFetch.then((m) => tryBackdrop(m?.background ?? null));
   } else if (isTmdb) {
     backdropPending = true;
     void tmdbLiteMeta(previewTmdbKey, meta.id)

@@ -1,4 +1,4 @@
-import { Film, Globe2, Loader2, Plus, Search, Sparkles, Trash2, Tv2, User, X } from "lucide-react";
+import { Film, Globe2, Loader2, Plus, Search, Trash2, Tv2, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { searchAll, type SearchPerson } from "@/lib/search";
@@ -27,7 +27,7 @@ export function CustomManager({
   onAddPerson: (p: SearchPerson) => void;
   onRemovePerson: (id: number) => void;
   onToggleSource: (k: "includeTraktWatchlist" | "includeTraktAnticipated") => void;
-  onToggleMediaType: (kind: "movie" | "tv" | "anime") => void;
+  onToggleMediaType: (kind: "movie" | "tv") => void;
   onToggleGenre: (g: { id: number; name: string; mediaType: "movie" | "tv" }) => void;
   onToggleProvider: (p: { id: number; name: string }) => void;
   onToggleCountry: (code: string) => void;
@@ -129,12 +129,6 @@ export function CustomManager({
                 onClick={() => onToggleMediaType("tv")}
                 icon={<Tv2 size={16} strokeWidth={2.1} />}
                 label={t("Series")}
-              />
-              <PillToggle
-                on={value.mediaTypes.anime}
-                onClick={() => onToggleMediaType("anime")}
-                icon={<Sparkles size={16} strokeWidth={2.1} />}
-                label={t("Anime")}
               />
             </div>
           </Section>
@@ -255,7 +249,9 @@ export function CustomManager({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-ink">{p.name}</span>
-                        <span className="block truncate text-[11.5px] text-ink-subtle">{p.knownFor}</span>
+                        <span className="block truncate text-[11.5px] text-ink-subtle">
+                          {p.knownFor}
+                        </span>
                       </span>
                       {tracked ? (
                         <span className="text-[10.5px] uppercase tracking-[0.14em] text-ink-subtle">

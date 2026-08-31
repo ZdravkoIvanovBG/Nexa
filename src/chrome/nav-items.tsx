@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 import { AddonsIcon } from "@/components/icons/addons-icon";
-import { CatalogsIcon } from "@/components/icons/catalogs-icon";
-import { AnimeIcon } from "@/components/icons/anime-icon";
 import { CalendarIcon } from "@/components/icons/calendar-icon";
 import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
@@ -19,11 +17,9 @@ import type { View } from "@/lib/view";
 export type NavItemId =
   | "home"
   | "discover"
-  | "catalogs"
   | "movies"
   | "shows"
   | "kids"
-  | "anime"
   | "live"
   | "vod"
   | "calendar"
@@ -37,7 +33,7 @@ export type NavItem = {
   label: string;
   render: (active: boolean) => ReactNode;
   view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
+  hideKey?: "liveTv" | "sports";
   parentalKey?: LockableTab;
   pinGated?: boolean;
 };
@@ -58,13 +54,6 @@ export const NAV_ITEMS: NavItem[] = [
     parentalKey: "discover",
   },
   {
-    id: "catalogs",
-    label: "nav.catalogs",
-    render: (active) => <CatalogsIcon active={active} />,
-    view: "catalogs",
-    parentalKey: "discover",
-  },
-  {
     id: "movies",
     label: "nav.movies",
     render: (active) => <MoviesIcon active={active} />,
@@ -79,14 +68,6 @@ export const NAV_ITEMS: NavItem[] = [
     parentalKey: "shows",
   },
   { id: "kids", label: "nav.kids", render: (active) => <KidsIcon active={active} />, view: "kids" },
-  {
-    id: "anime",
-    label: "nav.anime",
-    render: (active) => <AnimeIcon active={active} />,
-    view: "anime",
-    hideKey: "anime",
-    parentalKey: "anime",
-  },
   {
     id: "live",
     label: "nav.live",

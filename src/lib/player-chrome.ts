@@ -31,7 +31,6 @@ export type PlayerControlId =
   | "subtitle-menu"
   | "speed-menu"
   | "aspect-menu"
-  | "anime4k-menu"
   | "hdr-toggle"
   | "rtx-hdr-toggle"
   | "draw-toggle"
@@ -186,7 +185,6 @@ export const DEFAULT_DEFAULT_CONFIG: PlayerChromeConfig = {
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
     { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
-    { id: "anime4k-menu", slot: "bottom-right", order: 27 },
     { id: "hdr-toggle", slot: "bottom-right", order: 28, hidden: true },
     { id: "rtx-hdr-toggle", slot: "bottom-right", order: 29, hidden: true },
     { id: "speed-menu", slot: "bottom-right", order: 30 },
@@ -222,7 +220,6 @@ export const DEFAULT_STREMIO_CONFIG: PlayerChromeConfig = {
     { id: "audio-menu", slot: "bottom-right", order: 10 },
     { id: "subtitle-menu", slot: "bottom-right", order: 20 },
     { id: "aspect-menu", slot: "bottom-right", order: 25, hidden: true },
-    { id: "anime4k-menu", slot: "bottom-right", order: 27 },
     { id: "hdr-toggle", slot: "bottom-right", order: 28, hidden: true },
     { id: "rtx-hdr-toggle", slot: "bottom-right", order: 29, hidden: true },
     { id: "draw-toggle", slot: "bottom-right", order: 30 },
@@ -267,7 +264,6 @@ export const CONTROL_META: Record<
     group: "menus",
     defaultSlot: "bottom-right",
   },
-  "anime4k-menu": { label: "Anime4K", group: "menus", defaultSlot: "bottom-right" },
   "hdr-toggle": { label: "HDR to SDR toggle", group: "menus", defaultSlot: "bottom-right" },
   "rtx-hdr-toggle": { label: "RTX Video HDR toggle", group: "menus", defaultSlot: "bottom-right" },
   "draw-toggle": { label: "Draw on video", group: "actions", defaultSlot: "bottom-right" },

@@ -28,9 +28,6 @@ export const ShellLayer = memo(function ShellLayer({
   onEnterSync,
   cropMode,
   onCropMode,
-  anime4kMode,
-  onAnime4kMode,
-  anime4kAvailable,
   onPiP,
   onFullscreen,
   openCastMenu,
@@ -83,9 +80,6 @@ export const ShellLayer = memo(function ShellLayer({
   onEnterSync?: () => void;
   cropMode?: string;
   onCropMode?: (id: string) => void;
-  anime4kMode?: string;
-  onAnime4kMode?: (id: string) => void;
-  anime4kAvailable?: boolean;
   onPiP: () => void;
   onFullscreen: () => void;
   openCastMenu: (anchor: { right: number; bottom: number } | null) => void;
@@ -186,9 +180,6 @@ export const ShellLayer = memo(function ShellLayer({
       }}
       cropMode={cropMode}
       onCropMode={onCropMode}
-      anime4kMode={anime4kMode}
-      onAnime4kMode={onAnime4kMode}
-      anime4kAvailable={anime4kAvailable}
       onPiP={onPiP}
       onFullscreen={onFullscreen}
       onCast={() => {

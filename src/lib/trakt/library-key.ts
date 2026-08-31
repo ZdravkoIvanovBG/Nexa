@@ -1,4 +1,4 @@
-import { episodeFromVideoId, type LibraryItem } from "@/lib/stremio";
+import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
 
 function itemEpisode(item: LibraryItem): { season: number; episode: number } | null {
   const s = item.state?.season;
@@ -34,10 +34,7 @@ export function libraryItemWatchedKeys(item: LibraryItem): string[] {
   return [];
 }
 
-export function isLibraryItemWatched(
-  item: LibraryItem,
-  watched: Set<string>,
-): boolean {
+export function isLibraryItemWatched(item: LibraryItem, watched: Set<string>): boolean {
   if (watched.size === 0) return false;
   const keys = libraryItemWatchedKeys(item);
   for (const k of keys) {

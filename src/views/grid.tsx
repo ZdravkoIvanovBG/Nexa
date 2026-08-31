@@ -1,58 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { BackToTop } from "@/components/back-to-top";
 import { PickCard } from "@/components/pick-card";
 import { VirtualGrid } from "@/components/virtual-grid";
-import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { layoutHasGlobalBack } from "@/lib/theme";
+import { useGridPaging } from "@/lib/use-grid-paging";
 import { useScrollMemory, useView, type GridSpec } from "@/lib/view";
-
-const PAGE_CAP = 40;
 
 export function GridView({ grid }: { grid: GridSpec }) {
   const { goBack } = useView();
   const t = useT();
   const scrollRef = useRef<HTMLElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [metas, setMetas] = useState<Meta[]>(grid.initial ?? []);
-  const [page, setPage] = useState(grid.initial?.length ? 1 : 0);
-  const [done, setDone] = useState(false);
-  const loadingRef = useRef(false);
+  const { metas, done, sentinelRef } = useGridPaging(grid);
   useScrollMemory(`grid:${grid.title}`, scrollRef);
-
-  useEffect(() => {
-    if (done) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting || loadingRef.current) return;
-        loadingRef.current = true;
-        const next = page + 1;
-        grid
-          .fetcher(next)
-          .then((batch) => {
-            setPage(next);
-            if (batch.length === 0 || next >= PAGE_CAP) {
-              setDone(true);
-              return;
-            }
-            const seen = new Set(metas.map((m) => m.id));
-            const fresh = batch.filter((m) => !seen.has(m.id));
-            if (fresh.length === 0) setDone(true);
-            else setMetas((prev) => [...prev, ...fresh]);
-          })
-          .catch(() => setDone(true))
-          .finally(() => {
-            loadingRef.current = false;
-          });
-      },
-      { rootMargin: "900px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [grid, page, done, metas]);
 
   const hero = grid.kidsHero;
   const bgArt = metas.find((m) => m.background)?.background?.replace("/t/p/w780/", "/t/p/w1280/");

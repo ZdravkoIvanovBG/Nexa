@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Star, Loader2 } from "lucide-react";
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
-import { kitsuToMal } from "@/lib/providers/anime-mapping";
 import type { SimklTarget } from "@/lib/simkl/types";
 import { addSimklRating, removeSimklRating, getCachedRatingByTarget } from "@/lib/simkl/ratings";
 import { useT } from "@/lib/i18n";
@@ -36,10 +35,6 @@ export function SimklRatingPicker({
       const resolution = stremioIdToSimklTarget(harborId);
       if (resolution.ok) {
         tgt = resolution.target;
-      } else if (harborId.startsWith("kitsu:")) {
-        const n = Number(harborId.split(":")[1]);
-        const mal = Number.isFinite(n) ? await kitsuToMal(n).catch(() => null) : null;
-        if (mal != null) tgt = { kind: "show", ids: { mal } };
       }
       if (cancelled) return;
       if (!tgt) {
@@ -47,7 +42,7 @@ export function SimklRatingPicker({
         return;
       }
       if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
-      if (type === "movie" && (tgt.kind === "show" || tgt.kind === "anime")) {
+      if (type === "movie" && tgt.kind === "show") {
         tgt = { kind: "movie", ids: tgt.ids };
       }
 

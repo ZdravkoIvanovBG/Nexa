@@ -5,10 +5,14 @@ import { useTogether } from "@/lib/together/provider";
 import { buildInviteUrl } from "@/lib/together/invite";
 import { SERVICES } from "@/lib/providers/streaming";
 import { awardTypeLabel } from "@/lib/providers/wikidata";
-import { awardSourceMeta } from "@/lib/anime-awards";
 import { tmdbPerson, tmdbPersonCached } from "@/lib/providers/tmdb/tmdb-people";
 import type { Meta } from "@/lib/cinemeta";
-import { configureDiscord, setBrowsePresence, setPartyPresence, type BrowsePresence } from "./presence";
+import {
+  configureDiscord,
+  setBrowsePresence,
+  setPartyPresence,
+  type BrowsePresence,
+} from "./presence";
 import { useActivityHint } from "./activity-hint";
 
 const JOIN_BASE = "https://app.harbor.site";
@@ -25,20 +29,11 @@ const NORMAL_AWARD_IMG: Record<string, string> = {
   venice: "venice.png",
   berlin: "berlin.png",
 };
-const ANIME_AWARD_IMG: Record<string, string> = {
-  crunchyroll: "crunchyroll-awards.png",
-  taaf: "taaf-icon.png",
-  jmaf: "jmaf-icon.png",
-  r_anime: "r-anime-icon.png",
-  animation_kobe: "animation-kobe.png",
-};
-
 const STATIC_LABELS: Record<string, BrowsePresence> = {
   home: { details: "Browsing Harbor" },
   discover: { details: "Browsing Discover" },
   movies: { details: "Browsing movies" },
   shows: { details: "Browsing shows" },
-  anime: { details: "Browsing anime" },
   live: { details: "Watching live TV" },
   library: { details: "Browsing their library" },
   calendar: { details: "Checking the calendar" },
@@ -65,7 +60,8 @@ function filterBrowse(f: MetaFilter): BrowsePresence {
   const media = f.mediaType === "movie" ? "movies" : "shows";
   if (f.kind === "year") return { details: `Browsing ${f.value} ${media}` };
   if (f.kind === "runtime") return { details: `Browsing ${media} around ${f.value} min` };
-  if (f.kind === "country") return { details: `Browsing ${media} from ${f.name}`, largeText: f.name };
+  if (f.kind === "country")
+    return { details: `Browsing ${media} from ${f.name}`, largeText: f.name };
   return { details: `Browsing ${f.name} ${media}`, largeText: f.name };
 }
 
@@ -80,7 +76,7 @@ function personBrowse(name: string, profilePath: string | null): BrowsePresence 
 
 export function useDiscordPresence(): void {
   const { settings } = useSettings();
-  const { topKind, service, meta, awardType, animeAwardSource, filter, personId } = useView();
+  const { topKind, service, meta, awardType, filter, personId } = useView();
   const hint = useActivityHint();
   const { snapshot } = useTogether();
   const relayUrl = settings.togetherRelayUrl;
@@ -130,17 +126,6 @@ export function useDiscordPresence(): void {
       });
       return;
     }
-    if (topKind === "anime-award" && animeAwardSource) {
-      const name = awardSourceMeta(animeAwardSource)?.name;
-      const file = ANIME_AWARD_IMG[animeAwardSource];
-      setBrowsePresence({
-        details: name ? `Browsing ${name}` : "Browsing anime awards",
-        state: "Awards",
-        largeImage: file ? `${AWARD_IMG}/${file}?v=2` : undefined,
-        largeText: name ?? "Anime awards",
-      });
-      return;
-    }
     if (topKind === "filter" && filter) {
       setBrowsePresence(filterBrowse(filter));
       return;
@@ -161,17 +146,7 @@ export function useDiscordPresence(): void {
       };
     }
     setBrowsePresence(STATIC_LABELS[topKind] ?? { details: "Browsing Harbor" });
-  }, [
-    topKind,
-    service,
-    meta,
-    awardType,
-    animeAwardSource,
-    filter,
-    personId,
-    settings.tmdbKey,
-    hint,
-  ]);
+  }, [topKind, service, meta, awardType, filter, personId, settings.tmdbKey, hint]);
 
   useEffect(() => {
     if (snapshot.state !== "joined" || !snapshot.room) {

@@ -75,7 +75,7 @@ export function useTrackAutoload(params: {
   const userAddons = userAddonsState.authKey === authKey ? userAddonsState.addons : null;
   useEffect(() => {
     let cancelled = false;
-    gatherSubtitleAddons(authKey)
+    gatherSubtitleAddons()
       .then((a) => {
         if (!cancelled) setUserAddonsState({ authKey, addons: a });
       })

@@ -4,11 +4,9 @@ import type { View } from "@/lib/view";
 export const VIEW_PATH: Record<View, string> = {
   home: "/",
   discover: "/discover",
-  catalogs: "/catalogs",
   movies: "/movies",
   shows: "/shows",
   kids: "/kids",
-  anime: "/anime",
   live: "/live",
   vod: "/vod",
   calendar: "/calendar",
@@ -16,7 +14,6 @@ export const VIEW_PATH: Record<View, string> = {
   downloads: "/downloads",
   addons: "/addons",
   settings: "/settings",
-  wrapped: "/wrapped",
 };
 
 const PATH_TO_VIEW = new Map<string, View>(

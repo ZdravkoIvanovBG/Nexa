@@ -1,10 +1,7 @@
 import { Calendar as CalendarIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { CalendarFilter } from "@/lib/calendar";
-import type { Settings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-
-type Source = Settings["calendarSource"];
 
 function EmptyShell({
   heading,
@@ -62,60 +59,16 @@ export function NotSignedInState({ onSignIn }: { onSignIn: () => void }) {
   );
 }
 
-export function EmptyState({
-  source,
-  filter,
-  watchlistOnly,
-}: {
-  source: Source;
-  filter: CalendarFilter;
-  watchlistOnly: boolean;
-}) {
+export function EmptyState({ filter }: { filter: CalendarFilter }) {
   const t = useT();
+  const filterKind = filter === "movie" ? t("movies") : filter === "tv" ? t("TV") : t("anime");
   const heading =
-    source === "library"
+    filter === "all"
       ? t("Nothing from your library this month")
-      : source === "trakt"
-        ? t("Nothing on Trakt this month")
-        : source === "anticipated"
-          ? t("Nothing anticipated this month")
-          : source === "simkl"
-            ? t("Nothing on Simkl this month")
-            : source === "simkl-anticipated"
-              ? t("No Simkl premieres this month")
-              : t("Nothing this month");
-  const filterKind =
-    filter === "movie" ? t("movies") : filter === "tv" ? t("TV") : t("anime");
-  const body =
-    source === "library"
-      ? t(
-          "Your saved shows have no episodes scheduled for this month. Switch to All upcoming to browse the full release calendar.",
-        )
-      : source === "trakt"
-        ? t(
-            "Trakt has no upcoming releases for your watchlist this month. Past months and dates more than six months out aren't covered by Trakt's calendar feed.",
-          )
-        : source === "anticipated"
-          ? t(
-              "None of Trakt's most-anticipated upcoming releases land in this month. Try a different month.",
-            )
-          : source === "simkl"
-            ? t(
-                "Your Simkl plan-to-watch list has no episodes airing this month. Switch to All upcoming to browse everything.",
-              )
-            : source === "simkl-anticipated"
-              ? t(
-                  "Simkl lists no new shows or anime premiering this month. Try a different month.",
-                )
-              : watchlistOnly
-            ? t(
-                "Nothing from your library lands this month. Toggle Watchlist off to see all releases.",
-              )
-            : filter === "all"
-              ? t("TMDB has no notable releases for this month and region.")
-              : t("No {kind} releases this month. Try a different filter.", {
-                  kind: filterKind,
-                });
+      : t("No {kind} from your library this month", { kind: filterKind });
+  const body = t(
+    "This calendar only shows what you track. Add titles to your watchlist, mark a show as Currently Watching, or mark something Watched, and their release dates land here.",
+  );
   return <EmptyShell heading={heading} body={body} />;
 }
 

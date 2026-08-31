@@ -2,7 +2,6 @@ export type LockableTab =
   | "discover"
   | "movies"
   | "shows"
-  | "anime"
   | "sports"
   | "liveTv"
   | "calendar"
@@ -16,7 +15,6 @@ export type LockableTabMeta = {
     | "discover"
     | "movies"
     | "shows"
-    | "anime"
     | "sports"
     | "liveTv"
     | "calendar"
@@ -28,7 +26,6 @@ export const LOCKABLE_TABS: LockableTabMeta[] = [
   { key: "discover", label: "Discover", iconKey: "discover" },
   { key: "movies", label: "Movies", iconKey: "movies" },
   { key: "shows", label: "Shows", iconKey: "shows" },
-  { key: "anime", label: "Anime", iconKey: "anime" },
   { key: "sports", label: "Sports", iconKey: "sports" },
   { key: "liveTv", label: "Live TV", iconKey: "liveTv" },
   { key: "calendar", label: "Calendar", iconKey: "calendar" },
@@ -42,7 +39,6 @@ export const DEFAULT_HIDDEN: HiddenTabs = {
   discover: false,
   movies: false,
   shows: false,
-  anime: false,
   sports: false,
   liveTv: false,
   calendar: false,

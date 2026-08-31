@@ -1,11 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import {
-  animeSeriesFromStreamId,
-  fetchSeasonEpisodes,
-  fetchSeasonList,
-  isAnimeId,
-} from "@/lib/series-episodes";
+import { fetchSeasonEpisodes, fetchSeasonList, isAnimeId } from "@/lib/series-episodes";
 import { useSettings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 
@@ -21,11 +16,7 @@ export function useSeasonBrowser(
   loading: boolean;
 } {
   const { settings } = useSettings();
-  const effMeta = useMemo<Meta>(() => {
-    if (!isAnimeId(meta.id)) return meta;
-    const base = animeSeriesFromStreamId(current?.kitsuStreamId);
-    return base && base !== meta.id ? { ...meta, id: base } : meta;
-  }, [meta, current?.kitsuStreamId]);
+  const effMeta = meta;
   const [seasons, setSeasons] = useState<number[]>([]);
   const [season, setSeason] = useState<number>(current?.imdbSeason ?? current?.season ?? 1);
   const [episodes, setEpisodes] = useState<PlayEpisode[]>([]);

@@ -22,9 +22,6 @@ export type HotkeyId =
   | "playerStart"
   | "playerEnd"
   | "playerStats"
-  | "playerAnime4kToggle"
-  | "playerAnime4kOn"
-  | "playerAnime4kOff"
   | "playerRtxHdrToggle"
   | "playerCrop"
   | "playerPanscanUp"
@@ -179,30 +176,6 @@ export const HOTKEYS: HotkeyDef[] = [
     description:
       "Save the last 30 seconds as a video clip with audio, choosing subtitles on or off. Saves to Pictures/Harbor.",
     defaultBinding: "c",
-  },
-  {
-    id: "playerAnime4kToggle",
-    scope: "Player",
-    group: "Playback",
-    label: "Toggle Anime4K",
-    description: "Turn Anime4K upscaling on (auto) or off. Only active when shaders are available.",
-    defaultBinding: "a",
-  },
-  {
-    id: "playerAnime4kOn",
-    scope: "Player",
-    group: "Playback",
-    label: "Anime4K on",
-    description: "Turn Anime4K upscaling on. Only active when shaders are available.",
-    defaultBinding: "ctrl+1",
-  },
-  {
-    id: "playerAnime4kOff",
-    scope: "Player",
-    group: "Playback",
-    label: "Anime4K off",
-    description: "Turn Anime4K upscaling off.",
-    defaultBinding: "ctrl+0",
   },
   {
     id: "playerRtxHdrToggle",

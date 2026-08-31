@@ -5,7 +5,7 @@ import { AuthModal } from "@/components/auth-modal";
 import { ContinueCard } from "@/components/continue-card";
 import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
-import { type LibraryItem } from "@/lib/stremio";
+import type { LibraryItem } from "@/lib/library-item";
 import { isLibraryItemWatched } from "@/lib/trakt/library-key";
 
 type Props = {

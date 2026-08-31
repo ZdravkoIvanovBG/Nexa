@@ -2,17 +2,11 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Play, X } from "lucide-react";
 import simklLogo from "@/assets/simkl.png";
 import { meta as fetchMeta, narrowMediaType, type Meta } from "@/lib/cinemeta";
-import { animeKitsuMeta, type AnimeKitsuVideo } from "@/lib/providers/anime-kitsu-addon";
 import { tmdbLiteMeta } from "@/lib/providers/tmdb/tmdb-lite";
 import { useContextMenu } from "@/lib/context-menu";
 import { useT } from "@/lib/i18n";
 import { readSnapshot, useSnapshotVersion } from "@/lib/snapshots";
-import {
-  episodeFromVideoId,
-  isAnimeCwItem,
-  libraryMetaType,
-  type LibraryItem,
-} from "@/lib/stremio";
+import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/library-item";
 import { useHasNewEpisode } from "@/lib/new-episodes";
 import { Tooltip } from "@/views/detail/tooltip";
 import { useProfiles } from "@/lib/profiles";
@@ -23,7 +17,6 @@ import { playLocalAware } from "@/lib/local-library/playback";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { fetchSeasonEpisodes } from "@/lib/series-episodes";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
-import { resolvePreferredAnimeTitle } from "@/lib/anime-title";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
 
 type Props = {
@@ -56,33 +49,16 @@ export const ContinueCard = memo(function ContinueCard({
   const progress = dur > 0 ? Math.min(1, off / dur) : 0;
   const remaining = dur > 0 && !isExternal ? formatRemaining(t, dur - off) : "";
   const upNext = item.upNext === true;
-  const kitsuThreeSeg =
-    /^(kitsu|mal|anilist|anidb):/.test(item._id) &&
-    (item.state?.video_id ?? "").split(":").length === 3;
   const ep =
     item.state?.season && item.state?.episode
       ? { season: item.state.season, episode: item.state.episode }
-      : kitsuThreeSeg
-        ? null
-        : episodeFromVideoId(item.state?.video_id);
-  const animeEp = kitsuThreeSeg
-    ? Number((item.state?.video_id ?? "").split(":")[2])
-    : isAnimeCwItem(item) && ep
-      ? ep.episode
-      : null;
+      : episodeFromVideoId(item.state?.video_id);
 
-  const sub =
-    animeEp && Number.isFinite(animeEp) && animeEp > 0
-      ? `Ep ${animeEp}`
-      : ep
-        ? `S${ep.season}E${ep.episode}`
-        : "";
+  const sub = ep ? `S${ep.season}E${ep.episode}` : "";
   const [logo, setLogo] = useState<string | undefined>();
   const [metaBg, setMetaBg] = useState<string | undefined>();
   const [hydratedMeta, setHydratedMeta] = useState<Meta | null>(null);
-  const [kitsuVideo, setKitsuVideo] = useState<AnimeKitsuVideo | null>(null);
   const [epTitle, setEpTitle] = useState<string | null>(null);
-  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
   const cardRef = useRef<HTMLButtonElement>(null);
 
@@ -106,8 +82,6 @@ export const ContinueCard = memo(function ContinueCard({
     setLogo(undefined);
     setMetaBg(undefined);
     setHydratedMeta(null);
-    setKitsuVideo(null);
-    setTranslatedTitle(null);
     setImgIdx(0);
     const el = cardRef.current;
     if (!el) return;
@@ -116,46 +90,6 @@ export const ContinueCard = memo(function ContinueCard({
     const start = () => {
       if (started) return;
       started = true;
-      if (/^(kitsu|mal|anilist|anidb):/.test(item._id)) {
-        resolvePreferredAnimeTitle(item._id, settingsRef.current.simklAnimeTitleLanguage)
-          .then((tt) => {
-            if (!cancelled && tt) setTranslatedTitle(tt);
-          })
-          .catch(() => {});
-        animeKitsuMeta(item._id)
-          .then((m) => {
-            if (cancelled || !m) return;
-            setHydratedMeta({
-              id: item._id,
-              type: libraryMetaType(item.type),
-              name: m.name?.trim() ? m.name : item.name,
-              poster: m.poster,
-              background: m.background,
-              logo: m.logo,
-            });
-            if (m.logo) setLogo(m.logo);
-            else
-              resolveLogo(settingsRef.current.tmdbKey, {
-                id: item._id,
-                type: libraryMetaType(item.type),
-                name: m.name || item.name,
-              })
-                .then((l) => {
-                  if (!cancelled && l) setLogo(l);
-                })
-                .catch(() => {});
-            const bg = m.background || (item.background ? undefined : m.poster);
-            if (bg) setMetaBg(bg);
-            if (kitsuThreeSeg) {
-              const vid =
-                m.videos.find((v) => v.id === item.state?.video_id) ??
-                m.videos.find((v) => v.episode === animeEp);
-              if (vid) setKitsuVideo(vid);
-            }
-          })
-          .catch(() => {});
-        return;
-      }
       if (item._id.startsWith("tmdb:")) {
         tmdbLiteMeta(settingsRef.current.tmdbKey, item._id)
           .then((m) => {
@@ -210,8 +144,7 @@ export const ContinueCard = memo(function ContinueCard({
 
   useEffect(() => {
     setEpTitle(null);
-    if (!ep || kitsuThreeSeg) return;
-    if (/^(kitsu|mal|anilist|anidb):/.test(item._id)) return;
+    if (!ep) return;
     let cancelled = false;
     const epMeta: Meta = { id: item._id, type: "series", name: item.name };
     fetchSeasonEpisodes(epMeta, ep.season, { tmdbKey: settingsRef.current.tmdbKey })
@@ -225,9 +158,9 @@ export const ContinueCard = memo(function ContinueCard({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item._id, ep?.season, ep?.episode, kitsuThreeSeg]);
+  }, [item._id, ep?.season, ep?.episode]);
 
-  const episodeTitle = epTitle ?? kitsuVideo?.title ?? null;
+  const episodeTitle = epTitle;
 
   const meta: Meta = hydratedMeta
     ? { ...hydratedMeta, id: item._id, type: libraryMetaType(item.type) }
@@ -245,25 +178,7 @@ export const ContinueCard = memo(function ContinueCard({
 
   const onPlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    let episode: PlayEpisode | undefined = item.type === "series" && ep ? ep : undefined;
-    if (!episode && kitsuThreeSeg) {
-      if (kitsuVideo) {
-        episode = {
-          season: kitsuVideo.season || 1,
-          episode: kitsuVideo.episode,
-          name: kitsuVideo.title,
-          still: kitsuVideo.thumbnail,
-          overview: kitsuVideo.overview,
-          kitsuStreamId: kitsuVideo.id,
-          imdbId: kitsuVideo.imdb_id,
-          imdbSeason: kitsuVideo.imdbSeason,
-          imdbEpisode: kitsuVideo.imdbEpisode,
-        };
-      } else {
-        const epNum = Number((item.state?.video_id ?? "").split(":")[2]);
-        if (Number.isFinite(epNum) && epNum > 0) episode = { season: 1, episode: epNum };
-      }
-    }
+    const episode: PlayEpisode | undefined = item.type === "series" && ep ? ep : undefined;
     playLocalAware({
       meta,
       episode: episode ?? null,
@@ -405,7 +320,7 @@ export const ContinueCard = memo(function ContinueCard({
           </div>
         </div>
         <p className="truncate text-[13px] font-medium text-ink">
-          {translatedTitle || hydratedMeta?.name?.trim() || item.name}
+          {hydratedMeta?.name?.trim() || item.name}
         </p>
       </button>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex aspect-[16/9] items-center justify-center">

@@ -54,11 +54,9 @@ export async function pickBridge(
   want: "auto" | "html5" | "mpv",
   notWebReady: boolean,
   mpvOpts: {
-    anime4k: boolean;
     hdrToSdr: boolean;
     rtxHdr?: boolean;
     embed?: boolean;
-    anime4kShaders?: string[];
     d3d11Flip?: boolean;
     macEdr?: boolean;
     extraOptions?: string;

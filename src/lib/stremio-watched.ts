@@ -1,5 +1,5 @@
 import type { Meta } from "./cinemeta";
-import type { LibraryItem } from "./stremio";
+import type { LibraryItem } from "@/lib/library-item";
 
 type CinemetaVideo = NonNullable<Meta["videos"]>[number];
 

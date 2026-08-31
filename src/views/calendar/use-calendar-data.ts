@@ -1,154 +1,61 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  fetchCalendarRange,
-  fetchCustomCalendar,
-  monthRangeISO,
-  type CalendarItem,
-} from "@/lib/calendar";
-import {
-  fetchAnticipatedCalendar,
-  fetchLibraryCalendar,
-  fetchSimklCalendar,
-  fetchSimklPremieresCalendar,
-  fetchTraktCalendar,
-} from "@/lib/calendar-sources";
+import { useEffect, useState } from "react";
+import type { CalendarItem } from "@/lib/calendar";
+import { fetchTrackedCalendar } from "@/lib/calendar-sources";
+import { subscribeTracking } from "@/lib/library-tracking";
+import { subscribeWatchlist } from "@/lib/watchlist";
 import type { Settings } from "@/lib/settings";
 import { t } from "@/lib/i18n";
 
 type Args = {
-  source: Settings["calendarSource"];
   authKey: string | null;
   traktConnected: boolean;
-  simklConnected: boolean;
   settings: Settings;
   year: number;
   month: number;
 };
 
-export function useCalendarData({
-  source,
-  authKey,
-  traktConnected,
-  simklConnected,
-  settings,
-  year,
-  month,
-}: Args) {
+/**
+ * Upcoming releases scoped to the user's own library: watchlist, Currently
+ * Watching and Watched. Re-runs whenever any of those stores changes.
+ */
+export function useCalendarData({ authKey, traktConnected, settings, year, month }: Args) {
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const prevSourceRef = useRef(source);
+  const [revision, setRevision] = useState(0);
 
-  if (prevSourceRef.current !== source) {
-    prevSourceRef.current = source;
-    setItems([]);
-    setLoading(true);
-    setError(null);
-  }
+  useEffect(() => {
+    const bump = () => setRevision((n) => n + 1);
+    const offTracking = subscribeTracking(bump);
+    const offWatchlist = subscribeWatchlist(bump);
+    return () => {
+      offTracking();
+      offWatchlist();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    const run = (p: Promise<CalendarItem[]>) => {
-      setLoading(true);
-      p.then((rows) => {
+    setLoading(true);
+    fetchTrackedCalendar(year, month, {
+      tmdbKey: settings.tmdbKey,
+      authKey,
+      includeTrakt: traktConnected,
+    })
+      .then((rows) => {
         if (!cancelled) setItems(rows);
       })
-        .catch((e) => {
-          if (!cancelled) setError(e instanceof Error ? e.message : t("Failed to load"));
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    };
-    const stop = () => {
-      setItems([]);
-      setLoading(false);
-    };
-
-    const dispatch = () => {
-      if (source === "library") {
-        if (!authKey) return stop();
-        return run(
-          fetchLibraryCalendar(authKey, year, month, {
-            tmdbKey: settings.tmdbKey,
-            includeTrakt: traktConnected,
-          }),
-        );
-      }
-      if (source === "trakt") {
-        if (!traktConnected) return stop();
-        return run(fetchTraktCalendar(year, month));
-      }
-      if (source === "simkl") {
-        if (!simklConnected) return stop();
-        return run(fetchSimklCalendar(year, month, { tmdbKey: settings.tmdbKey }));
-      }
-      if (source === "simkl-anticipated") {
-        return run(fetchSimklPremieresCalendar(year, month));
-      }
-      if (source === "anticipated") {
-        return run(fetchAnticipatedCalendar(year, month));
-      }
-      if (source === "custom") {
-        if (!settings.tmdbKey) return stop();
-        const { start, end } = monthRangeISO(year, month);
-        const extras: Promise<CalendarItem[]>[] = [];
-        if (settings.customCalendar.includeTraktAnticipated) {
-          extras.push(fetchAnticipatedCalendar(year, month).catch(() => []));
-        }
-        if (settings.customCalendar.includeTraktWatchlist && traktConnected) {
-          extras.push(fetchTraktCalendar(year, month).catch(() => []));
-        }
-        return run(
-          Promise.all(extras)
-            .then((batches) => batches.flat())
-            .then((extra) =>
-              fetchCustomCalendar({
-                apiKey: settings.tmdbKey,
-                region: settings.region,
-                filters: {
-                  trackedPeople: settings.customCalendar.trackedPeople,
-                  genres: settings.customCalendar.genres,
-                  watchProviders: settings.customCalendar.watchProviders,
-                  originCountries: settings.customCalendar.originCountries,
-                  mediaTypes: settings.customCalendar.mediaTypes,
-                },
-                start,
-                end,
-                extra,
-              }),
-            ),
-        );
-      }
-      if (!settings.tmdbKey) return stop();
-      const { start, end } = monthRangeISO(year, month);
-      return run(fetchCalendarRange(settings.tmdbKey, start, end, settings.region));
-    };
-
-    dispatch();
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : t("Failed to load"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [
-    source,
-    authKey,
-    traktConnected,
-    simklConnected,
-    settings.tmdbKey,
-    settings.region,
-    settings.customCalendar.trackedPeople,
-    settings.customCalendar.includeTraktAnticipated,
-    settings.customCalendar.includeTraktWatchlist,
-    year,
-    month,
-  ]);
-
-  useEffect(() => {
-    if (simklConnected) {
-      void fetchSimklPremieresCalendar(year, month).catch(() => {});
-    }
-  }, [simklConnected, year, month]);
+  }, [authKey, traktConnected, settings.tmdbKey, year, month, revision]);
 
   return { items, loading, error };
 }

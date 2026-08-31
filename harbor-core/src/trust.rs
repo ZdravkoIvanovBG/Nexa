@@ -36,17 +36,6 @@ fn episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
     if older { older_floor } else if in_cinema { cinema } else { normal }
 }
 
-fn anime_episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
-    let (cinema, normal, older_floor) = match r {
-        Resolution::UHD => (600 * MIB, 400 * MIB, 150 * MIB),
-        Resolution::P1080 => (220 * MIB, 150 * MIB, 50 * MIB),
-        Resolution::P720 => (100 * MIB, 60 * MIB, 20 * MIB),
-        Resolution::P480 => (40 * MIB, 28 * MIB, 8 * MIB),
-        Resolution::SD => (25 * MIB, 18 * MIB, 5 * MIB),
-    };
-    if older { older_floor } else if in_cinema { cinema } else { normal }
-}
-
 fn resolution_label(r: Resolution) -> &'static str {
     match r {
         Resolution::UHD => "4K",
@@ -103,8 +92,6 @@ static PART_WORD_RX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\b(part|chapter|vol|volume)\b").unwrap());
 
 static WORD_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"[a-z0-9]+").unwrap());
-
-static ANIME_JA_RX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^(ja|jp|jap|japanese)").unwrap());
 
 static TITLE_STOPWORDS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
     [
@@ -263,14 +250,13 @@ fn check_one(
         }
     }
 
-    if kind_is_movie && !opts.is_anime
+    if kind_is_movie
         && (s.season_pack || s.season.is_some() || s.episode.is_some()) {
             return Some("series-result-for-movie".to_string());
         }
 
     if strict
         && kind_is_movie
-        && !opts.is_anime
         && in_cinema_window
         && opts.expected_year.is_some()
         && s.year.is_none()
@@ -339,11 +325,7 @@ fn check_one(
     if kind_is_series {
         if let Some(sz) = s.size {
             if !is_short_format(s) {
-                let floor = if opts.is_anime {
-                    anime_episode_min_size(s.resolution, in_cinema_window, older_catalog)
-                } else {
-                    episode_min_size(s.resolution, in_cinema_window, older_catalog)
-                };
+                let floor = episode_min_size(s.resolution, in_cinema_window, older_catalog);
                 if sz < floor {
                     return Some(format!(
                         "episode-stub-too-small-for-{}",
@@ -354,7 +336,7 @@ fn check_one(
         }
     }
 
-    if strict && kind_is_series && !opts.is_anime {
+    if strict && kind_is_series {
         if let Some(expected) = opts.expected_title.as_deref() {
             if !s.parsed_title.is_empty()
                 && !title_matches(
@@ -371,7 +353,7 @@ fn check_one(
 
     let has_file_idx = s.stream.file_idx.is_some();
 
-    if strict && !opts.is_anime && !has_file_idx && !s.season_pack {
+    if strict && !has_file_idx && !s.season_pack {
         if let (Some(expected_season), Some(season)) = (opts.expected_season, s.season) {
             if season != expected_season {
                 return Some(format!(
@@ -381,7 +363,7 @@ fn check_one(
         }
     }
 
-    if strict && !opts.is_anime && !has_file_idx && !s.season_pack {
+    if strict && !has_file_idx && !s.season_pack {
         if let (Some(expected_episode), Some(episode)) = (opts.expected_episode, s.episode) {
             if episode != expected_episode {
                 return Some(format!(
@@ -698,7 +680,6 @@ mod tests {
             repack_iteration: 0,
             proper: false,
             hardcoded: false,
-            anime_hash: None,
             scam_score: 0,
         }
     }
@@ -952,21 +933,18 @@ mod tests {
     }
 
     #[test]
-    fn anime_keeps_small_episode_non_anime_rejects() {
+    fn rejects_small_episode_below_floor() {
         let mut s = base_stream();
         s.resolution = Resolution::P1080;
         s.size = Some(180 * MIB);
         let mut opts = opts_strict();
         opts.kind = Some("series".into());
-        let non_anime = apply_trust(vec![s.clone()], &opts);
-        assert_eq!(non_anime.rejected.len(), 1);
+        let result = apply_trust(vec![s], &opts);
+        assert_eq!(result.rejected.len(), 1);
         assert_eq!(
-            non_anime.rejected[0].reason,
+            result.rejected[0].reason,
             "episode-stub-too-small-for-1080p"
         );
-        opts.is_anime = true;
-        let anime = apply_trust(vec![s], &opts);
-        assert_eq!(anime.keep.len(), 1);
     }
 
     #[test]

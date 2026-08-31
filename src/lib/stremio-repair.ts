@@ -1,14 +1,17 @@
 import { meta as fetchMeta, narrowMediaType } from "@/lib/cinemeta";
-import { animeKitsuMeta } from "@/lib/providers/anime-kitsu-addon";
 import { tmdbLiteMeta } from "@/lib/providers/tmdb/tmdb-lite";
-import { libraryPut, type LibraryItem } from "@/lib/stremio";
+import type { LibraryItem } from "@/lib/library-item";
+import { libraryPut } from "@/lib/stremio";
 
 const FLAG_PREFIX = "harbor.libraryNameRepair.v1.";
 const MAX_ITEMS = 150;
 const CONCURRENCY = 4;
 
 function norm(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
 }
 
 async function canonicalFor(
@@ -19,10 +22,6 @@ async function canonicalFor(
   try {
     if (id.startsWith("tt")) {
       const m = await fetchMeta(narrowMediaType(item.type), id);
-      return m?.name ? { name: m.name, poster: m.poster ?? null } : null;
-    }
-    if (/^(kitsu|mal|anilist|anidb):/.test(id)) {
-      const m = await animeKitsuMeta(id);
       return m?.name ? { name: m.name, poster: m.poster ?? null } : null;
     }
     if (id.startsWith("tmdb:")) {

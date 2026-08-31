@@ -1,15 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { preloadCatalogPage } from "@/lib/catalog-page";
-import { fetchAddonsDirectory, fetchInstalledAddonsPair } from "@/lib/addons-store/store";
-import { listBrowseCatalogs } from "@/lib/catalog-browse";
+import { fetchAddonsDirectory, fetchInstalledAddonsList } from "@/lib/addons-store/store";
 import { recentlyPlayed } from "@/lib/playback-history";
 import { queryKeys } from "@/lib/query/keys";
 import { useSettings } from "@/lib/settings";
 import type { Settings } from "@/lib/settings/types";
-import { useAuth } from "@/lib/auth";
-import { SPECS as ANIME_SPECS } from "@/views/anime/anime-rows";
-import { prefetchCatalogShelf } from "@/views/catalogs/catalog-shelf";
+import { useProfiles } from "@/lib/profiles";
 import { prefetchDiscoverPage } from "@/views/discover/discover-queries";
 import { kidsSpecs } from "@/views/kids/kids-specs";
 import { buildMovieHero, movieSpecs } from "@/views/movies/movie-specs";
@@ -25,43 +22,17 @@ export function preloadNavPage(
   view: string,
   tmdbKey: string,
   region: string,
-  authKey: string | null = null,
+  profileId: string | null = null,
   settings?: Settings,
 ): void {
   if (view === "discover") {
     if (settings) prefetchDiscoverPage(queryClient, settings);
     return;
   }
-  if (view === "anime") {
-    void preloadCatalogPage(queryClient, {
-      pageId: "anime",
-      scope: "jikan",
-      specs: ANIME_SPECS.map((s) => ({ key: s.key, title: s.title, fetcher: s.fetcher })),
-      limit: PRELOAD_LIMIT,
-    });
-    return;
-  }
-  if (view === "catalogs") {
-    void queryClient
-      .prefetchQuery({
-        queryKey: queryKeys.catalog.list(authKey),
-        queryFn: () => listBrowseCatalogs(authKey),
-        staleTime: 5 * 60_000,
-      })
-      .then(() => {
-        const list = queryClient.getQueryData<Awaited<ReturnType<typeof listBrowseCatalogs>>>(
-          queryKeys.catalog.list(authKey),
-        );
-        if (!list?.length) return;
-        for (const c of list.slice(0, PRELOAD_LIMIT)) prefetchCatalogShelf(queryClient, c);
-      })
-      .catch(() => {});
-    return;
-  }
   if (view === "addons") {
     void queryClient.prefetchQuery({
-      queryKey: queryKeys.addons.installed(authKey),
-      queryFn: () => fetchInstalledAddonsPair(authKey),
+      queryKey: queryKeys.addons.installed(profileId),
+      queryFn: fetchInstalledAddonsList,
       staleTime: 60_000,
     });
     void queryClient.prefetchQuery({
@@ -99,12 +70,12 @@ export function preloadNavPage(
   }
 }
 
-const WARM_VIEWS = ["discover", "anime", "catalogs", "movies", "shows", "kids"] as const;
+const WARM_VIEWS = ["discover", "movies", "shows", "kids"] as const;
 
 /** Idle warmup so the main catalog routes paint from cache on first open. */
 export function useIdlePagePrefetch() {
   const { settings } = useSettings();
-  const { authKey } = useAuth();
+  const { activeId: profileId } = useProfiles();
   const queryClient = useQueryClient();
   const tmdbKey = settings.tmdbKey;
   const region = settings.region;
@@ -120,7 +91,7 @@ export function useIdlePagePrefetch() {
     const run = () => {
       if (cancelled) return;
       for (const view of WARM_VIEWS)
-        preloadNavPage(queryClient, view, tmdbKey, region, authKey, settings);
+        preloadNavPage(queryClient, view, tmdbKey, region, profileId, settings);
     };
 
     const id =
@@ -136,5 +107,5 @@ export function useIdlePagePrefetch() {
         window.clearTimeout(id);
       }
     };
-  }, [tmdbKey, region, queryClient, authKey, settings]);
+  }, [tmdbKey, region, queryClient, profileId, settings]);
 }

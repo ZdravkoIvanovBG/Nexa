@@ -49,14 +49,13 @@ import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-pr
 import { TogetherInviteToast } from "@/components/together-invite-toast";
 import { TogetherSummonToast } from "@/components/together-summon-toast";
 import { TogetherParticipantLeftToast } from "@/components/together-participant-left-toast";
-import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
-import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
-import { MalAvatarSync } from "@/components/mal/mal-avatar-sync";
-import { MalSyncToast } from "@/components/mal/mal-sync-toast";
 import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-modal";
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider } from "@/lib/auth";
+import { CloudSessionProvider } from "@/lib/cloud/session";
+import { CloudSync } from "@/lib/cloud/sync-mount";
+import { CloudAuthGate } from "@/components/cloud-auth/cloud-auth-gate";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
@@ -85,8 +84,6 @@ import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
 import { Home } from "@/views/home";
 import { ParentalProvider } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
-import { AnilistProvider } from "@/lib/anilist/provider";
-import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
 import { focusTvPageDefault, useKeyboardNavigation } from "@/lib/keyboard-navigation";
@@ -100,15 +97,11 @@ import {
 import { HarborQueryProvider, useIdlePagePrefetch } from "@/lib/query";
 import { HarborRouterProvider, ViewRouterSync } from "@/router";
 
-const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
-const importWrapped = () => import("@/views/wrapped");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
-const importCatalogs = () => import("@/views/catalogs");
 const importAward = () => import("@/views/award");
-const importAnimeAward = () => import("@/views/anime-award");
 const importFilter = () => import("@/views/filter");
 const importGrid = () => import("@/views/grid");
 const importPerson = () => import("@/views/person");
@@ -129,15 +122,11 @@ const importDownloads = () => import("@/views/downloads");
 const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
-const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
-const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
 const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
-const Catalogs = lazy(() => importCatalogs().then((m) => ({ default: m.Catalogs })));
 const AwardView = lazy(() => importAward().then((m) => ({ default: m.AwardView })));
-const AnimeAwardView = lazy(() => importAnimeAward().then((m) => ({ default: m.AnimeAwardView })));
 const FilterView = lazy(() => importFilter().then((m) => ({ default: m.FilterView })));
 const GridView = lazy(() => importGrid().then((m) => ({ default: m.GridView })));
 const PersonView = lazy(() => importPerson().then((m) => ({ default: m.PersonView })));
@@ -183,12 +172,11 @@ function useViewPreloader() {
         ? win.requestIdleCallback(cb, { timeout })
         : window.setTimeout(cb, Math.min(timeout, 800));
 
-    // Priority: Movies/Shows chunks first — they were lazy and felt slower than Anime.
+    // Priority: Movies/Shows chunks first — they were lazy and felt slower to load.
     const priorityId = schedule(() => {
       if (cancelled) return;
       void importMovies();
       void importShows();
-      void importAnime();
       void importDiscover();
       void importDetail();
       void importPlayPicker();
@@ -205,12 +193,10 @@ function useViewPreloader() {
       void importLive();
       void importQueue();
       void importAward();
-      void importAnimeAward();
       void importService();
       void importMatchDetail();
       void importOnboarding();
       void importLibrary();
-      void importCatalogs();
       void importKids();
       void importVod();
       void importDownloads();
@@ -283,91 +269,87 @@ export function App({ onReady }: { onReady?: () => void }) {
   if (isWeb() && isMobileDevice()) return <MobileNotice />;
   return (
     <HarborQueryProvider>
-      <HarborRouterProvider>
-        <SettingsProvider>
-          <ProfilesProvider>
-            <ParentalProvider>
-              <TraktProvider>
-                <AnilistProvider>
-                  <MalProvider>
-                    <SimklProvider>
-                      <LetterboxdProvider>
-                        <RankingsProvider>
-                          <AuthProvider>
-                            <OnboardingProvider>
-                              <TogetherProvider>
-                                <ViewProvider>
-                                  <ViewRouterSync />
-                                  <IdlePagePrefetch />
-                                  <SearchProvider>
-                                    <DvrProvider>
-                                      <FavoritesProvider>
-                                        <MediaFavoritesProvider>
-                                          <LocalWatchlistProvider>
-                                            <ContextMenuProvider>
-                                              <TopRankModalProvider>
-                                                <HarborErrorBoundary>
-                                                  <RemoteHostMount />
-                                                  <ProfileIdentitySync />
-                                                  <SettingsProfileBridge />
-                                                  <TrackerProfileBridge />
-                                                  <AnilistAvatarSync />
-                                                  <MalAvatarSync />
-                                                  <MiddleClickScroll />
-                                                  <ThemeBackdrop />
-                                                  <WatchlistSync />
-                                                  <Shell onReady={onReady} />
-                                                  <Suspense fallback={null}>
-                                                    <OnboardingModal />
-                                                  </Suspense>
-                                                  <TogetherInviteToast />
-                                                  <TogetherFloater />
-                                                  <TogetherHostLeavingPrompt />
-                                                  <TogetherSummonToast />
-                                                  <TogetherParticipantLeftToast />
-                                                  <AnilistSyncToast />
-                                                  <MalSyncToast />
-                                                  <ListToastHost />
-                                                  <TogetherLeaveForLiveModal />
-                                                  <TogetherLocationPublisher />
-                                                  <DiscordPresence />
-                                                  <ContextMenu />
-                                                  <WatchLocalModal />
-                                                  <LocalEpisodesModal />
-                                                  <HoverPreview />
-                                                  <CustomHoverCssMount />
-                                                  <TopRankModal />
-                                                  <ProfilePickerModal />
-                                                  <CurfewGuard />
-                                                  <SearchOverlay />
-                                                  <SearchHotkey />
-                                                  <EmbedViewportRoot />
-                                                  <InstallerViewportRoot />
-                                                  <UpdateRoot />
-                                                </HarborErrorBoundary>
-                                                <ErrorView />
-                                                <DevErrorTrigger />
-                                              </TopRankModalProvider>
-                                            </ContextMenuProvider>
-                                          </LocalWatchlistProvider>
-                                        </MediaFavoritesProvider>
-                                      </FavoritesProvider>
-                                    </DvrProvider>
-                                  </SearchProvider>
-                                </ViewProvider>
-                              </TogetherProvider>
-                            </OnboardingProvider>
-                          </AuthProvider>
-                        </RankingsProvider>
-                      </LetterboxdProvider>
-                    </SimklProvider>
-                  </MalProvider>
-                </AnilistProvider>
-              </TraktProvider>
-            </ParentalProvider>
-          </ProfilesProvider>
-        </SettingsProvider>
-      </HarborRouterProvider>
+      <CloudSessionProvider>
+        <HarborRouterProvider>
+          <SettingsProvider>
+            <ProfilesProvider>
+              <ParentalProvider>
+                <TraktProvider>
+                  <SimklProvider>
+                    <LetterboxdProvider>
+                      <RankingsProvider>
+                        <AuthProvider>
+                          <OnboardingProvider>
+                            <TogetherProvider>
+                              <ViewProvider>
+                                <ViewRouterSync />
+                                <IdlePagePrefetch />
+                                <SearchProvider>
+                                  <DvrProvider>
+                                    <FavoritesProvider>
+                                      <MediaFavoritesProvider>
+                                        <LocalWatchlistProvider>
+                                          <ContextMenuProvider>
+                                            <TopRankModalProvider>
+                                              <HarborErrorBoundary>
+                                                <RemoteHostMount />
+                                                <ProfileIdentitySync />
+                                                <SettingsProfileBridge />
+                                                <TrackerProfileBridge />
+                                                <MiddleClickScroll />
+                                                <ThemeBackdrop />
+                                                <WatchlistSync />
+                                                <CloudSync />
+                                                <Shell onReady={onReady} />
+                                                <Suspense fallback={null}>
+                                                  <OnboardingModal />
+                                                </Suspense>
+                                                <TogetherInviteToast />
+                                                <TogetherFloater />
+                                                <TogetherHostLeavingPrompt />
+                                                <TogetherSummonToast />
+                                                <TogetherParticipantLeftToast />
+                                                <ListToastHost />
+                                                <TogetherLeaveForLiveModal />
+                                                <TogetherLocationPublisher />
+                                                <DiscordPresence />
+                                                <ContextMenu />
+                                                <WatchLocalModal />
+                                                <LocalEpisodesModal />
+                                                <HoverPreview />
+                                                <CustomHoverCssMount />
+                                                <TopRankModal />
+                                                <ProfilePickerModal />
+                                                <CurfewGuard />
+                                                <CloudAuthGate />
+                                                <SearchOverlay />
+                                                <SearchHotkey />
+                                                <EmbedViewportRoot />
+                                                <InstallerViewportRoot />
+                                                <UpdateRoot />
+                                              </HarborErrorBoundary>
+                                              <ErrorView />
+                                              <DevErrorTrigger />
+                                            </TopRankModalProvider>
+                                          </ContextMenuProvider>
+                                        </LocalWatchlistProvider>
+                                      </MediaFavoritesProvider>
+                                    </FavoritesProvider>
+                                  </DvrProvider>
+                                </SearchProvider>
+                              </ViewProvider>
+                            </TogetherProvider>
+                          </OnboardingProvider>
+                        </AuthProvider>
+                      </RankingsProvider>
+                    </LetterboxdProvider>
+                  </SimklProvider>
+                </TraktProvider>
+              </ParentalProvider>
+            </ProfilesProvider>
+          </SettingsProvider>
+        </HarborRouterProvider>
+      </CloudSessionProvider>
     </HarborQueryProvider>
   );
 }
@@ -437,7 +419,6 @@ function TogetherLocationPublisher() {
         return { kind: "addon-detail" as const, addonId: addonDetailId };
       if (topKind === "home") return { kind: "home" };
       if (topKind === "discover") return { kind: "discover" };
-      if (topKind === "anime") return { kind: "anime" };
       if (topKind === "queue") return { kind: "queue" };
       if (topKind === "addons") return { kind: "addons" };
       if (topKind === "library") return { kind: "home" };
@@ -499,7 +480,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
     filter,
     grid,
     awardType,
-    animeAwardSource,
     picker,
     player,
     setView,
@@ -863,10 +843,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
   }, [setView, openMeta, openPlayer]);
 
   useEffect(() => {
-    if (topKind === "anime" && settings.hideContent.anime) setView("home");
-  }, [topKind, settings.hideContent.anime, setView]);
-
-  useEffect(() => {
     if (!kid || player) return;
     const allowed =
       topKind === "kids" ||
@@ -908,14 +884,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const filterTop = topKind === "filter";
   const gridTop = topKind === "grid";
   const awardTop = topKind === "award";
-  const animeAwardTop = topKind === "anime-award";
   const settingsTop = topKind === "settings";
-  const animeTop = topKind === "anime";
   const discoverTop = topKind === "discover";
-  const catalogsTop = topKind === "catalogs";
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
-  const wrappedTop = topKind === "wrapped";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
@@ -955,12 +927,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   const overlayPinned = useOverlayPinned();
   const settingsAlive = useIdleEvict(settingsTop, overlayPinned);
-  const animeAlive = useIdleEvict(animeTop);
   const discoverAlive = useIdleEvict(discoverTop);
-  const catalogsAlive = useIdleEvict(catalogsTop);
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
-  const wrappedAlive = useIdleEvict(wrappedTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
@@ -980,7 +949,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const filterAlive = useKeepAlive(filterTop, !!filter);
   const gridAlive = useKeepAlive(gridTop, !!grid, stackKinds.includes("grid"));
   const awardAlive = useKeepAlive(awardTop, awardTop);
-  const animeAwardAlive = useKeepAlive(animeAwardTop, animeAwardTop && !!animeAwardSource);
   const pickerAlive = useKeepAlive(pickerTop, !!picker);
   const moviesAlive = useIdleEvict(moviesTop);
   const kidsAlive = useIdleEvict(kidsTop);
@@ -1045,24 +1013,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
             </Suspense>
           </div>
         )}
-        {animeAlive && (
-          <div className={layer(animeTop)}>
-            <Suspense fallback={null}>
-              <AnimeView active={animeTop} />
-            </Suspense>
-          </div>
-        )}
         {discoverAlive && (
           <div className={layer(discoverTop)}>
             <Suspense fallback={null}>
               <Discover active={discoverTop} />
-            </Suspense>
-          </div>
-        )}
-        {catalogsAlive && (
-          <div className={layer(catalogsTop)}>
-            <Suspense fallback={null}>
-              <Catalogs active={catalogsTop} />
             </Suspense>
           </div>
         )}
@@ -1077,13 +1031,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(calendarTop)}>
             <Suspense fallback={null}>
               <CalendarView />
-            </Suspense>
-          </div>
-        )}
-        {wrappedAlive && (
-          <div className={layer(wrappedTop)}>
-            <Suspense fallback={null}>
-              <WrappedView active={wrappedTop} />
             </Suspense>
           </div>
         )}
@@ -1229,13 +1176,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(awardTop)}>
             <Suspense fallback={null}>
               <AwardView key={`award-${awardType}`} awardType={awardType} />
-            </Suspense>
-          </div>
-        )}
-        {animeAwardAlive && animeAwardSource && (
-          <div className={layer(animeAwardTop)}>
-            <Suspense fallback={null}>
-              <AnimeAwardView key={`anime-award-${animeAwardSource}`} sourceId={animeAwardSource} />
             </Suspense>
           </div>
         )}

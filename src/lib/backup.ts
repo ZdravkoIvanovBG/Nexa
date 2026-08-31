@@ -19,6 +19,14 @@ function isPortable(key: string): boolean {
   if (!key.startsWith("harbor.")) return false;
   if (key === "harbor.auth" || key.startsWith("harbor.auth.")) return false;
   if (key === "harbor.together.clientId") return false;
+  // Credentials. Exporting these writes a live refresh token into the .harbx in
+  // plaintext, and restoring one wipes the session of whoever is signed in now.
+  if (key.startsWith("harbor.supabase.")) return false;
+  // Per-device sync bookkeeping, not user data. The pending-op queue belongs to
+  // the device that recorded it, and the migration gates record "this device has
+  // already merged with the cloud" -- restoring one onto a fresh device makes the
+  // next hydrate treat local-only rows as deletions and silently drop them.
+  if (key.startsWith("harbor.cloud.")) return false;
   return true;
 }
 

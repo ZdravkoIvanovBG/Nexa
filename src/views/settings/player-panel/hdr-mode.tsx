@@ -1,6 +1,7 @@
 import { useSettings } from "@/lib/settings";
 import { isWindowsDesktop } from "@/lib/platform";
 import { isRtxHdrBlocked } from "@/lib/player/rtx-hdr-policy";
+import { isSvpActive } from "@/lib/player/svp-policy";
 import { useT } from "@/lib/i18n";
 import { DisplayPanelSelector } from "./display-panel-selector";
 
@@ -29,9 +30,7 @@ export function HdrModePicker() {
   const { settings, update } = useSettings();
   const t = useT();
   const current = deriveMode(settings);
-  const svpAlwaysActive =
-    settings.playerSvp && settings.svpVpyPath.length > 0 && settings.svpScope === "all";
-  const rtxHdrUnavailable = isRtxHdrBlocked(settings.playerHdrToSdr, svpAlwaysActive);
+  const rtxHdrUnavailable = isRtxHdrBlocked(settings.playerHdrToSdr, isSvpActive(settings));
 
   const options: Array<{
     id: HdrMode;

@@ -566,7 +566,6 @@ export function createHtml5Bridge(): PlayerBridge {
       if (video && on) video.style.objectFit = "fill";
     },
     setVideoEq() {},
-    setAnime4kShaders() {},
     async addSubtitle(url, lang, title, select, metadata): Promise<boolean> {
       let resolvedUrl = url;
       if (

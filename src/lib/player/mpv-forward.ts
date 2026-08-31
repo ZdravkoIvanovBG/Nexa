@@ -5,7 +5,6 @@ import {
   type PlayerCapabilities,
   type PlayerSnapshot,
 } from "./bridge";
-import { isWindowsDesktop } from "@/lib/platform";
 import { subtitleDownloadArgs } from "./subtitle-load";
 
 export type ForwardingBridge = PlayerBridge & {
@@ -78,10 +77,6 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     },
     setVideoEq(name, value) {
       void set(name, value);
-    },
-    setAnime4kShaders(shaders) {
-      const sep = isWindowsDesktop() ? ";" : ":";
-      void set("glsl-shaders", shaders.filter(Boolean).join(sep));
     },
     async addSubtitle(url, lang, title, select, metadata) {
       try {

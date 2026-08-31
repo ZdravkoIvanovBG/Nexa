@@ -33,7 +33,7 @@ export function useSubtitleChoices(src: PlayerSrc) {
   const preferredLangs = useMemo(() => {
     const primary = settings.preferredSubLangs?.length
       ? settings.preferredSubLangs
-      : settings.preferredLanguages ?? [];
+      : (settings.preferredLanguages ?? []);
     const base = primary.length > 0 ? primary : ["English"];
     return isAnimeSrc(src) ? base : base.filter((l) => !isJapanese(l));
   }, [settings.preferredSubLangs, settings.preferredLanguages, src.meta.id]);
@@ -46,7 +46,7 @@ export function useSubtitleChoices(src: PlayerSrc) {
     void (async () => {
       let addons: Addon[] = [];
       try {
-        addons = await gatherSubtitleAddons(authKey);
+        addons = await gatherSubtitleAddons();
       } catch {
         addons = [];
       }

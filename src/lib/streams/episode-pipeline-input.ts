@@ -25,9 +25,9 @@ function embeddedStreams(meta: Meta, episode: PlayEpisode | undefined): Stream[]
       ? vids.find(
           (v) =>
             (v.season ?? null) === episode.season &&
-            ((v.episode ?? v.number) ?? null) === episode.episode,
+            (v.episode ?? v.number ?? null) === episode.episode,
         )
-      : vids.find((v) => v.id === meta.id) ?? (vids.length === 1 ? vids[0] : undefined);
+      : (vids.find((v) => v.id === meta.id) ?? (vids.length === 1 ? vids[0] : undefined));
   const raw = pick?.streams ?? [];
   return raw.map(
     (s) =>
@@ -51,7 +51,17 @@ export function buildEpisodePipelineInput(params: {
   strictMode: boolean;
   filterDisabled: boolean;
 }): PipelineInput {
-  const { meta, episode, imdbId, streamIds, addons, debrids, settings, strictMode, filterDisabled } = params;
+  const {
+    meta,
+    episode,
+    imdbId,
+    streamIds,
+    addons,
+    debrids,
+    settings,
+    strictMode,
+    filterDisabled,
+  } = params;
   const embedded = embeddedStreams(meta, episode);
   const addonNative = isAddonNativeMeta(meta);
   const requestType = addonNative
@@ -61,14 +71,11 @@ export function buildEpisodePipelineInput(params: {
       : meta.type === "series"
         ? "series"
         : "movie";
-  const animeReq = streamIds.some((id) => id.startsWith("kitsu:") || id.startsWith("mal:"));
-  const imdbEpAligned =
-    !animeReq || episode?.imdbEpisode == null || episode.episode === episode.imdbEpisode;
-  const effSeason = imdbEpAligned ? (episode?.imdbSeason ?? episode?.season) : episode?.season;
-  const effEpisode = imdbEpAligned ? (episode?.imdbEpisode ?? episode?.episode) : episode?.episode;
+  const effSeason = episode?.imdbSeason ?? episode?.season;
+  const effEpisode = episode?.imdbEpisode ?? episode?.episode;
   const prevGroup =
     episode && typeof effSeason === "number" && typeof effEpisode === "number" && effEpisode > 1
-      ? readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined
+      ? (readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined)
       : undefined;
   return {
     request: {
@@ -80,12 +87,11 @@ export function buildEpisodePipelineInput(params: {
       imdbId: imdbId ?? "",
       title: meta.name,
       year: parseInt(meta.releaseInfo ?? "", 10) || undefined,
-      season: animeReq && episode?.imdbSeason == null ? undefined : effSeason,
-      episode: animeReq && episode?.imdbEpisode == null ? episode?.episode : effEpisode,
+      season: effSeason,
+      episode: effEpisode,
     },
     addons,
     debrids,
-    isAnime: animeReq,
     presetStreams: embedded.length > 0 ? embedded : undefined,
     trust: {
       kind: episode ? "series" : meta.type === "series" ? "series" : "movie",
@@ -101,7 +107,6 @@ export function buildEpisodePipelineInput(params: {
       requirePreferredLanguage: strictMode && settings.requirePreferredLanguage,
       allowSeasonPacks: !strictMode,
       allowSizeOutliers: !strictMode,
-      isAnime: animeReq,
     },
     score: {
       activeDebrids: debrids.map((d) => d.slug),

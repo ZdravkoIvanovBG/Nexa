@@ -25,6 +25,7 @@
     "prepare": "vp config"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-router": "^1.170.18",
     "@tanstack/react-virtual": "^3.14.6",

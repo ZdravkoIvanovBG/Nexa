@@ -1,35 +1,20 @@
 import { useEffect, useRef } from "react";
-import { markAnimeWatching, syncAnimeProgress } from "@/lib/anilist/sync";
-import { markMalWatching, syncMalProgress } from "@/lib/mal/sync";
 import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
-import { isLocalUrl } from "@/lib/player/local-url";
 import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, subscribePlaybackClock } from "@/lib/player/playback-clock";
-import { useSettings } from "@/lib/settings";
 import type { PlayerSrc } from "@/lib/view";
-import { CLOUD_OK } from "@/lib/stremio";
 
 const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;
 const TASTE_MIN_SEC = 90;
 const WATCHED_RATIO = 0.85;
 const STUB_MAX_SEC = 150;
-
-const isAnimeId = (id: string) =>
-  id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
-
-const animeTrackId = (s: PlayerSrc): string | null => {
-  if (isAnimeId(s.meta.id)) return s.meta.id;
-  const ks = s.episode?.kitsuStreamId;
-  if (ks?.startsWith("kitsu:")) return ks.split(":").slice(0, 2).join(":");
-  return null;
-};
 
 export function useResumeAutosave(params: {
   src: PlayerSrc;
@@ -38,13 +23,8 @@ export function useResumeAutosave(params: {
   episode: number | undefined;
 }) {
   const { src, snap, season, episode } = params;
-  const { settings } = useSettings();
   const lastSavedRef = useRef(0);
   const taughtRef = useRef<Set<string>>(new Set());
-  const anilistAutoSyncRef = useRef(settings.anilistAutoSync);
-  anilistAutoSyncRef.current = settings.anilistAutoSync;
-  const malAutoSyncRef = useRef(settings.malAutoSync);
-  malAutoSyncRef.current = settings.malAutoSync;
   const latestRef = useRef({ src, snap, season, episode });
   latestRef.current = { src, snap, season, episode };
   const lastGoodPosRef = useRef(0);
@@ -79,7 +59,7 @@ export function useResumeAutosave(params: {
       savePlayback(id, { title: s.meta.name, parsedTitle: s.meta.name }, se, ep);
     }
     if (
-      (s.meta.type === "series" || s.meta.type === "anime" || isAnimeId(id)) &&
+      (s.meta.type === "series" || s.meta.type === "anime") &&
       typeof se === "number" &&
       typeof ep === "number" &&
       finished &&
@@ -93,10 +73,7 @@ export function useResumeAutosave(params: {
       });
       setManualWatched(id, se, ep, true);
     }
-    if (
-      (s.meta.type === "series" || s.meta.type === "movie") &&
-      (!CLOUD_OK.test(id) || isLocalUrl(s.url))
-    ) {
+    if (s.meta.type === "series" || s.meta.type === "movie") {
       saveLocalCw({
         id,
         type: s.meta.type,
@@ -112,19 +89,6 @@ export function useResumeAutosave(params: {
       });
     }
     if (pos < TASTE_MIN_SEC) return;
-    const trackId = animeTrackId(s);
-    if (anilistAutoSyncRef.current && trackId) {
-      void markAnimeWatching(trackId, s.meta.name);
-    }
-    if (malAutoSyncRef.current && trackId) {
-      void markMalWatching(trackId, s.meta.name);
-    }
-    if (finished && anilistAutoSyncRef.current && trackId) {
-      void syncAnimeProgress(trackId, ep, s.meta.name);
-    }
-    if (finished && malAutoSyncRef.current && trackId) {
-      void syncMalProgress(trackId, ep, s.meta.name);
-    }
     const kind = finished ? "watched" : "play";
     const key = `${id}|${kind}`;
     if (taughtRef.current.has(key)) return;

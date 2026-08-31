@@ -42,7 +42,6 @@ export function TogetherSummonToast() {
   function viewLabel(v: string): string {
     if (v === "home") return "Home";
     if (v === "discover") return "Discover";
-    if (v === "anime") return "Anime";
     if (v === "queue") return "My Library";
     return v;
   }

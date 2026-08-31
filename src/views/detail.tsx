@@ -8,15 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
-import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
-import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
-import { kitsuAnime } from "@/lib/providers/kitsu";
-import { stripFranchiseSuffix } from "@/lib/providers/jikan";
-import { peekCachedLogo, resolveLogo } from "@/lib/logo";
-import { useMalRating } from "@/lib/mal-rating";
-import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
-import { AnimeAwardsBlock } from "@/components/anime-awards-block";
+import { Check, Eye, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
 import { AwardsBlock } from "@/components/awards-block";
 import { BackToTop } from "@/components/back-to-top";
 import { PickCard } from "@/components/pick-card";
@@ -35,7 +27,7 @@ import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
 import { awardSummary, useAwards } from "@/lib/providers/wikidata";
-import { mergeBundledAwards } from "@/lib/awards-history";
+import { mergeBundledAwards, parseAwardYear } from "@/lib/awards-history";
 import {
   tmdbDetails,
   tmdbImdbId,
@@ -49,16 +41,11 @@ import { fetchParentalGuide, type ParentalGuide } from "@/lib/parental-guide";
 import { ParentalGuideHeroCard } from "./detail/parental-guide-section";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
-import {
-  CLOUD_OK,
-  cloudWriteId,
-  episodeFromVideoId,
-  libraryGetOne,
-  type LibraryItem,
-} from "@/lib/stremio";
+import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
+import { CLOUD_OK, cloudWriteId } from "@/lib/media-id";
+import { libraryGetOne } from "@/lib/stremio";
 import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watched";
 import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
-import { isDetectedAnime } from "@/lib/anime-detect";
 import {
   isMovieWatchedLocal,
   movieWatchedVersion,
@@ -78,6 +65,13 @@ import { playLocalAware } from "@/lib/local-library/playback";
 import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
 import { markMovieWatched } from "@/lib/mark-watched";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
+import {
+  addToWatching,
+  markWatched,
+  removeFromWatching,
+  removeFromWatched,
+  useTrackingState,
+} from "@/lib/library-tracking";
 import { openUrl } from "@/lib/window";
 import { profileFromDetail, trackEvent } from "@/lib/discover";
 import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
@@ -87,8 +81,6 @@ import { useT } from "@/lib/i18n";
 import { queryKeys } from "@/lib/query";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
 import type { ListItemInput } from "@/lib/custom-lists";
-import { AddToAnilistButton } from "./detail/add-to-anilist-button";
-import { AddToMalButton } from "@/components/mal/add-to-mal-button";
 import { AddToSimklButton } from "./detail/add-to-simkl-button";
 import { getLocalCache, saveLocalCache } from "@/lib/simkl/activities";
 import { simklRequest } from "@/lib/simkl/client";
@@ -110,19 +102,6 @@ import { EpisodeDownloadButton } from "./detail/episode-download-button";
 import { HeroBackdrop } from "./detail/hero-backdrop";
 import { isTitleUpcoming } from "./detail/helpers";
 import { HeroAwardsCorner } from "./detail/hero-awards";
-import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
-import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
-
-function animeAwardLookupName(
-  releaseYear: number | undefined,
-  ...candidates: (string | null | undefined)[]
-): string | null {
-  for (const c of candidates) {
-    if (!c) continue;
-    if (findAnyAwardWins(c, releaseYear).length > 0) return c;
-  }
-  return null;
-}
 import { Pill } from "./detail/pill";
 import { Credit } from "./detail/credit";
 import { TitlePlate } from "./detail/title-plate";
@@ -137,36 +116,14 @@ import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
 import { SeriesEpisodes } from "./detail/series-episodes";
 import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
-import { AnimeEpisodes } from "./detail/anime-episodes";
 import { EpisodeGridSkeleton } from "./detail/episode-grid-skeleton";
-import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
 import { TraktComments } from "./detail/trakt-comments";
 import { LetterboxdPanel } from "./detail/letterboxd-panel";
 import { LetterboxdReviews } from "./detail/letterboxd-reviews";
-import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
-
-function parseYear(v: string | number | undefined | null): number {
-  if (v == null) return 0;
-  const n = Number(String(v).slice(0, 4));
-  return Number.isFinite(n) && n > 1900 ? n : 0;
-}
-
-async function kitsuYearVerdict(
-  kitsuId: number,
-  releaseInfo: string | undefined,
-  detailYear: string | undefined,
-): Promise<"ok" | "reject" | "wait"> {
-  const showYear = parseYear(releaseInfo) || parseYear(detailYear);
-  if (!showYear) return "wait";
-  const ka = await kitsuAnime(kitsuId).catch(() => null);
-  const animeYear = parseYear(ka?.year);
-  if (!animeYear) return "ok";
-  return Math.abs(animeYear - showYear) <= 3 ? "ok" : "reject";
-}
 
 if (typeof document !== "undefined") {
   const __id = "harbor-fade-in-up-style";
@@ -198,20 +155,6 @@ export function DetailView({
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const [detail, setDetail] = useState<TmdbDetail | null>(null);
-  const [animeEpisodes, setAnimeEpisodes] = useState<KitsuEpisode[]>([]);
-  const [franchise, setFranchise] = useState<FranchiseEntry[]>([]);
-  const [animeCanonicalId, setAnimeCanonicalId] = useState<string | null>(null);
-  const [ownLogo, setOwnLogo] = useState<string | undefined>(() =>
-    peekCachedLogo(
-      settings.tmdbKey,
-      { id: meta.id, type: meta.type, name: meta.name },
-      { preferOwn: true },
-    ),
-  );
-  const [detectedKitsu, setDetectedKitsu] = useState<number | null>(null);
-  const [detectingAnime, setDetectingAnime] = useState(false);
-  const failedKitsu = useRef<number | null>(null);
-  const [streamers, setStreamers] = useState<KitsuStreamer[]>([]);
   const [backdrops, setBackdrops] = useState<string[]>([]);
   const [backdropIdx, setBackdropIdx] = useState(0);
   const pinnedBackdrop = useTitleBackdrop(meta.id);
@@ -246,6 +189,7 @@ export function DetailView({
   const inLocalLibrary = useInLocalLibrary(meta.id, [detail?.imdbId]);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
+  const tracking = useTrackingState(meta.id);
   const inSession = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
   useScrollMemory(`meta:${meta.id}`, scrollRef);
 
@@ -265,18 +209,6 @@ export function DetailView({
           (k) => cache.imdbToSimkl[k] === simklId,
         );
         if (imdbKey) resolvedId = imdbKey;
-
-        if (!resolvedId) {
-          const kitsuKey = Object.keys(cache.kitsuToSimkl).find(
-            (k) => cache.kitsuToSimkl[k] === simklId,
-          );
-          if (kitsuKey) resolvedId = `kitsu:${kitsuKey}`;
-        }
-
-        if (!resolvedId) {
-          const malKey = Object.keys(cache.malToSimkl).find((k) => cache.malToSimkl[k] === simklId);
-          if (malKey) resolvedId = `mal:${malKey}`;
-        }
 
         if (!resolvedId) {
           const tmdbKey = Object.keys(cache.tmdbToSimkl).find(
@@ -304,10 +236,6 @@ export function DetailView({
             const ids = data.ids;
             if (ids.imdb) {
               resolvedId = ids.imdb;
-            } else if (ids.kitsu) {
-              resolvedId = `kitsu:${ids.kitsu}`;
-            } else if (ids.mal) {
-              resolvedId = `mal:${ids.mal}`;
             } else if (ids.tmdb) {
               const tmdbType = mediaType === "movie" ? "movie" : "tv";
               resolvedId = `tmdb:${tmdbType}:${ids.tmdb}`;
@@ -315,8 +243,6 @@ export function DetailView({
 
             if (resolvedId && cache) {
               if (ids.imdb) cache.imdbToSimkl[ids.imdb] = simklId;
-              if (ids.kitsu) cache.kitsuToSimkl[String(ids.kitsu)] = simklId;
-              if (ids.mal) cache.malToSimkl[String(ids.mal)] = simklId;
               if (ids.tmdb) {
                 const tmdbType = mediaType === "movie" ? "movie" : "tv";
                 cache.tmdbToSimkl[`${tmdbType}:${ids.tmdb}`] = simklId;
@@ -350,12 +276,6 @@ export function DetailView({
     };
   }, [meta.id, meta.type, setNavStack]);
 
-  const idAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
-  const isAnime = idAnime || detectedKitsu != null;
-  const stickyAwardName = useRef<string | null>(null);
-  useEffect(() => {
-    stickyAwardName.current = null;
-  }, [meta.id]);
   useEffect(() => {
     setHarborImdbRating(null);
     const tt = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
@@ -380,13 +300,6 @@ export function DetailView({
   useEffect(() => {
     let cancelled = false;
     setDetail(null);
-    setAnimeEpisodes([]);
-    setFranchise([]);
-    setAnimeCanonicalId(null);
-    setDetectedKitsu(null);
-    setDetectingAnime(false);
-    failedKitsu.current = null;
-    setStreamers([]);
     setBackdrops([]);
     setBackdropIdx(0);
     setCinemetaFull(meta.videos && meta.videos.length > 0 ? meta : null);
@@ -402,54 +315,6 @@ export function DetailView({
       cancelled = true;
     };
   }, [meta.id, meta.type, addonNative]);
-
-  useEffect(() => {
-    if (idAnime || detectedKitsu != null || addonNative) return;
-    const tmdbTv = meta.id.startsWith("tmdb:tv:") ? Number(meta.id.slice(8)) : null;
-    const imdb = meta.id.startsWith("tt")
-      ? meta.id
-      : detail?.imdbId?.startsWith("tt")
-        ? detail.imdbId
-        : null;
-    if (tmdbTv == null && !imdb) return;
-    let cancelled = false;
-    setDetectingAnime(true);
-    (async () => {
-      let k = tmdbTv != null && Number.isFinite(tmdbTv) ? await tmdbTvToKitsu(tmdbTv) : null;
-      if (k == null && imdb) k = await imdbToKitsu(imdb);
-      if (cancelled) return;
-      if (k != null && k !== failedKitsu.current) {
-        const verdict = await kitsuYearVerdict(k, meta.releaseInfo, detail?.year);
-        if (cancelled) return;
-        if (verdict === "ok") setDetectedKitsu(k);
-        else if (verdict === "reject") failedKitsu.current = k;
-      }
-      setDetectingAnime(false);
-    })().catch(() => {
-      if (!cancelled) setDetectingAnime(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    idAnime,
-    detectedKitsu,
-    addonNative,
-    meta.id,
-    detail?.imdbId,
-    detail?.year,
-    meta.releaseInfo,
-  ]);
-
-  useEffect(() => {
-    if (idAnime || detectedKitsu == null) return;
-    const showYear = parseYear(meta.releaseInfo);
-    const loadedYear = parseYear(detail?.year);
-    if (showYear && loadedYear && Math.abs(showYear - loadedYear) > 3) {
-      failedKitsu.current = detectedKitsu;
-      setDetectedKitsu(null);
-    }
-  }, [idAnime, detectedKitsu, detail?.year, meta.releaseInfo]);
 
   useEffect(() => {
     if (meta.type !== "series") return;
@@ -495,7 +360,7 @@ export function DetailView({
     if (/^(tt\d|tmdb:|kitsu:|mal:|anilist:|anidb:|simkl:)/.test(meta.id)) return;
     if (cinemetaFull?.videos && cinemetaFull.videos.length > 0) return;
     let cancelled = false;
-    resolveMeta(authKey, narrowMediaType(meta.type), meta.id)
+    resolveMeta(narrowMediaType(meta.type), meta.id)
       .then((full) => {
         if (cancelled || !full?.videos?.length) return;
         setCinemetaFull(full);
@@ -565,7 +430,7 @@ export function DetailView({
     const se = episodeFromVideoId(st.video_id);
     const season = st.season ?? se?.season;
     const episode = st.episode ?? se?.episode;
-    if (!isAnime && libraryItem.type === "series" && season && episode) {
+    if (libraryItem.type === "series" && season && episode) {
       const local = readResumeEntry(meta.id, season, episode);
       if (!local || stremioT > local.t) {
         saveResumeMs(meta.id, st.timeOffset, season, episode);
@@ -575,7 +440,7 @@ export function DetailView({
           );
       }
     }
-  }, [libraryItem, meta.id, isAnime]);
+  }, [libraryItem, meta.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -584,58 +449,21 @@ export function DetailView({
       return;
     }
     setLoading(true);
-    const work = isAnime
-      ? animeDetails(
-          settingsRef.current,
-          detectedKitsu != null ? { ...meta, id: `kitsu:${detectedKitsu}` } : meta,
-        ).then((res) => {
-          if (cancelled) return null;
-          if (!res) {
-            if (detectedKitsu != null) {
-              failedKitsu.current = detectedKitsu;
-              setDetectedKitsu(null);
-            }
-            return null;
-          }
-          setAnimeEpisodes(res.episodes);
-          setFranchise([]);
-          void res.franchisePromise
-            .then((fr) => {
-              if (!cancelled) setFranchise(fr);
-            })
-            .catch(() => {});
-          void res.enrichPromise
-            .then((eps) => {
-              if (!cancelled) setAnimeEpisodes([...eps]);
-            })
-            .catch(() => {});
-          void res.extrasPromise
-            .then((patch) => {
-              if (cancelled) return;
-              setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
-              if (patch.gallery?.backdrops?.length) setBackdrops(patch.gallery.backdrops);
-            })
-            .catch(() => {});
-          setAnimeCanonicalId(`kitsu:${res.kitsuId}`);
-          setStreamers(res.streamers);
-          setBackdrops(res.backdrops);
-          return res.detail;
-        })
-      : queryClient.fetchQuery({
-          queryKey: queryKeys.detail.data(
-            meta.id,
-            meta.type,
-            settingsRef.current.tmdbKey,
-            settingsRef.current.tmdbLanguage,
-          ),
-          queryFn: () =>
-            settingsRef.current.tmdbKey
-              ? tmdbDetails(settingsRef.current.tmdbKey, meta).then(
-                  (data) => data ?? cinemetaDetails(meta),
-                )
-              : cinemetaDetails(meta),
-          staleTime: 30 * 60_000,
-        });
+    const work = queryClient.fetchQuery({
+      queryKey: queryKeys.detail.data(
+        meta.id,
+        meta.type,
+        settingsRef.current.tmdbKey,
+        settingsRef.current.tmdbLanguage,
+      ),
+      queryFn: () =>
+        settingsRef.current.tmdbKey
+          ? tmdbDetails(settingsRef.current.tmdbKey, meta).then(
+              (data) => data ?? cinemetaDetails(meta),
+            )
+          : cinemetaDetails(meta),
+      staleTime: 30 * 60_000,
+    });
     work
       .then((d) => {
         if (cancelled) return;
@@ -656,9 +484,7 @@ export function DetailView({
     settings.fanartKey,
     settings.tvdbKey,
     settings.tmdbLanguage,
-    isAnime,
     addonNative,
-    detectedKitsu,
     queryClient,
   ]);
 
@@ -711,7 +537,7 @@ export function DetailView({
 
   useEffect(() => {
     setWatchProviders([]);
-    if (isAnime || !settings.tmdbKey || !detail) return;
+    if (!settings.tmdbKey || !detail) return;
     const k = detail.kind;
     if ((k !== "movie" && k !== "tv") || !Number.isFinite(Number(detail.id))) return;
     let cancelled = false;
@@ -723,7 +549,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [detail, isAnime, settings.tmdbKey, settings.region]);
+  }, [detail, settings.tmdbKey, settings.region]);
 
   useEffect(() => {
     setParentalGuide(undefined);
@@ -745,8 +571,7 @@ export function DetailView({
     };
   }, [detail?.imdbId, meta.id, meta.type]);
 
-  const rawTitle = detail?.title ?? meta.name;
-  const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
+  const title = detail?.title ?? meta.name;
   const listSeed: ListItemInput = {
     id: meta.id,
     type: meta.type,
@@ -779,10 +604,7 @@ export function DetailView({
     return () => window.clearInterval(id);
   }, [carouselOn, backdropPool.length]);
   const backdrop = (carouselOn ? backdropPool[backdropIdx] : backdropPool[0]) || primaryBackdrop;
-  const stableLogo = useStableAsset(
-    isAnime ? [ownLogo, detail?.logo, meta.logo] : [detail?.logo, meta.logo],
-    meta.id,
-  );
+  const stableLogo = useStableAsset([detail?.logo, meta.logo], meta.id);
   const logo = pinnedLogo || stableLogo;
   const year = detail?.year ?? meta.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
@@ -791,12 +613,7 @@ export function DetailView({
     scores?.imdbRating ??
     cinemetaRating ??
     (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
-  const malRating = useMalRating(
-    isAnime
-      ? { ...meta, id: animeCanonicalId ?? meta.id, imdbRating: detail?.rating ?? meta.imdbRating }
-      : undefined,
-  );
-  const rating = isAnime ? malRating : (imdbRatingValue ?? detail?.rating ?? meta.imdbRating);
+  const rating = imdbRatingValue ?? detail?.rating ?? meta.imdbRating;
   const runtime = detail?.runtime;
   const genres = detail?.genres ?? meta.genres ?? [];
   const recommendations = detail?.recommendations ?? [];
@@ -809,23 +626,9 @@ export function DetailView({
   const heroAwardSummary = awardSummary(awards).slice(0, 2);
   const awardsInDescription = (settings.theme.preset as string) === "elegantfin";
   const renderHeroAwards = () => {
-    if (isAnime) {
-      const animeName =
-        animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-        stickyAwardName.current;
-      if (animeName) {
-        stickyAwardName.current = animeName;
-        return <CrunchyrollAwardsCorner name={animeName} year={releaseYearNum} inline />;
-      }
-    }
     if (heroAwardSummary.length > 0) {
       return <HeroAwardsCorner summary={heroAwardSummary} inline />;
     }
-    const resolved =
-      animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-      stickyAwardName.current;
-    if (resolved) stickyAwardName.current = resolved;
-    if (resolved) return <CrunchyrollAwardsCorner name={resolved} year={releaseYearNum} inline />;
     return null;
   };
   const awardsNode = renderHeroAwards();
@@ -833,7 +636,6 @@ export function DetailView({
   const heroAwardsCorner = awardsInDescription ? null : awardsNode;
   const isSeries = detail?.kind != null ? detail.kind === "tv" : meta.type === "series";
   const traktResolution = useMemo((): IdResolution => {
-    if (isAnime) return { ok: false, reason: "anime" };
     const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
     const tmdbId = detail?.id;
     if (isSeries && (imdbId || (tmdbId && detail?.kind === "tv"))) {
@@ -849,7 +651,7 @@ export function DetailView({
       return { ok: true, target: { kind: "movie", ids } } as IdResolution;
     }
     return stremioIdToTraktTarget(meta.id);
-  }, [meta.id, isSeries, isAnime, detail?.imdbId, detail?.id, detail?.kind]);
+  }, [meta.id, isSeries, detail?.imdbId, detail?.id, detail?.kind]);
   const playMeta: Meta = {
     ...meta,
     name: title,
@@ -860,26 +662,6 @@ export function DetailView({
     behaviorHints: meta.behaviorHints ?? cinemetaFull?.behaviorHints,
     videos: meta.videos ?? cinemetaFull?.videos,
   };
-
-  useEffect(() => {
-    if (!isAnime) return;
-    const seasonMeta: Meta = {
-      id: animeCanonicalId ?? meta.id,
-      type: meta.type,
-      name: title || meta.name,
-    };
-    const seed = peekCachedLogo(settings.tmdbKey, seasonMeta, { preferOwn: true });
-    if (seed) setOwnLogo(seed);
-    let cancelled = false;
-    resolveLogo(settings.tmdbKey, seasonMeta, { preferOwn: true })
-      .then((u) => {
-        if (!cancelled && u) setOwnLogo(u);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isAnime, animeCanonicalId, meta.id, meta.type, meta.name, title, settings.tmdbKey]);
 
   useSyncExternalStore(subscribeMovieWatched, movieWatchedVersion, movieWatchedVersion);
   const watchedMark =
@@ -903,7 +685,7 @@ export function DetailView({
   );
   useEffect(() => {
     if (seriesWatchedVer === prevSeriesWatchedVerRef.current) return;
-    if (!authKey || !isSeries || isAnime || isDetectedAnime(meta.id)) return;
+    if (!authKey || !isSeries) return;
     const imdb = meta.id.startsWith("tt")
       ? meta.id
       : detail?.imdbId?.startsWith("tt")
@@ -948,14 +730,12 @@ export function DetailView({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesWatchedVer, authKey, isSeries, isAnime, cinemetaFull?.videos, detail?.imdbId, meta.id]);
+  }, [seriesWatchedVer, authKey, isSeries, cinemetaFull?.videos, detail?.imdbId, meta.id]);
 
   const upcoming = !loading && isTitleUpcoming(detail, meta);
-  const currentFranchiseId = animeCanonicalId ?? meta.id;
 
   const lastPlay = useMemo(() => {
     if (episodeHint) return episodeHint;
-    if (isAnime) return lastPlayedEpisode(meta.id);
     const candidates: Array<{ season: number; episode: number; t: number }> = [];
     const ids = Array.from(
       new Set(
@@ -1000,42 +780,51 @@ export function DetailView({
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
-  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, isAnime, episodeHint]);
+  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, episodeHint]);
+
+  const toggleTierWatched = useCallback(() => {
+    if (tracking.watched) {
+      removeFromWatched(meta.id);
+      return;
+    }
+    markWatched(listSeed);
+  }, [tracking.watched, meta.id, listSeed]);
+
+  const toggleWatching = useCallback(() => {
+    if (tracking.watching) {
+      removeFromWatching(meta.id);
+      return;
+    }
+    addToWatching(listSeed, {
+      season: lastPlay?.season,
+      episode: lastPlay?.episode,
+      totalSeasons: detail?.numberOfSeasons,
+      status: detail?.status,
+      yearLabel: meta.releaseInfo,
+    });
+  }, [
+    tracking.watching,
+    meta.id,
+    meta.releaseInfo,
+    listSeed,
+    lastPlay,
+    detail?.numberOfSeasons,
+    detail?.status,
+  ]);
 
   useEffect(() => {
     if (loading) return;
     let targetEp: PlayEpisode | undefined;
     if (isSeries) {
-      if (isAnime) {
-        const wantedEp = lastPlay
-          ? animeEpisodes.find(
-              (e) => (e.seasonNumber || 1) === lastPlay.season && e.number === lastPlay.episode,
-            )
-          : animeEpisodes[0];
-        if (wantedEp) {
-          targetEp = {
-            season: wantedEp.seasonNumber || 1,
-            episode: wantedEp.number,
-            name: wantedEp.title,
-            still: wantedEp.thumbnail ?? undefined,
-            overview: wantedEp.synopsis || undefined,
-            kitsuStreamId: wantedEp.streamId,
-            imdbId: wantedEp.imdbId,
-            imdbSeason: wantedEp.imdbSeason,
-            imdbEpisode: wantedEp.imdbEpisode,
-          };
-        }
-      } else {
-        const lp = lastPlay || { season: 1, episode: 1 };
-        targetEp = { season: lp.season, episode: lp.episode };
-        const v = cinemetaFull?.videos?.find(
-          (x) => x.season === lp.season && x.episode === lp.episode,
-        );
-        if (v) targetEp.imdbId = v.id;
-      }
+      const lp = lastPlay || { season: 1, episode: 1 };
+      targetEp = { season: lp.season, episode: lp.episode };
+      const v = cinemetaFull?.videos?.find(
+        (x) => x.season === lp.season && x.episode === lp.episode,
+      );
+      if (v) targetEp.imdbId = v.id;
     }
     prefetchSegments(playMeta, targetEp);
-  }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
+  }, [loading, isSeries, lastPlay, cinemetaFull?.videos, playMeta]);
 
   const smartPlay = useCallback(
     async (forcePicker = false) => {
@@ -1047,7 +836,7 @@ export function DetailView({
           stream();
           return;
         }
-        if (isSeries && !isAnime && settings.localPlaybackMode !== "stream") {
+        if (isSeries && settings.localPlaybackMode !== "stream") {
           const tmdbMatch = meta.id.match(/^tmdb:tv:(\d+)$/);
           const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
           const seriesImdb = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
@@ -1078,29 +867,6 @@ export function DetailView({
         });
       };
       if (!isSeries) {
-        launch(undefined);
-        return;
-      }
-      if (isAnime) {
-        const wantedEp = lastPlay
-          ? animeEpisodes.find(
-              (e) => (e.seasonNumber || 1) === lastPlay.season && e.number === lastPlay.episode,
-            )
-          : animeEpisodes[0];
-        if (wantedEp) {
-          launch({
-            season: wantedEp.seasonNumber || 1,
-            episode: wantedEp.number,
-            name: wantedEp.title,
-            still: wantedEp.thumbnail ?? undefined,
-            overview: wantedEp.synopsis || undefined,
-            kitsuStreamId: wantedEp.streamId,
-            imdbId: wantedEp.imdbId,
-            imdbSeason: wantedEp.imdbSeason,
-            imdbEpisode: wantedEp.imdbEpisode,
-          });
-          return;
-        }
         launch(undefined);
         return;
       }
@@ -1139,8 +905,6 @@ export function DetailView({
     },
     [
       isSeries,
-      isAnime,
-      animeEpisodes,
       lastPlay,
       openPicker,
       openPlayer,
@@ -1201,13 +965,11 @@ export function DetailView({
       )}
       <HeroRatings
         rating={rating}
-        isAnime={isAnime}
         scores={scores}
         mdblist={mdblist}
         imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
         mediaType={meta.type === "movie" ? "movie" : "show"}
         ratingSource={imdbRatingValue != null ? "imdb" : "tmdb"}
-        animeImdbRating={harborImdbRating}
         onOpenUrl={openUrl}
       />
       {runtime && (
@@ -1215,7 +977,7 @@ export function DetailView({
           onClick={() => {
             if (isSeries) {
               document
-                .querySelector("[data-episodes], [data-anime-episodes]")
+                .querySelector("[data-episodes]")
                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
               return;
             }
@@ -1305,7 +1067,7 @@ export function DetailView({
 
           <div className="absolute inset-x-0 bottom-0 px-12 pb-14">
             <div className={awardsInDescription ? "max-w-3xl" : undefined}>
-              {tagline && !loading && !detectingAnime && (
+              {tagline && !loading && (
                 <p
                   className={`mb-4 text-[14px] font-medium uppercase tracking-[0.2em] ${
                     awardsInDescription
@@ -1387,21 +1149,28 @@ export function DetailView({
                     )}
                   </button>
                 )}
-                {actionStage < 2 && isAnime && (
-                  <AddToAnilistButton
-                    harborId={animeCanonicalId ?? meta.id}
-                    title={title || meta.name}
-                  />
-                )}
-                {actionStage < 2 && isAnime && (
-                  <AddToMalButton
-                    harborId={animeCanonicalId ?? meta.id}
-                    title={title || meta.name}
-                  />
+                {actionStage < 2 && (
+                  <button
+                    type="button"
+                    onClick={toggleTierWatched}
+                    title={
+                      tracking.watched
+                        ? t("Watched. Rank it in your tier list.")
+                        : t("Mark as watched and add it to your tier list.")
+                    }
+                    className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98] ${
+                      tracking.watched
+                        ? "border-accent/55 bg-accent/15 text-accent hover:bg-accent/22"
+                        : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
+                    }`}
+                  >
+                    <Check size={18} strokeWidth={2.4} />
+                    {tracking.watched ? t("Watched") : t("Mark as watched")}
+                  </button>
                 )}
                 {actionStage < 2 && (
                   <AddToSimklButton
-                    harborId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
+                    harborId={meta.id}
                     title={title || meta.name}
                     type={meta.type === "movie" ? "movie" : "series"}
                   />
@@ -1425,6 +1194,11 @@ export function DetailView({
                     watchedMark={watchedMark}
                     onWatched={markThisMovieWatched}
                     showSync={actionStage >= 2}
+                    isTierWatched={tracking.watched}
+                    onToggleTierWatched={toggleTierWatched}
+                    showWatching={isSeries}
+                    isWatching={tracking.watching}
+                    onToggleWatching={toggleWatching}
                     listItem={listSeed}
                     inWatchlist={inWatchlist}
                     onToggleWatchlist={() =>
@@ -1437,10 +1211,9 @@ export function DetailView({
                       })
                     }
                     simkl={{
-                      harborId: isAnime ? (animeCanonicalId ?? meta.id) : meta.id,
+                      harborId: meta.id,
                       type: meta.type === "movie" ? "movie" : "series",
                     }}
-                    anilist={isAnime ? { harborId: animeCanonicalId ?? meta.id } : null}
                   />
                 ) : (
                   <>
@@ -1499,6 +1272,23 @@ export function DetailView({
                         <Check size={20} strokeWidth={2.4} />
                       </button>
                     )}
+                    {isSeries && (
+                      <button
+                        type="button"
+                        onClick={toggleWatching}
+                        aria-label={
+                          tracking.watching ? t("Stop tracking progress") : t("Track progress")
+                        }
+                        title={tracking.watching ? t("Currently Watching") : t("Track progress")}
+                        className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
+                          tracking.watching
+                            ? "border-accent/55 bg-accent/15 text-accent hover:bg-accent/22"
+                            : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
+                        }`}
+                      >
+                        <Eye size={20} strokeWidth={1.9} />
+                      </button>
+                    )}
                     {trailerCandidate && (
                       <button
                         type="button"
@@ -1519,11 +1309,9 @@ export function DetailView({
                     onClick={promoteMetaToRoot}
                     className="flex h-12 items-center gap-2 rounded-full border border-edge bg-canvas/80 px-5 text-[14px] font-medium text-ink-muted transition-colors hover:border-ink-subtle hover:bg-canvas/95 hover:text-ink"
                   >
-                    {meta.type === "series" || meta.type === "tv"
+                    {meta.type === "series" || meta.type === "tv" || meta.type === "anime"
                       ? t("Open in TV Shows")
-                      : meta.type === "anime"
-                        ? t("Open in Anime")
-                        : t("Open in Movies")}
+                      : t("Open in Movies")}
                   </button>
                 )}
               </div>
@@ -1548,42 +1336,15 @@ export function DetailView({
             </div>
           </div>
         )}
-        {loading && (meta.type === "series" || isAnime) && <EpisodeGridSkeleton />}
+        {loading && meta.type === "series" && <EpisodeGridSkeleton />}
 
-        {isAnime && streamers.length > 0 && (
-          <FadeInUp>
-            <StreamingLinks streamers={streamers} />
-          </FadeInUp>
-        )}
-
-        {!isAnime && watchProviders.length > 0 && (
+        {watchProviders.length > 0 && (
           <FadeInUp>
             <WatchOn providers={watchProviders} />
           </FadeInUp>
         )}
 
-        {!liveContext &&
-          detail &&
-          isAnime &&
-          (animeEpisodes.length > 1 || franchise.length > 1) && (
-            <FadeInUp>
-              <AnimeEpisodes
-                meta={playMeta}
-                episodes={animeEpisodes}
-                franchise={franchise}
-                currentId={currentFranchiseId}
-                scrollRef={scrollRef}
-                trackId={animeCanonicalId ?? undefined}
-                imdbId={
-                  detail.imdbId ??
-                  animeEpisodes.find((e) => e.imdbId)?.imdbId ??
-                  (meta.id.startsWith("tt") ? meta.id : null)
-                }
-              />
-            </FadeInUp>
-          )}
-
-        {!liveContext && detail && !isAnime && isSeries && detail.seasons.length > 0 && (
+        {!liveContext && detail && isSeries && detail.seasons.length > 0 && (
           <FadeInUp>
             <SeriesEpisodes
               meta={playMeta}
@@ -1603,7 +1364,6 @@ export function DetailView({
         {!liveContext &&
           !loading &&
           (!detail || detail.seasons.length === 0) &&
-          !isAnime &&
           (isSeries || (addonNative && (meta.type === "channel" || meta.type === "tv"))) &&
           cinemetaFull?.videos &&
           (addonNative
@@ -1719,23 +1479,6 @@ export function DetailView({
               node: <MediaGallery detail={detail} title={title} logo={logo} metaId={meta.id} />,
             });
           }
-          if (isAnime) {
-            railSections.push({
-              key: "animeAwards",
-              label: t("Awards"),
-              minHeight: 160,
-              node: (
-                <AnimeAwardsBlock
-                  name={
-                    animeAwardLookupName(releaseYearNum, title, meta.name, detail?.title) ??
-                    stickyAwardName.current ??
-                    title
-                  }
-                  year={releaseYearNum}
-                />
-              ),
-            });
-          }
           if (detail && awards) {
             railSections.push({
               key: "awards",
@@ -1749,10 +1492,10 @@ export function DetailView({
               key: "info",
               label: t("Information"),
               minHeight: 200,
-              node: <InfoBlock detail={detail} isAnime={isAnime} />,
+              node: <InfoBlock detail={detail} />,
             });
           }
-          if (!isAnime && settings.showTraktComments === true) {
+          if (settings.showTraktComments === true) {
             railSections.push({
               key: "traktComments",
               label: t("Comments"),
@@ -1760,38 +1503,28 @@ export function DetailView({
               node: <TraktComments resolution={traktResolution} />,
             });
           }
-          if (isAnime && settings.showAnilistComments === true) {
-            railSections.push({
-              key: "anilistComments",
-              label: t("AniList Comments"),
-              minHeight: 120,
-              node: <AnilistComments harborId={animeCanonicalId ?? meta.id} />,
-            });
-          }
-          if (!isAnime) {
-            railSections.push({
-              key: "letterboxdPanel",
-              label: t("Letterboxd"),
-              minHeight: 120,
-              node: (
-                <LetterboxdPanel
-                  meta={meta}
-                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-                />
-              ),
-            });
-            railSections.push({
-              key: "letterboxdReviews",
-              label: t("Letterboxd Reviews"),
-              minHeight: 120,
-              node: (
-                <LetterboxdReviews
-                  meta={meta}
-                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
-                />
-              ),
-            });
-          }
+          railSections.push({
+            key: "letterboxdPanel",
+            label: t("Letterboxd"),
+            minHeight: 120,
+            node: (
+              <LetterboxdPanel
+                meta={meta}
+                imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+              />
+            ),
+          });
+          railSections.push({
+            key: "letterboxdReviews",
+            label: t("Letterboxd Reviews"),
+            minHeight: 120,
+            node: (
+              <LetterboxdReviews
+                meta={meta}
+                imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+              />
+            ),
+          });
           if (railSections.length === 0) return null;
           const railKeys = railSections.map((s) => s.key);
           const persist = (next: DetailCustomization) => {
@@ -1836,7 +1569,7 @@ export function DetailView({
           );
         })()}
 
-        {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
+        {!loading && !detail && !addonNative && !settings.tmdbKey && (
           <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}
           </div>

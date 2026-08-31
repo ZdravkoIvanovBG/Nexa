@@ -1,5 +1,6 @@
 import type { Meta } from "@/lib/cinemeta";
-import { libraryGetOne, libraryPut, type LibraryItem } from "@/lib/stremio";
+import type { LibraryItem } from "@/lib/library-item";
+import { libraryGetOne, libraryPut } from "@/lib/stremio";
 import { encodeWatchedEpisodes } from "@/lib/stremio-watched";
 
 type CinemetaVideo = NonNullable<Meta["videos"]>[number];

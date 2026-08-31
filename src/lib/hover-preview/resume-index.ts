@@ -1,7 +1,7 @@
 import type { Meta } from "../cinemeta";
 import { lastPlayedEpisode, readResumeEntry } from "../resume";
 import { tmdbImdbCached } from "../providers/tmdb";
-import { episodeFromVideoId, type LibraryItem } from "../stremio";
+import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
 import { FRESH_FRACTION, RESUME_MEMO_TTL_MS } from "./timing";
 
 export type PreviewResume = {

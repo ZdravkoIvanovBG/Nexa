@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { Anime4kIndicator } from "@/components/player/anime4k-indicator";
 import { SvpIndicator } from "@/components/player/svp-indicator";
 import { StatsOverlay } from "@/components/player/stats-overlay";
 import { SubStyleBar } from "@/components/player/sub-style-bar";
@@ -61,13 +60,6 @@ export const StageOverlays = memo(function StageOverlays({
         />
       )}
       {showStats && !pipMode && <StatsOverlay snap={snap} engine={engine} />}
-      {!pipMode && (
-        <Anime4kIndicator
-          engine={engine}
-          chromeVisible={chromeVisible}
-          suppressed={topVolumeShowing}
-        />
-      )}
       {!pipMode && (
         <SvpIndicator engine={engine} chromeVisible={chromeVisible} suppressed={topVolumeShowing} />
       )}

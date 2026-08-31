@@ -1,4 +1,4 @@
-import type { LibraryItem } from "@/lib/stremio";
+import type { LibraryItem } from "@/lib/library-item";
 import { setItemWithRecovery } from "@/lib/storage-recovery";
 
 const KEY = "harbor.manualwatched.v1";

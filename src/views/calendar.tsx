@@ -1,5 +1,5 @@
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   applyCalendarFilter,
   groupByDate,
@@ -8,89 +8,47 @@ import {
   type CalendarItem,
 } from "@/lib/calendar";
 import { CalendarSkeleton } from "./calendar/calendar-skeleton";
-import { CustomCalendarBar } from "./calendar/custom-bar";
 import { useCalendarData } from "./calendar/use-calendar-data";
 import { useAuth } from "@/lib/auth";
-import { library, type LibraryItem } from "@/lib/stremio";
 import { useSettings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
-import { useSimkl } from "@/lib/simkl/provider";
 import { useScrollMemory, useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
-import { AuthModal } from "@/components/auth-modal";
 import { DayModal } from "./calendar/day-modal";
-import { EmptyState, ErrorState, NoKeyState, NotSignedInState } from "./calendar/empty-states";
+import { EmptyState, ErrorState } from "./calendar/empty-states";
 import { MonthGrid } from "./calendar/month-grid";
-import { SourceSwitcher } from "./calendar/source-switcher";
 import {
-  buildLibraryNameSet,
   buildMonthCells,
   calendarEpisodeHint,
   calendarToMeta,
   FILTERS,
   MONTH_NAMES,
-  normalizeName,
 } from "./calendar/utils";
 
 export function CalendarView() {
   const t = useT();
   const { settings, update } = useSettings();
   const { authKey } = useAuth();
-  const [showAuth, setShowAuth] = useState(false);
-  const { openSettings, openMeta } = useView();
+  const { openMeta } = useView();
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [filter, setFilter] = useState<CalendarFilter>("all");
-  const [watchlistOnly, setWatchlistOnly] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   useScrollMemory("calendar", scrollRef);
-  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [dayModal, setDayModal] = useState<string | null>(null);
 
-  const source = settings.calendarSource;
   const { isConnected: traktConnected } = useTrakt();
-  const { isConnected: simklConnected } = useSimkl();
 
   const { items, loading, error } = useCalendarData({
-    source,
     authKey,
     traktConnected,
-    simklConnected,
     settings,
     year,
     month,
   });
 
-  useEffect(() => {
-    if (!authKey || source !== "all") {
-      setLibraryItems([]);
-      return;
-    }
-    let cancelled = false;
-    library(authKey)
-      .then((rows) => {
-        if (!cancelled) setLibraryItems(rows);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey, source]);
-
-  const libraryNames = useMemo(() => buildLibraryNameSet(libraryItems), [libraryItems]);
-
-  const filtered = useMemo(() => {
-    if (source !== "all" && source !== "simkl-anticipated") return items;
-    let out = applyCalendarFilter(items, filter);
-    if (source === "all" && watchlistOnly) {
-      out = out.filter((i) => {
-        const t = i.type === "tv" ? "tv" : "movie";
-        return libraryNames.has(`${normalizeName(i.name)}::${t}`);
-      });
-    }
-    return out;
-  }, [source, items, filter, watchlistOnly, libraryNames]);
+  const filtered = useMemo(() => applyCalendarFilter(items, filter), [items, filter]);
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
   const cells = useMemo(
@@ -127,22 +85,15 @@ export function CalendarView() {
   };
 
   const todayISO = todayLocalISO();
-  const dayModalItems = dayModal ? grouped.get(dayModal) ?? [] : [];
-
-  const showAllControls = source === "all";
-  const showPremiereFilters = source === "simkl-anticipated";
+  const dayModalItems = dayModal ? (grouped.get(dayModal) ?? []) : [];
 
   let body: React.ReactNode;
-  if (source === "library" && !authKey) {
-    body = <NotSignedInState onSignIn={() => setShowAuth(true)} />;
-  } else if (source === "all" && !settings.tmdbKey) {
-    body = <NoKeyState onSetup={() => openSettings("library")} />;
-  } else if (error) {
+  if (error) {
     body = <ErrorState message={error} />;
   } else if (loading && filtered.length === 0) {
     body = <CalendarSkeleton />;
   } else if (filtered.length === 0) {
-    body = <EmptyState source={source} filter={filter} watchlistOnly={watchlistOnly} />;
+    body = <EmptyState filter={filter} />;
   } else {
     body = (
       <MonthGrid
@@ -196,12 +147,6 @@ export function CalendarView() {
           </div>
         </div>
         <nav className="mt-6 flex flex-wrap items-center gap-3">
-          <SourceSwitcher
-            value={source}
-            onChange={(s) => update({ calendarSource: s })}
-            traktConnected={traktConnected}
-            simklConnected={simklConnected}
-          />
           <button
             onClick={() => update({ weekStartsMonday: !settings.weekStartsMonday })}
             className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-colors ${
@@ -212,101 +157,39 @@ export function CalendarView() {
           >
             {t("Start week on Monday")}
           </button>
-          {source === "custom" && (
-            <CustomCalendarBar
-              tmdbKey={settings.tmdbKey}
-              traktConnected={traktConnected}
-              value={settings.customCalendar}
-              onChange={(next) => update({ customCalendar: next })}
-            />
-          )}
-          {showAllControls && (
-            <>
-              <span className="mx-1 h-5 w-px bg-edge-soft" />
-              <div className="flex flex-wrap items-center gap-2">
-                {FILTERS.map((f) => {
-                  const active = filter === f.id;
-                  const count =
-                    f.id === "all"
-                      ? filtered.length
-                      : applyCalendarFilter(items, f.id).length;
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-                        active
-                          ? "bg-ink text-canvas"
-                          : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
-                      }`}
-                    >
-                      {t(f.label)}
-                      <span
-                        className={`text-[11px] tabular-nums ${
-                          active ? "text-canvas/65" : "text-ink-subtle"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+          <span className="mx-1 h-5 w-px bg-edge-soft" />
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTERS.map((f) => {
+              const active = filter === f.id;
+              const count = f.id === "all" ? items.length : applyCalendarFilter(items, f.id).length;
+              return (
                 <button
-                  onClick={() => authKey && setWatchlistOnly((v) => !v)}
-                  disabled={!authKey}
-                  title={!authKey ? t("Sign in to filter by your library") : undefined}
-                  className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                    watchlistOnly
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+                    active
                       ? "bg-ink text-canvas"
                       : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
                   }`}
                 >
-                  <Star
-                    size={11}
-                    strokeWidth={2.4}
-                    className={watchlistOnly ? "fill-canvas" : ""}
-                  />
-                  {t("Watchlist only")}
+                  {t(f.label)}
+                  <span
+                    className={`text-[11px] tabular-nums ${
+                      active ? "text-canvas/65" : "text-ink-subtle"
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
-              </div>
-            </>
-          )}
-          {showPremiereFilters && (
-            <>
-              <span className="mx-1 h-5 w-px bg-edge-soft" />
-              <div className="flex flex-wrap items-center gap-2">
-                {FILTERS.map((f) => {
-                  const active = filter === f.id;
-                  const count =
-                    f.id === "all" ? items.length : applyCalendarFilter(items, f.id).length;
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-                        active
-                          ? "bg-ink text-canvas"
-                          : "border border-edge-soft text-ink-muted hover:border-edge hover:text-ink"
-                      }`}
-                    >
-                      {t(f.label)}
-                      <span
-                        className={`text-[11px] tabular-nums ${
-                          active ? "text-canvas/65" : "text-ink-subtle"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+              );
+            })}
+          </div>
         </nav>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 py-8">{body}</div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 py-8">
+        {body}
+      </div>
 
       {dayModal && dayModalItems.length > 0 && (
         <DayModal
@@ -319,8 +202,6 @@ export function CalendarView() {
           }}
         />
       )}
-
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>
   );
 }

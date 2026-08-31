@@ -15,7 +15,8 @@ import { useT } from "@/lib/i18n";
 import { publishResumeStates } from "@/lib/hover-preview/store";
 import { hasPageRowChanges, resetPageRows, usePageRows } from "@/lib/page-rows";
 import { useSettings } from "@/lib/settings";
-import { cwSortKey, isAnimeCwItem, isCwMember, library, type LibraryItem } from "@/lib/stremio";
+import { cwSortKey, isCwMember, type LibraryItem } from "@/lib/library-item";
+import { library } from "@/lib/stremio";
 import { clearLocalCw } from "@/lib/local-cw";
 import {
   dismissManualWatched,
@@ -137,7 +138,7 @@ export function Shows({ active = true }: { active?: boolean }) {
 
   const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
   const resurfaceLibrary = useMemo(() => {
-    const manual = manualWatchedLibraryItems().filter((i) => !isAnimeCwItem(i));
+    const manual = manualWatchedLibraryItems();
     if (manual.length === 0) return items;
     const cwMemberIds = new Set(items.filter(isCwMember).map((i) => i._id));
     const usable = manual.filter((i) => !cwMemberIds.has(i._id));
@@ -150,7 +151,6 @@ export function Shows({ active = true }: { active?: boolean }) {
     settings.tmdbKey,
     settings.cwAdvanceNext,
     resurfaceLibrary,
-    "exclude",
     manualWatchedVer,
   );
 

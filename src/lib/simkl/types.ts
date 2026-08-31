@@ -24,9 +24,7 @@ export type SimklIds = {
 export type SimklTarget =
   | { kind: "movie"; ids: SimklIds }
   | { kind: "episode"; show: { ids: SimklIds }; season: number; number: number }
-  | { kind: "show"; ids: SimklIds }
-  | { kind: "anime"; ids: SimklIds }
-  | { kind: "anime-episode"; anime: { ids: SimklIds }; season: number; number: number };
+  | { kind: "show"; ids: SimklIds };
 
 export type SimklItem = {
   type: "movie" | "show";

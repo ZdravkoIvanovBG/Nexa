@@ -11,16 +11,6 @@ export async function hydrateLibraryMeta(
   const cacheKey = `${type}:${id}`;
   const cached = metaHydrateCache.get(cacheKey);
   if (cached) return cached;
-  const authKey = (() => {
-    try {
-      const raw = localStorage.getItem("harbor.auth");
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { authKey?: string };
-      return parsed.authKey ?? null;
-    } catch {
-      return null;
-    }
-  })();
   const p = (async () => {
     if (id.startsWith("tmdb:") && tmdbKey) {
       const isTv = id.startsWith("tmdb:tv:") || id.startsWith("tmdb:series:");
@@ -47,7 +37,7 @@ export async function hydrateLibraryMeta(
         /* fall through to addon resolve */
       }
     }
-    return (await resolveMeta(authKey, type, id).catch(() => null)) ?? null;
+    return (await resolveMeta(type, id).catch(() => null)) ?? null;
   })();
   metaHydrateCache.set(cacheKey, p);
   return p;

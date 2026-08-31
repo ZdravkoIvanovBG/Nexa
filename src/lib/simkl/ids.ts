@@ -1,37 +1,20 @@
-import { anidbToMal, anilistToMal, kitsuToMal } from "@/lib/providers/anime-mapping";
 import type { SimklIds, SimklTarget } from "./types";
 
 export type IdResolution =
   | { ok: true; target: SimklTarget }
-  | { ok: false; reason: "anime" | "unrecognized" };
+  | { ok: false; reason: "unrecognized" };
 
 export function simklTargetIds(target: SimklTarget): SimklIds {
   if (target.kind === "episode") return target.show.ids;
-  if (target.kind === "anime-episode") return target.anime.ids;
   return target.ids;
-}
-
-async function animeIdToMal(harborId: string): Promise<number | null> {
-  const n = Number(harborId.split(":")[1]);
-  if (!Number.isFinite(n)) return null;
-  if (harborId.startsWith("kitsu:")) return kitsuToMal(n).catch(() => null);
-  if (harborId.startsWith("anilist:")) return anilistToMal(n).catch(() => null);
-  if (harborId.startsWith("anidb:")) return anidbToMal(n).catch(() => null);
-  return null;
 }
 
 export async function resolveSimklTarget(
   harborId: string,
   type: "movie" | "series",
 ): Promise<SimklTarget | null> {
-  let tgt: SimklTarget | null = null;
   const resolution = stremioIdToSimklTarget(harborId);
-  if (resolution.ok) {
-    tgt = resolution.target;
-  } else {
-    const mal = await animeIdToMal(harborId);
-    if (mal != null) tgt = { kind: "show", ids: { mal } };
-  }
+  let tgt: SimklTarget | null = resolution.ok ? resolution.target : null;
   if (!tgt) return null;
   if (type === "series" && tgt.kind === "movie") tgt = { kind: "show", ids: tgt.ids };
   if (type === "movie" && tgt.kind === "show") tgt = { kind: "movie", ids: tgt.ids };
@@ -46,13 +29,8 @@ export function stremioIdToSimklTarget(
 
   if (metaId.startsWith("mal:")) {
     const n = Number(metaId.split(":")[1]);
-    if (!Number.isFinite(n)) return { ok: false, reason: "unrecognized" };
-    if (episode) return { ok: false, reason: "anime" };
+    if (!Number.isFinite(n) || episode) return { ok: false, reason: "unrecognized" };
     return { ok: true, target: { kind: "show", ids: { mal: n } } };
-  }
-
-  if (metaId.startsWith("kitsu:")) {
-    return { ok: false, reason: "anime" };
   }
 
   if (metaId.startsWith("tt")) {

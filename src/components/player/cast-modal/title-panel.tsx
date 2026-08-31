@@ -18,10 +18,6 @@ import { PeopleRail, PosterRail, RailSection, RailSkeleton, type Person } from "
 import { useModalRatings } from "./use-modal-ratings";
 import { useTitleDetail } from "./use-title-detail";
 
-function isAnimeId(id: string): boolean {
-  return id.startsWith("kitsu:") || id.startsWith("mal:") || id.startsWith("anilist:");
-}
-
 function posterUrl(poster: string | undefined, fallback: string | undefined): string | undefined {
   if (!poster) return fallback;
   return poster.startsWith("http") ? poster : `${IMG}/w342${poster}`;
@@ -64,16 +60,15 @@ export function TitlePanel({
     : genres.map((name) => ({ id: 0, name }));
   const isSeries = meta.type === "series" || meta.id.startsWith("tmdb:tv:");
   const upcoming = !loading && !isSeries && isTitleUpcoming(detail, meta);
-  const anime = isAnimeId(meta.id);
   const titleWatched = useMetaWatched(meta.id, meta.type);
   const queued = useIsQueued(meta);
   const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
   const mediaType: "movie" | "show" = isSeries ? "show" : "movie";
   const { scores, mdblist, harborImdb } = useModalRatings(imdbId, mediaType);
   const imdbRating = harborImdb ?? scores?.imdbRating ?? null;
-  const primaryRating = anime ? rating : (imdbRating ?? rating);
+  const primaryRating = imdbRating ?? rating;
   const ratingSource: "imdb" | "tmdb" = imdbRating ? "imdb" : "tmdb";
-  const tmdbRating = !anime && detail?.rating ? detail.rating : null;
+  const tmdbRating = detail?.rating ? detail.rating : null;
 
   const liveAwards = useAwards(imdbId ?? undefined);
   const awards = useMemo(
@@ -134,7 +129,6 @@ export function TitlePanel({
               bare
               rating={primaryRating}
               tmdbRating={tmdbRating}
-              isAnime={anime}
               scores={scores}
               mdblist={mdblist}
               imdbId={imdbId}
@@ -210,7 +204,11 @@ export function TitlePanel({
                   : "bg-white/[0.12] text-white ring-white/15 hover:bg-white/20"
               }`}
             >
-              {queued ? <Check size={17} strokeWidth={2.6} /> : <Plus size={17} strokeWidth={2.4} />}
+              {queued ? (
+                <Check size={17} strokeWidth={2.6} />
+              ) : (
+                <Plus size={17} strokeWidth={2.4} />
+              )}
               {queued ? t("Queued") : t("Queue")}
             </button>
           </div>
@@ -277,7 +275,9 @@ export function TitlePanel({
         </RailSection>
       ) : needsKey ? (
         <p className="px-1 text-[13.5px] leading-relaxed text-white/55">
-          {t("Add a TMDB key in Settings to see the cast, crew and recommendations for every title.")}
+          {t(
+            "Add a TMDB key in Settings to see the cast, crew and recommendations for every title.",
+          )}
         </p>
       ) : null}
 

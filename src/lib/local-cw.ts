@@ -1,5 +1,7 @@
 const KEY = "harbor.localcw.v1";
-const MAX = 60;
+// Matches MAX_WATCHING in library-tracking.ts: this is now the sole Continue
+// Watching store, so it has to hold as much as the list it replaced.
+const MAX = 200;
 const FINISHED_RATIO = 0.92;
 
 export type LocalCwEntry = {

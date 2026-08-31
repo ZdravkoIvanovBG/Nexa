@@ -1,7 +1,7 @@
 import { simklRequest, SimklApiError } from "./client";
 import { getSession } from "./session";
 import { readResumeMs, saveResumeMs } from "@/lib/resume";
-import type { LibraryItem } from "@/lib/stremio";
+import type { LibraryItem } from "@/lib/library-item";
 
 type Ids = {
   imdb?: string;
@@ -50,7 +50,6 @@ function buildItem(
   when: string,
   season?: number,
   episode?: number,
-  isAnime?: boolean,
 ): LibraryItem {
   return {
     _id: id,
@@ -67,7 +66,6 @@ function buildItem(
     _ctime: when,
     _mtime: when,
     external: "simkl",
-    isAnime,
   };
 }
 
@@ -84,7 +82,7 @@ function toLibraryItem(raw: RawSession): LibraryItem | null {
   if (!raw.show && !raw.episode && raw.anime) {
     const movieId = movieMetaId(raw.anime.ids);
     if (movieId) {
-      return buildItem(movieId, "movie", raw.anime, pct, DURATION_MS.movie, when, undefined, undefined, true);
+      return buildItem(movieId, "movie", raw.anime, pct, DURATION_MS.movie, when);
     }
   }
 
@@ -101,7 +99,6 @@ function toLibraryItem(raw: RawSession): LibraryItem | null {
       when,
       raw.episode?.season,
       raw.episode?.number,
-      !raw.show,
     );
   }
   return null;

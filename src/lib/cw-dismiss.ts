@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { clearResume } from "./resume";
-import { episodeFromVideoId, libraryPut, type LibraryItem } from "./stremio";
+import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
+import { libraryPut } from "./stremio";
 
 const SIMKL_KEY = "harbor.cw.dismissed.simkl";
 const dismissed = new Set<string>();
@@ -26,8 +27,7 @@ function emit(): void {
 
 export function isCwDismissed(item: LibraryItem): boolean {
   return (
-    dismissed.has(item._id) ||
-    (item.external === "simkl" && dismissed.has(`simkl|${item._id}`))
+    dismissed.has(item._id) || (item.external === "simkl" && dismissed.has(`simkl|${item._id}`))
   );
 }
 
@@ -48,8 +48,7 @@ export function dismissCw(item: LibraryItem, authKey: string | null): void {
   emit();
   if (!authKey || !item.state) return;
   const vid = item.state.video_id ?? "";
-  const kitsuThreeSeg =
-    /^(kitsu|mal|anilist|anidb):/.test(id) && vid.split(":").length === 3;
+  const kitsuThreeSeg = /^(kitsu|mal|anilist|anidb):/.test(id) && vid.split(":").length === 3;
   const se = kitsuThreeSeg ? null : episodeFromVideoId(item.state.video_id);
   clearResume(
     id,

@@ -35,7 +35,7 @@ export function SearchSection(props: SubtitleMenuProps) {
   useEffect(() => {
     let cancelled = false;
     setAddonsLoading(true);
-    gatherSubtitleAddons(authKey)
+    gatherSubtitleAddons()
       .then((a) => {
         if (!cancelled) {
           setAddons(a);

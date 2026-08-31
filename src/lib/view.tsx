@@ -17,15 +17,11 @@ import { useTogether } from "./together/provider";
 import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
 import { armRemoteStickyHop } from "./remote/session";
-import { franchiseRoot, franchiseRootSync } from "./providers/anime-franchise-root";
 
-const isAnimeMetaId = (id: string) => /^(kitsu|mal|anilist|anidb):/.test(id);
 export type View =
   | "home"
   | "settings"
-  | "anime"
   | "discover"
-  | "catalogs"
   | "addons"
   | "calendar"
   | "movies"
@@ -34,8 +30,7 @@ export type View =
   | "library"
   | "live"
   | "vod"
-  | "downloads"
-  | "wrapped";
+  | "downloads";
 
 export type PlayEpisode = {
   season: number;
@@ -108,13 +103,10 @@ export type MetaFilter =
 export type Frame =
   | { kind: "home" }
   | { kind: "settings" }
-  | { kind: "anime" }
   | { kind: "discover" }
-  | { kind: "catalogs" }
   | { kind: "addons" }
   | { kind: "addon-detail"; id: string }
   | { kind: "calendar" }
-  | { kind: "wrapped" }
   | { kind: "queue" }
   | { kind: "movies" }
   | { kind: "shows" }
@@ -138,7 +130,6 @@ export type Frame =
   | { kind: "filter"; filter: MetaFilter }
   | { kind: "grid"; grid: GridSpec }
   | { kind: "award"; awardType: import("./providers/wikidata").AwardType }
-  | { kind: "anime-award"; sourceId: import("./anime-awards").AwardSourceId }
   | {
       kind: "picker";
       meta: Meta;
@@ -154,13 +145,10 @@ export type Frame =
 const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   home: "home",
   settings: "settings",
-  anime: "anime",
   discover: "discover",
-  catalogs: "catalogs",
   addons: "addons",
   "addon-detail": "addons",
   calendar: "calendar",
-  wrapped: "wrapped",
   queue: "discover",
   movies: "movies",
   shows: "shows",
@@ -178,7 +166,6 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   filter: null,
   grid: null,
   award: null,
-  "anime-award": null,
   picker: null,
   player: null,
   "match-detail": null,
@@ -251,8 +238,6 @@ type ViewValue = {
   stackKinds: Frame["kind"][];
   awardType: import("./providers/wikidata").AwardType | null;
   openAward: (t: import("./providers/wikidata").AwardType) => void;
-  animeAwardSource: import("./anime-awards").AwardSourceId | null;
-  openAnimeAward: (s: import("./anime-awards").AwardSourceId) => void;
   homeResetTick: number;
   picker: {
     meta: Meta;
@@ -315,20 +300,14 @@ function frameKey(f: Frame): string {
       return "home";
     case "settings":
       return "settings";
-    case "anime":
-      return "anime";
     case "discover":
       return "discover";
-    case "catalogs":
-      return "catalogs";
     case "addons":
       return "addons";
     case "addon-detail":
       return `addon-detail:${f.id}`;
     case "calendar":
       return "calendar";
-    case "wrapped":
-      return "wrapped";
     case "queue":
       return "queue";
     case "movies":
@@ -363,8 +342,6 @@ function frameKey(f: Frame): string {
       return `grid:${f.grid.title}`;
     case "award":
       return `award:${f.awardType}`;
-    case "anime-award":
-      return `anime-award:${f.sourceId}`;
     case "picker": {
       const a = typeof f.attempt === "number" ? `:a${f.attempt}` : "";
       return f.episode
@@ -593,20 +570,10 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           rowScrollMem.current.clear();
           return [{ kind: "home" }];
         }
-        if (v === "anime") {
-          scrollMem.current.clear();
-          rowScrollMem.current.clear();
-          return [{ kind: "anime" }];
-        }
         if (v === "discover") {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "discover" }];
-        }
-        if (v === "catalogs") {
-          scrollMem.current.clear();
-          rowScrollMem.current.clear();
-          return [{ kind: "catalogs" }];
         }
         if (v === "addons") {
           scrollMem.current.clear();
@@ -617,11 +584,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "calendar" }];
-        }
-        if (v === "wrapped") {
-          scrollMem.current.clear();
-          rowScrollMem.current.clear();
-          return [{ kind: "wrapped" }];
         }
         if (v === "downloads") {
           scrollMem.current.clear();
@@ -703,8 +665,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (top.kind !== "meta") return s;
       const m = top.meta;
       let root: Frame;
-      if (m.type === "series" || m.type === "tv") root = { kind: "shows" };
-      else if (m.type === "anime") root = { kind: "anime" };
+      if (m.type === "series" || m.type === "tv" || m.type === "anime") root = { kind: "shows" };
       else root = { kind: "movies" };
       return [root, { kind: "meta", meta: m }];
     });
@@ -738,19 +699,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           });
         });
       };
-      if (!isAnimeMetaId(m.id) || opts?.exact) {
-        push(m);
-        return;
-      }
-      const warm = franchiseRootSync(m.id);
-      if (warm != null) {
-        if (warm === m.id) push(m);
-        else push({ ...m, id: warm }, m.id);
-        return;
-      }
-      void franchiseRoot(m.id)
-        .then((root) => (root === m.id ? push(m) : push({ ...m, id: root }, m.id)))
-        .catch(() => push(m));
+      push(m);
     },
     [setNavStack],
   );
@@ -824,17 +773,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         const top = cur[cur.length - 1];
         if (top.kind === "award" && top.awardType === t) return cur;
         return pushFrame(cur, { kind: "award", awardType: t });
-      });
-    },
-    [setNavStack],
-  );
-
-  const openAnimeAward = useCallback(
-    (s: import("./anime-awards").AwardSourceId) => {
-      setNavStack((cur) => {
-        const top = cur[cur.length - 1];
-        if (top.kind === "anime-award" && top.sourceId === s) return cur;
-        return pushFrame(cur, { kind: "anime-award", sourceId: s });
       });
     },
     [setNavStack],
@@ -1011,8 +949,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       stackKinds,
       awardType,
       openAward,
-      animeAwardSource: top.kind === "anime-award" ? top.sourceId : null,
-      openAnimeAward,
       homeResetTick,
       picker,
       openPicker,
@@ -1076,7 +1012,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openGrid,
       openCollections,
       openAward,
-      openAnimeAward,
       openPicker,
       openPlayer,
       replacePlayerSrc,

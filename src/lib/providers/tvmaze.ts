@@ -8,7 +8,6 @@ export type TvmazeShow = {
   id: number;
   name: string;
   image: string | null;
-  isAnime: boolean;
 };
 
 export type TvmazeEpisode = {
@@ -61,7 +60,6 @@ export async function tvmazeShow(imdb: string): Promise<TvmazeShow | null> {
       const raw = (await res.json()) as {
         id?: number;
         name?: string;
-        genres?: string[];
         image?: { medium?: string; original?: string } | null;
       };
       if (typeof raw?.id !== "number") return null;
@@ -69,7 +67,6 @@ export async function tvmazeShow(imdb: string): Promise<TvmazeShow | null> {
         id: raw.id,
         name: raw.name ?? "",
         image: raw.image?.original ?? raw.image?.medium ?? null,
-        isAnime: (raw.genres ?? []).some((g) => g.toLowerCase() === "anime"),
       };
       const ids = loadIds();
       ids[imdb] = raw.id;

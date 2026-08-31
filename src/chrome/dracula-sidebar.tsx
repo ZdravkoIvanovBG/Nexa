@@ -11,16 +11,7 @@ import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 
-const PRIMARY_IDS = new Set([
-  "home",
-  "discover",
-  "movies",
-  "shows",
-  "kids",
-  "anime",
-  "live",
-  "vod",
-]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
 
 export function DraculaSidebar() {
   const { view, setView, chromeHidden } = useView();

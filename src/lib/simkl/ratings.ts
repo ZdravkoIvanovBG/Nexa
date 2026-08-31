@@ -18,11 +18,7 @@ interface SimklDetailResponse {
 }
 
 function detailPathFor(type: string | undefined, simklId: number): string {
-  return type === "movie"
-    ? `/movies/${simklId}`
-    : type === "anime"
-      ? `/anime/${simklId}`
-      : `/tv/${simklId}`;
+  return type === "movie" ? `/movies/${simklId}` : `/tv/${simklId}`;
 }
 
 async function resolveScoreByImdb(imdbId: string): Promise<number | null> {
@@ -46,9 +42,10 @@ async function resolveScoreByImdb(imdbId: string): Promise<number | null> {
   return detail.ratings?.simkl?.rating ?? null;
 }
 
-export function useSimklCommunityRating(
-  imdbId: string | null,
-): { rating: number | null; loading: boolean } {
+export function useSimklCommunityRating(imdbId: string | null): {
+  rating: number | null;
+  loading: boolean;
+} {
   const [rating, setRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -154,138 +151,10 @@ export function useSimklCardScores(imdbId: string | undefined): {
   return { score, loading };
 }
 
-const animeScoreCache = new Map<string, number | null>();
-const animeScoreInFlight = new Map<string, Promise<number | null>>();
-
-const ANIME_ID_PARAM: Record<string, string> = {
-  mal: "mal",
-  kitsu: "kitsu",
-  anidb: "anidb",
-  anilist: "anilist",
-};
-
-async function resolveSimklCardScoreByAnimeId(animeId: string): Promise<number | null> {
-  const cacheKey = `anime:${animeId}`;
-  if (animeScoreCache.has(cacheKey)) {
-    return animeScoreCache.get(cacheKey) ?? null;
-  }
-  if (animeScoreInFlight.has(cacheKey)) {
-    return animeScoreInFlight.get(cacheKey)!;
-  }
-
-  const simklMatch = animeId.match(/^simkl:(\d+)$/);
-  const externalMatch = animeId.match(/^(mal|kitsu|anidb|anilist):(\d+)$/);
-
-  if (!simklMatch && !externalMatch) {
-    animeScoreCache.set(cacheKey, null);
-    return null;
-  }
-
-  const resolvedSimklId = simklMatch ? Number(simklMatch[1]) : null;
-  const resolvedParam = externalMatch ? ANIME_ID_PARAM[externalMatch[1]] : null;
-  const resolvedIdValue = externalMatch ? externalMatch[2] : null;
-
-  const promise = (async () => {
-    try {
-      if (resolvedSimklId != null) {
-        const detail = await simklRequest<SimklDetailResponse>(`/anime/${resolvedSimklId}`, {
-          method: "GET",
-          authed: false,
-        });
-        const rating = detail.ratings?.simkl?.rating ?? null;
-        animeScoreCache.set(cacheKey, rating);
-        return rating;
-      }
-
-      if (resolvedParam == null || resolvedIdValue == null) {
-        animeScoreCache.set(cacheKey, null);
-        return null;
-      }
-      const results = await simklRequest<SimklSearchIdItem[]>(
-        `/search/id?${resolvedParam}=${encodeURIComponent(resolvedIdValue)}`,
-        { method: "GET", authed: false },
-      );
-      if (!Array.isArray(results) || results.length === 0) {
-        animeScoreCache.set(cacheKey, null);
-        return null;
-      }
-      const item = results[0];
-      const directRating = item.ratings?.simkl?.rating;
-      if (directRating != null) {
-        animeScoreCache.set(cacheKey, directRating);
-        return directRating;
-      }
-      const simklId = item.ids?.simkl;
-      if (simklId == null) {
-        animeScoreCache.set(cacheKey, null);
-        return null;
-      }
-      const detail = await simklRequest<SimklDetailResponse>(detailPathFor(item.type, simklId), {
-        method: "GET",
-        authed: false,
-      });
-      const rating = detail.ratings?.simkl?.rating ?? null;
-      animeScoreCache.set(cacheKey, rating);
-      return rating;
-    } catch {
-      animeScoreCache.set(cacheKey, null);
-      return null;
-    } finally {
-      animeScoreInFlight.delete(cacheKey);
-    }
-  })();
-
-  animeScoreInFlight.set(cacheKey, promise);
-  return promise;
-}
-
-export function useSimklCardScoresByAnimeId(animeId: string | undefined): {
-  score: number | null;
-  loading: boolean;
-} {
-  const [score, setScore] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!animeId) {
-      setScore(null);
-      setLoading(false);
-      return;
-    }
-    const cacheKey = `anime:${animeId}`;
-    if (animeScoreCache.has(cacheKey)) {
-      setScore(animeScoreCache.get(cacheKey) ?? null);
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    resolveSimklCardScoreByAnimeId(animeId).then((result) => {
-      if (!cancelled) {
-        setScore(result);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [animeId]);
-
-  return { score, loading };
-}
-
 function getRatingPayload(target: SimklTarget): { key: string; ids: SimklIds } {
   const isMovie = target.kind === "movie";
-  const isAnime = target.kind === "anime" || target.kind === "anime-episode";
-
-  const ids =
-    target.kind === "episode"
-      ? target.show.ids
-      : target.kind === "anime-episode"
-        ? target.anime.ids
-        : target.ids;
-
-  const key = isMovie ? "movies" : isAnime ? "anime" : "shows";
+  const ids = target.kind === "episode" ? target.show.ids : target.ids;
+  const key = isMovie ? "movies" : "shows";
   return { key, ids };
 }
 

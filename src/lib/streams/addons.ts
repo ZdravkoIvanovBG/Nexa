@@ -62,7 +62,9 @@ export async function fetchAddonStreams(
     }
   }
   if (skipped.length > 0) console.info(`[addons] skipped: ${skipped.join(", ")}`);
-  console.info(`[addons] querying ${namedTasks.length}: ${namedTasks.map((t) => t.name).join(", ")}`);
+  console.info(
+    `[addons] querying ${namedTasks.length}: ${namedTasks.map((t) => t.name).join(", ")}`,
+  );
 
   const accumulated: Stream[] = [];
   const wrapped = namedTasks.map(({ name, p }) =>
@@ -102,8 +104,6 @@ function pickId(addon: Addon, type: string, ids: string[]): string | null {
   return null;
 }
 
-const ANIME_SCHEMES = ["kitsu", "mal", "anidb", "anilist"];
-
 function idScheme(id: string): string {
   return id.startsWith("tt") ? "imdb" : id.split(":")[0];
 }
@@ -112,9 +112,6 @@ function pickIds(addon: Addon, type: string, ids: string[]): string[] {
   const sorted = [...ids].sort((a, b) => idPriority(a) - idPriority(b));
   const accepted = sorted.filter((id) => addonAcceptsId(addon, type, id));
   if (accepted.length === 0) return [];
-  const animeId = accepted.find((id) => ANIME_SCHEMES.some((s) => id.startsWith(s)));
-  const ttId = accepted.find((id) => id.startsWith("tt"));
-  if (animeId && ttId) return [animeId, ttId];
   return [accepted[0]];
 }
 
@@ -129,9 +126,7 @@ function addonAcceptsId(addon: Addon, type: string, id: string): boolean {
     return streamResources.some((r) => {
       const typeOk = Array.isArray(r.types) && r.types.includes(type);
       const idOk =
-        !r.idPrefixes ||
-        r.idPrefixes.length === 0 ||
-        r.idPrefixes.some((p) => id.startsWith(p));
+        !r.idPrefixes || r.idPrefixes.length === 0 || r.idPrefixes.some((p) => id.startsWith(p));
       return typeOk && idOk;
     });
   }

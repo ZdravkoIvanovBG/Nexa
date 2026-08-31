@@ -33,13 +33,9 @@ export function ProfileChipCompact({
   }, [open]);
 
   const name =
-    activeProfile?.name ??
-    user?.fullname ??
-    user?.email?.split("@")[0] ??
-    t("profile.fallback");
+    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
   const color = activeProfile?.color ?? "#7cd6ff";
-  const avatarSrc =
-    activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
 
   return (
@@ -57,12 +53,7 @@ export function ProfileChipCompact({
           style={{ background: color }}
         >
           {avatarSrc ? (
-            <img
-              src={avatarSrc}
-              alt=""
-              className="h-full w-full object-cover"
-              draggable={false}
-            />
+            <img src={avatarSrc} alt="" className="h-full w-full object-cover" draggable={false} />
           ) : (
             <CatAvatar className="h-full w-full" />
           )}
@@ -78,9 +69,7 @@ export function ProfileChipCompact({
           <div className="border-b border-white/10 px-4 py-3">
             <div className="text-[13.5px] font-semibold text-ink">{name}</div>
             {user?.email && (
-              <div className="truncate text-[11.5px] text-ink-subtle">
-                {user.email}
-              </div>
+              <div className="truncate text-[11.5px] text-ink-subtle">{user.email}</div>
             )}
           </div>
           {otherProfiles.length > 0 && (
@@ -108,9 +97,7 @@ export function ProfileChipCompact({
                   >
                     {p.name.slice(0, 1).toUpperCase()}
                   </span>
-                  <span className="truncate text-[12.5px] text-ink">
-                    {p.name}
-                  </span>
+                  <span className="truncate text-[12.5px] text-ink">{p.name}</span>
                 </button>
               ))}
             </div>

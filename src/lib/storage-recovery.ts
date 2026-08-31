@@ -34,6 +34,7 @@ const PRUNABLE_EXACT = new Set<string>([
   "harbor.anime.toppicks.visit.v1",
   "harbor.anime.mal_id_by_franchise.v1",
   "harbor.anime.detected.v1",
+  "harbor.kitsu-to-mal.cache.v1",
   "harbor.picker-cache.v4",
   "harbor.picker-cache.v5",
   "harbor.shows.hero.pool.v2",
@@ -46,10 +47,7 @@ const PRUNABLE_EXACT = new Set<string>([
   "harbor.playback-history.v1",
 ]);
 
-const PRUNABLE_PREFIXES = [
-  "harbor.libraryNameRepair.v1.",
-  "harbor.anilist.collection.v1.",
-];
+const PRUNABLE_PREFIXES = ["harbor.libraryNameRepair.v1.", "harbor.anilist.collection.v1."];
 
 function isPrunable(key: string): boolean {
   if (PRUNABLE_EXACT.has(key)) return true;
@@ -169,6 +167,8 @@ export function proactiveStorageCleanup(): void {
   }
   if (total > PROACTIVE_TOTAL_THRESHOLD) {
     const r = freeStorageSpace();
-    console.info(`[storage] proactive total cleanup: ${r.pruned.length} caches, ${r.freedBytes} bytes`);
+    console.info(
+      `[storage] proactive total cleanup: ${r.pruned.length} caches, ${r.freedBytes} bytes`,
+    );
   }
 }

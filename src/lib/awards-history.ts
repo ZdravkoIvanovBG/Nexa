@@ -2,6 +2,11 @@ import awardsData from "@/data/awards.json";
 import type { AwardCategory } from "./awards-catalog";
 import type { AwardEntry, AwardType } from "./providers/wikidata";
 
+export function parseAwardYear(releaseInfo: string | undefined | null): number | undefined {
+  const match = releaseInfo?.match(/\d{4}/);
+  return match ? Number(match[0]) : undefined;
+}
+
 export type CategoryWinner = {
   year: number;
   workTitle: string;

@@ -14,8 +14,8 @@ export type BrowseCatalog = {
   genres: string[];
 };
 
-export async function listBrowseCatalogs(authKey: string | null): Promise<BrowseCatalog[]> {
-  const addons = await gatherCatalogAddons(authKey).catch(() => []);
+export async function listBrowseCatalogs(): Promise<BrowseCatalog[]> {
+  const addons = await gatherCatalogAddons().catch(() => []);
   const out: BrowseCatalog[] = [];
   for (const addon of addons) {
     const base = addon.transportUrl.replace(/\/manifest\.json$/, "");

@@ -10,7 +10,6 @@ type TrackedPerson = Settings["customCalendar"]["trackedPeople"][number];
 const EVENT_LABELS: Record<WebhookTrigger["event"], string> = {
   newMovie: "A new movie comes out",
   newSeries: "A new series comes out",
-  newAnime: "A new anime comes out",
   fromTrackedPerson: "Someone I track has a new release",
   fromGenre: "A specific genre releases",
   fromProvider: "A streamer releases something",
@@ -23,7 +22,6 @@ const EVENT_LABELS: Record<WebhookTrigger["event"], string> = {
 const EVENT_ORDER: WebhookTrigger["event"][] = [
   "newMovie",
   "newSeries",
-  "newAnime",
   "fromTrackedPerson",
   "fromGenre",
   "fromProvider",
@@ -75,9 +73,10 @@ function defaultTrigger(event: WebhookTrigger["event"]): WebhookTrigger {
 
 function describeTrigger(t: WebhookTrigger, trackedPeople: TrackedPerson[]): string {
   switch (t.event) {
-    case "newMovie": return "Any new movie";
-    case "newSeries": return "Any new series";
-    case "newAnime": return "Any new anime";
+    case "newMovie":
+      return "Any new movie";
+    case "newSeries":
+      return "Any new series";
     case "fromTrackedPerson": {
       const ids = t.personIds ?? [];
       if (ids.length === 0) return `Any of your ${trackedPeople.length} tracked people`;
@@ -96,13 +95,18 @@ function describeTrigger(t: WebhookTrigger, trackedPeople: TrackedPerson[]): str
     case "fromProvider":
       return t.providerIds.length === 0
         ? "Any streamer"
-        : t.providerIds.map((id) => PROVIDERS.find((p) => p.id === id)?.name).filter(Boolean).join(", ");
+        : t.providerIds
+            .map((id) => PROVIDERS.find((p) => p.id === id)?.name)
+            .filter(Boolean)
+            .join(", ");
     case "fromCountry":
       return t.countryCodes.length === 0
         ? "Any country"
         : t.countryCodes.map((c) => COUNTRIES.find((x) => x.code === c)?.name ?? c).join(", ");
-    case "fromTraktAnticipated": return "Trakt anticipated";
-    case "fromTraktWatchlist": return "Your Trakt watchlist";
+    case "fromTraktAnticipated":
+      return "Trakt anticipated";
+    case "fromTraktWatchlist":
+      return "Your Trakt watchlist";
     case "liveTvEvent":
       return `Live TV · ${t.favoritesOnly ? "favorites" : "all channels"} · ${t.leadMinutes ?? 15} min lead`;
   }
@@ -183,7 +187,9 @@ export function RuleBuilder({
             <li
               key={r.id}
               className={`flex items-center gap-3 rounded-lg border px-3.5 py-2.5 transition-colors ${
-                r.enabled ? "border-edge-soft bg-elevated/40" : "border-edge-soft/40 bg-canvas/20 opacity-60"
+                r.enabled
+                  ? "border-edge-soft bg-elevated/40"
+                  : "border-edge-soft/40 bg-canvas/20 opacity-60"
               }`}
             >
               <button
@@ -199,7 +205,9 @@ export function RuleBuilder({
                 >
                   <span
                     className={`absolute start-0 top-0.5 block h-4 w-4 rounded-full bg-canvas transition-transform ${
-                      r.enabled ? "translate-x-[18px] rtl:-translate-x-[18px]" : "translate-x-0.5 rtl:-translate-x-0.5"
+                      r.enabled
+                        ? "translate-x-[18px] rtl:-translate-x-[18px]"
+                        : "translate-x-0.5 rtl:-translate-x-0.5"
                     }`}
                   />
                 </span>
@@ -322,7 +330,13 @@ function RuleEditor({
                 { value: "tv", label: "Series" },
               ]}
               onChange={(v) =>
-                setDraft({ ...draft, trigger: { ...(draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>), mediaType: v as "movie" | "tv" } })
+                setDraft({
+                  ...draft,
+                  trigger: {
+                    ...(draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>),
+                    mediaType: v as "movie" | "tv",
+                  },
+                })
               }
             />
             <SubChips
@@ -330,7 +344,9 @@ function RuleEditor({
               items={Object.entries(MOVIE_GENRES).map(([name, id]) => ({
                 key: String(id),
                 label: name,
-                selected: (draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>).genreIds.includes(id),
+                selected: (
+                  draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>
+                ).genreIds.includes(id),
                 onToggle: () => {
                   const t = draft.trigger as Extract<WebhookTrigger, { event: "fromGenre" }>;
                   const next = t.genreIds.includes(id)
@@ -350,7 +366,9 @@ function RuleEditor({
               items={PROVIDERS.map((p) => ({
                 key: String(p.id),
                 label: p.name,
-                selected: (draft.trigger as Extract<WebhookTrigger, { event: "fromProvider" }>).providerIds.includes(p.id),
+                selected: (
+                  draft.trigger as Extract<WebhookTrigger, { event: "fromProvider" }>
+                ).providerIds.includes(p.id),
                 onToggle: () => {
                   const t = draft.trigger as Extract<WebhookTrigger, { event: "fromProvider" }>;
                   const next = t.providerIds.includes(p.id)
@@ -370,7 +388,9 @@ function RuleEditor({
               items={COUNTRIES.map((c) => ({
                 key: c.code,
                 label: c.name,
-                selected: (draft.trigger as Extract<WebhookTrigger, { event: "fromCountry" }>).countryCodes.includes(c.code),
+                selected: (
+                  draft.trigger as Extract<WebhookTrigger, { event: "fromCountry" }>
+                ).countryCodes.includes(c.code),
                 onToggle: () => {
                   const t = draft.trigger as Extract<WebhookTrigger, { event: "fromCountry" }>;
                   const next = t.countryCodes.includes(c.code)
@@ -388,7 +408,10 @@ function RuleEditor({
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
-                checked={(draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>).favoritesOnly !== false}
+                checked={
+                  (draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>)
+                    .favoritesOnly !== false
+                }
                 onChange={(e) => {
                   const t = draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>;
                   setDraft({ ...draft, trigger: { ...t, favoritesOnly: e.target.checked } });
@@ -403,7 +426,8 @@ function RuleEditor({
               </span>
               <select
                 value={String(
-                  (draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>).leadMinutes ?? 15,
+                  (draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>)
+                    .leadMinutes ?? 15,
                 )}
                 onChange={(e) => {
                   const t = draft.trigger as Extract<WebhookTrigger, { event: "liveTvEvent" }>;
@@ -438,10 +462,14 @@ function RuleEditor({
                 key: String(p.id),
                 label: p.name,
                 selected: (
-                  (draft.trigger as Extract<WebhookTrigger, { event: "fromTrackedPerson" }>).personIds ?? []
+                  (draft.trigger as Extract<WebhookTrigger, { event: "fromTrackedPerson" }>)
+                    .personIds ?? []
                 ).includes(p.id),
                 onToggle: () => {
-                  const t = draft.trigger as Extract<WebhookTrigger, { event: "fromTrackedPerson" }>;
+                  const t = draft.trigger as Extract<
+                    WebhookTrigger,
+                    { event: "fromTrackedPerson" }
+                  >;
                   const cur = t.personIds ?? [];
                   const next = cur.includes(p.id) ? cur.filter((x) => x !== p.id) : [...cur, p.id];
                   setDraft({ ...draft, trigger: { ...t, personIds: next } });
@@ -457,13 +485,23 @@ function RuleEditor({
               label="Discord"
               on={draft.channels.discord}
               disabled={!canDiscord}
-              onToggle={() => setDraft({ ...draft, channels: { ...draft.channels, discord: !draft.channels.discord } })}
+              onToggle={() =>
+                setDraft({
+                  ...draft,
+                  channels: { ...draft.channels, discord: !draft.channels.discord },
+                })
+              }
             />
             <ChannelToggle
               label="Telegram"
               on={draft.channels.telegram}
               disabled={!canTelegram}
-              onToggle={() => setDraft({ ...draft, channels: { ...draft.channels, telegram: !draft.channels.telegram } })}
+              onToggle={() =>
+                setDraft({
+                  ...draft,
+                  channels: { ...draft.channels, telegram: !draft.channels.telegram },
+                })
+              }
             />
           </div>
         </Field>
@@ -493,7 +531,9 @@ function RuleEditor({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -547,7 +587,9 @@ function SubChips({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+        {label}
+      </span>
       <div className="flex flex-wrap gap-1.5">
         {items.map((it) => (
           <button

@@ -56,7 +56,6 @@ export function EpisodeWatchedMenu({
     const r = stremioIdToSimklTarget(metaId, { season: target.season, episode: target.episode });
     if (!r.ok) return null;
     if (r.target.kind === "episode") return r.target.show.ids;
-    if (r.target.kind === "anime-episode") return r.target.anime.ids;
     return null;
   })();
 

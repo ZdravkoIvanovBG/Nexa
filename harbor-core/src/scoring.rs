@@ -28,10 +28,7 @@ static TRUSTED_GROUPS: Lazy<&'static [&'static str]> = Lazy::new(|| {
     &[
         "FRDS", "FRAMESTOR", "FORM", "EVO", "RARBG", "ETHEL", "FLUX", "QXR", "MEGUSTA", "ION10",
         "PSA", "AMIABLE", "GALAXYRG", "WEBDV", "RZEROX", "SIC", "TGX", "NTB", "NTG", "TEPES",
-        "GECKOS", "SUCCESSFULCRAB", "SUBSPLEASE", "ERAI", "ERAIRAWS", "JUDAS", "ASW", "EMBER",
-        "ANE", "CLEO", "BEATRICERAWS", "AKIHITO", "VODES", "NANDESUKA", "SMOL", "TENRAISENSEI",
-        "GST", "ANIMEKAIZOKU", "REINFORCE", "RAWS", "OZR", "PURGATORY", "SHK", "KOTUWA", "KIRION",
-        "COMMIE", "DAMEDESUYO", "MTBB", "GJM", "SOFCJ",
+        "GECKOS", "SUCCESSFULCRAB",
     ]
 });
 
@@ -1340,7 +1337,6 @@ mod tests {
             repack_iteration: 0,
             proper: false,
             hardcoded: false,
-            anime_hash: None,
             scam_score: 0,
         }
     }

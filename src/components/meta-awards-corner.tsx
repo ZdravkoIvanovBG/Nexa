@@ -1,10 +1,9 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
 import { Laurel } from "@/components/icons/laurel";
-import { awardSourceMeta, findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
 import type { Meta } from "@/lib/cinemeta";
 import { awardSummary, useAwards, type AwardType } from "@/lib/providers/wikidata";
-import { mergeBundledAwards } from "@/lib/awards-history";
+import { mergeBundledAwards, parseAwardYear } from "@/lib/awards-history";
 
 const HEADLINE_FOR: Record<string, string> = {
   oscar: "Academy Award",
@@ -31,9 +30,13 @@ const NOUN_FOR: Record<string, string> = {
 };
 
 export function MetaAwardsCorner({ meta, imdbId }: { meta: Meta; imdbId?: string | null }) {
-  const isAnime = meta.id.startsWith("kitsu:") || meta.id.startsWith("mal:");
-  if (isAnime) return <AnimeCorner name={meta.name} year={parseAwardYear(meta.releaseInfo)} />;
-  return <ClassicCorner imdbId={imdbId ?? null} name={meta.name} year={parseAwardYear(meta.releaseInfo)} />;
+  return (
+    <ClassicCorner
+      imdbId={imdbId ?? null}
+      name={meta.name}
+      year={parseAwardYear(meta.releaseInfo)}
+    />
+  );
 }
 
 type CornerTier = "full" | "compact" | "hidden";
@@ -59,51 +62,15 @@ function useHostTier() {
   return { ref, tier };
 }
 
-function AnimeCorner({ name, year }: { name: string; year?: number }) {
-  const { ref, tier } = useHostTier();
-  const wins = findAnyAwardWins(name, year);
-  if (wins.length === 0 || tier === "hidden") return null;
-  const top = wins[0];
-  const src = awardSourceMeta(top.source);
-  const compact = tier === "compact";
-  const subline = top.isAOTY
-    ? `${top.year} Anime of the Year`
-    : `${top.year} ${top.categoryName.replace(/^Best\s+/i, "Best ")}`;
-  const otherWins = wins.length - 1;
-  return (
-    <div
-      ref={ref}
-      className="pointer-events-none absolute bottom-10 end-10 z-10 flex max-w-[44%] items-center justify-end gap-3 text-end"
-      title={wins.map((w) => `${awardSourceMeta(w.source).shortName} ${w.year} ${w.categoryName}`).join("\n")}
-    >
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span
-          className={`truncate font-bold uppercase tracking-[0.18em] text-ink/55 ${compact ? "text-[9.5px]" : "text-[10.5px]"}`}
-        >
-          {compact ? "Award Winner" : `${src.name} Winner`}
-        </span>
-        {!compact && <span className="truncate text-[13px] font-semibold text-ink/85">{subline}</span>}
-        {!compact && otherWins > 0 && (
-          <span className="truncate text-[11px] text-ink-subtle">
-            +{otherWins} more award{otherWins === 1 ? "" : "s"}
-          </span>
-        )}
-      </div>
-      <span className="shrink-0 text-accent">
-        <Laurel size={compact ? 48 : 68}>
-          <img
-            src={src.iconSmall}
-            alt=""
-            className={`object-contain ${compact ? "h-5 w-5" : "h-7 w-7"} ${top.source === "animation_kobe" ? "brightness-0 invert" : ""}`}
-            draggable={false}
-          />
-        </Laurel>
-      </span>
-    </div>
-  );
-}
-
-function ClassicCorner({ imdbId, name, year }: { imdbId: string | null; name: string; year?: number }) {
+function ClassicCorner({
+  imdbId,
+  name,
+  year,
+}: {
+  imdbId: string | null;
+  name: string;
+  year?: number;
+}) {
   const { ref, tier } = useHostTier();
   const live = useAwards(imdbId ?? undefined);
   const awards = useMemo(() => mergeBundledAwards(live, name, year), [live, name, year]);
@@ -145,10 +112,7 @@ function ClassicCorner({ imdbId, name, year }: { imdbId: string | null; name: st
             </span>
           ))}
       </div>
-      <span
-        className="shrink-0 text-accent"
-        style={laurelTint ? { color: laurelTint } : undefined}
-      >
+      <span className="shrink-0 text-accent" style={laurelTint ? { color: laurelTint } : undefined}>
         {won ? (
           <Laurel size={compact ? 48 : 68}>
             <AwardLogo type={top.type as AwardType} size={compact ? 18 : 24} />
@@ -171,4 +135,3 @@ function pluralizeNoun(type: string, n: number): string {
   if (base.endsWith("s")) return base;
   return `${base}s`;
 }
-

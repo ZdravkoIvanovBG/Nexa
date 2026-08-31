@@ -1,4 +1,3 @@
-mod anime4k;
 mod binary_lookup;
 mod browser;
 mod cast;
@@ -659,8 +658,6 @@ pub fn run() {
             web_server::web_serve_status,
             web_server::remote_ws_broadcast,
             web_server::remote_ws_client_count,
-            anime4k::anime4k_download,
-            anime4k::anime4k_dir,
             svp::svp_status,
             svp::svp_launch,
             svp::svp_ensure_running,

@@ -3,13 +3,8 @@ import type { Settings } from "@/lib/settings";
 import { fetchWatchingItems, fetchWatchlist } from "./watchlist";
 import type { SimklItem } from "./types";
 import { getLocalCache } from "./activities";
-import { enhanceGroupsWithRelations, type AnimeFranchise } from "./anime-grouping";
 import { clearCdnCache, fetchSimklTrending } from "./home-rails/cdn";
-import {
-  groupSimklItemsByFranchise,
-  hydrateSimklItems,
-  hydrateSimklItemsFranchise,
-} from "./home-rails/hydrate";
+import { hydrateSimklItems } from "./home-rails/hydrate";
 import { computeUpNextShows } from "./home-rails/up-next";
 
 export { hydrateSimklItems };
@@ -33,41 +28,18 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     fetchSimklTrending().catch(() => []),
   ]);
 
-  const isAnimeType = (it: SimklItem) =>
-    it.ids.mal != null || it.ids.anidb != null || it.ids.kitsu != null;
-  const watchingShows = watching.filter((it) => it.type === "show" && !isAnimeType(it));
-  const watchingAnimeRaw = watching.filter(
-    (it) => (it.type === "show" || it.type === "movie") && isAnimeType(it),
-  );
-  const planMovies = plan.filter((it) => it.type === "movie" && !isAnimeType(it));
-  const planShows = plan.filter((it) => it.type === "show" && !isAnimeType(it));
-  const planAnimeRaw = plan.filter(
-    (it) => (it.type === "show" || it.type === "movie") && isAnimeType(it),
-  );
+  const watchingShows = watching.filter((it) => it.type === "show");
+  const planMovies = plan.filter((it) => it.type === "movie");
+  const planShows = plan.filter((it) => it.type === "show");
 
-  let watchingAnime = groupSimklItemsByFranchise(watchingAnimeRaw);
-  let planAnime = groupSimklItemsByFranchise(planAnimeRaw);
-
-  watchingAnime = await enhanceGroupsWithRelations(watchingAnime).catch(() => watchingAnime);
-  planAnime = await enhanceGroupsWithRelations(planAnime).catch(() => planAnime);
-
-  const [
-    watchingShowsMetas,
-    watchingAnimeMetas,
-    planMoviesMetas,
-    planShowsMetas,
-    planAnimeMetas,
-    upcomingMetas,
-    trendingMetas,
-  ] = await Promise.all([
-    hydrateSimklItems(watchingShows.slice(0, PER_RAIL), tmdbKey),
-    hydrateSimklItemsFranchise(watchingAnime.slice(0, PER_RAIL)),
-    hydrateSimklItems(planMovies.slice(0, PER_RAIL), tmdbKey),
-    hydrateSimklItems(planShows.slice(0, PER_RAIL), tmdbKey),
-    hydrateSimklItemsFranchise(planAnime.slice(0, PER_RAIL)),
-    hydrateSimklItems(upcomingShows.slice(0, PER_RAIL), tmdbKey),
-    hydrateSimklItems(trendingItems.slice(0, PER_RAIL), tmdbKey),
-  ]);
+  const [watchingShowsMetas, planMoviesMetas, planShowsMetas, upcomingMetas, trendingMetas] =
+    await Promise.all([
+      hydrateSimklItems(watchingShows.slice(0, PER_RAIL), tmdbKey),
+      hydrateSimklItems(planMovies.slice(0, PER_RAIL), tmdbKey),
+      hydrateSimklItems(planShows.slice(0, PER_RAIL), tmdbKey),
+      hydrateSimklItems(upcomingShows.slice(0, PER_RAIL), tmdbKey),
+      hydrateSimklItems(trendingItems.slice(0, PER_RAIL), tmdbKey),
+    ]);
 
   const rows: HomeRow[] = [];
 
@@ -75,12 +47,6 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
     const slice = items.slice((page - 1) * PER_RAIL, page * PER_RAIL);
     if (slice.length === 0) return [];
     return hydrateSimklItems(slice, tmdbKey);
-  };
-
-  const pagerFranchise = (items: AnimeFranchise[]) => async (page: number) => {
-    const slice = items.slice((page - 1) * PER_RAIL, page * PER_RAIL);
-    if (slice.length === 0) return [];
-    return hydrateSimklItemsFranchise(slice);
   };
 
   if (watchingShowsMetas.length >= 1 && settings.simklGranularFilters.shows.watching) {
@@ -93,19 +59,6 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
       hasMore: watchingShows.length > PER_RAIL,
       noDedup: true,
       fetcher: pager(watchingShows),
-    });
-  }
-
-  if (watchingAnimeMetas.length >= 1 && settings.simklGranularFilters.anime.watching) {
-    rows.push({
-      key: "simkl-watching-anime",
-      type: "series",
-      name: "Watching Anime on Simkl",
-      metas: watchingAnimeMetas,
-      page: 1,
-      hasMore: watchingAnime.length > PER_RAIL,
-      noDedup: true,
-      fetcher: pagerFranchise(watchingAnime),
     });
   }
 
@@ -132,19 +85,6 @@ export async function buildSimklHomeRows(settings: Settings): Promise<HomeRow[]>
       hasMore: planShows.length > PER_RAIL,
       noDedup: true,
       fetcher: pager(planShows),
-    });
-  }
-
-  if (planAnimeMetas.length >= 4 && settings.simklGranularFilters.anime.plantowatch) {
-    rows.push({
-      key: "simkl-plantowatch-anime",
-      type: "series",
-      name: "Plan to Watch Anime on Simkl",
-      metas: planAnimeMetas,
-      page: 1,
-      hasMore: planAnime.length > PER_RAIL,
-      noDedup: true,
-      fetcher: pagerFranchise(planAnime),
     });
   }
 

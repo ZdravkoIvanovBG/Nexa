@@ -1,7 +1,7 @@
 import { meta as cinemetaMeta, type Meta } from "./cinemeta";
 import { safeFetch as fetch } from "./safe-fetch";
-import { addonAccepts, userAddons, type Addon } from "./addons";
-import { loadInstalled } from "./addon-store";
+import { addonAccepts, type Addon } from "./addons";
+import { installedAddons } from "./addon-store";
 
 const ADDON_TIMEOUT_MS = 4000;
 
@@ -14,23 +14,12 @@ function preferCustomMeta(): boolean {
   }
 }
 
-function localAddons(): Addon[] {
-  return loadInstalled()
-    .filter((a) => !!a.manifest)
-    .map((a) => ({ manifest: a.manifest!, transportUrl: a.transportUrl }));
-}
-
-export async function resolveMeta(
-  authKey: string | null,
-  type: "movie" | "series",
-  id: string,
-): Promise<Meta | null> {
+export async function resolveMeta(type: "movie" | "series", id: string): Promise<Meta | null> {
   const cinemetaPromise = cinemetaMeta(type, id).catch(() => null);
 
-  const user = authKey ? await userAddons(authKey).catch(() => [] as Addon[]) : [];
   const seen = new Set<string>();
   const candidates: Addon[] = [];
-  for (const a of [...user, ...localAddons()]) {
+  for (const a of installedAddons()) {
     const key = a.transportUrl || a.manifest.id;
     if (seen.has(key)) continue;
     seen.add(key);

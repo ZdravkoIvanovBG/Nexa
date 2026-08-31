@@ -33,18 +33,17 @@ export function useMarkSeason({
       );
       if (!simklConnected) return;
       const r = stremioIdToSimklTarget(meta.id, { season: active, episode: 1 });
-      const showIds =
-        r.ok &&
-        (r.target.kind === "episode"
-          ? r.target.show.ids
-          : r.target.kind === "anime-episode"
-            ? r.target.anime.ids
-            : null);
+      const showIds = r.ok && r.target.kind === "episode" ? r.target.show.ids : null;
       if (!showIds) return;
       if (watched) {
-        void markEpisodesWatched(showIds, active, enrichedEpisodes.map((e) => e.episodeNumber));
+        void markEpisodesWatched(
+          showIds,
+          active,
+          enrichedEpisodes.map((e) => e.episodeNumber),
+        );
       } else {
-        for (const e of enrichedEpisodes) void unmarkEpisodeWatched(showIds, active, e.episodeNumber);
+        for (const e of enrichedEpisodes)
+          void unmarkEpisodeWatched(showIds, active, e.episodeNumber);
       }
     },
     [meta, active, enrichedEpisodes, simklConnected],

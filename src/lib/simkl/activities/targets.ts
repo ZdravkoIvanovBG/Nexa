@@ -10,19 +10,12 @@ import {
 } from "./store";
 
 function targetIds(target: SimklTarget): RawIds | undefined {
-  const ids =
-    target.kind === "episode"
-      ? target.show.ids
-      : target.kind === "anime-episode"
-        ? target.anime.ids
-        : target.ids;
+  const ids = target.kind === "episode" ? target.show.ids : target.ids;
   return ids as RawIds;
 }
 
 function targetType(target: SimklTarget): "movie" | "show" | "anime" {
-  if (target.kind === "movie") return "movie";
-  if (target.kind === "anime" || target.kind === "anime-episode") return "anime";
-  return "show";
+  return target.kind === "movie" ? "movie" : "show";
 }
 
 export function updateCachedStatus(

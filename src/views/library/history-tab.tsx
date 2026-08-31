@@ -1,13 +1,8 @@
 import { Clock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import {
-  episodeFromVideoId,
-  library,
-  libraryMetaType,
-  removeStremioLibraryItem,
-  type LibraryItem,
-} from "@/lib/stremio";
+import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/library-item";
+import { library, removeStremioLibraryItem } from "@/lib/stremio";
 import { fetchWatchedHistory, type HistoryItem } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useSettings } from "@/lib/settings";

@@ -11,8 +11,10 @@ import {
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { isAuthenticated as simklConnected } from "@/lib/simkl/session";
 import { setItemWithRecovery, freeStorageSpace } from "@/lib/storage-recovery";
-import { cloudWriteId, saveStremioBookmark, removeStremioBookmark } from "@/lib/stremio";
+import { cloudWriteId } from "@/lib/media-id";
+import { saveStremioBookmark, removeStremioBookmark } from "@/lib/stremio";
 import { readActiveStremioAuthKey } from "@/lib/auth";
+import { applyRemote, mirrorWatchlist } from "@/lib/cloud/mirror";
 
 const KEY = "harbor.watchlist.v1";
 const AGG_KEY = "harbor.watchlist.aggregate.v1";
@@ -109,6 +111,17 @@ function write(map: Map<string, LocalEntry>) {
     memoryFallback = null;
   }
   for (const s of subs) s();
+  mirrorWatchlist(Array.from(map.values()));
+}
+
+/**
+ * Overwrite the whole local watchlist from a cloud pull. Wrapped in
+ * applyRemote so the mirror treats it as inbound and does not push it back.
+ */
+export function replaceWatchlist(entries: LocalEntry[]): void {
+  const map = new Map<string, LocalEntry>();
+  for (const e of entries) map.set(e.id, e);
+  applyRemote(() => write(map));
 }
 
 export function readLocalEntries(): LocalEntry[] {

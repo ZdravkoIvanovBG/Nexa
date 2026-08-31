@@ -2,13 +2,12 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { emptySnapshot, type PlayerBridge, type PlayerSnapshot } from "@/lib/player/bridge";
 import { probeMpv } from "@/lib/player/mpv";
 import { mergeMpvOptions } from "@/lib/player/mpv-tuning";
-import { anime4kShadersFor, type Anime4kChoice } from "./use-anime4k";
 import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock } from "@/lib/player/playback-clock";
 import { isLinuxDesktop, isWindowsDesktop } from "@/lib/platform";
 import { svpEnsureRunning, svpStatus } from "@/lib/svp";
-import { isAnimeMedia, isSvpActiveForMedia } from "@/lib/player/svp-policy";
+import { isSvpActive } from "@/lib/player/svp-policy";
 import { pickBridge } from "../player-utils";
 
 function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean {
@@ -49,9 +48,7 @@ export function usePlayerBridge(params: {
 
   const hdrOpaqueWindow = isWindowsDesktop() && settings.playerHdrOpaqueWindow;
   const embedActive = settings.playerMpvEmbed && !hdrOpaqueWindow;
-  const isAnimeSrc = isAnimeMedia(src.meta);
-  const anime4kOn = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
-  const svpRequested = isSvpActiveForMedia(settings, src.meta);
+  const svpRequested = isSvpActive(settings);
   const [svpRuntimeReady, setSvpRuntimeReady] = useState<boolean | null>(
     isLinuxDesktop() && svpRequested ? null : true,
   );
@@ -85,7 +82,7 @@ export function usePlayerBridge(params: {
       !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
   const chosenEngine =
     isLiveLike && !src.notWebReady ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
-  const bridgeKey = `${chosenEngine}|${anime4kOn}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}`;
+  const bridgeKey = `${chosenEngine}|${embedActive}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {
     if (svpPending) return;
@@ -111,16 +108,10 @@ export function usePlayerBridge(params: {
         };
       };
       const { bridge: choose, engine: chosen } = await pickBridge(want, src.notWebReady === true, {
-        anime4k: anime4kOn,
         hdrToSdr: settings.playerHdrToSdr,
         rtxHdr: settings.playerRtxHdr && !settings.playerHdrToSdr && !svpOn,
         embed: embedActive,
         d3d11Flip: settings.playerD3d11Flip,
-        anime4kShaders: anime4kShadersFor(
-          settings,
-          src,
-          (settings.playerAnime4kOverride as Anime4kChoice) || "auto",
-        ),
         macEdr: false,
         extraOptions: mergeMpvOptions(settings, svpOn),
         getEmbedRect,

@@ -11,7 +11,6 @@ import { Section, ToggleRow } from "./shared";
 import { clearCalendarCache } from "@/lib/simkl/calendar";
 import { clearHomeRailsCache } from "@/lib/simkl/home-rails";
 import { clearCalendarSourceCache } from "@/lib/calendar-sources";
-import { clearAnimeGroupingCache } from "@/lib/simkl/anime-grouping";
 
 export function SimklPanel() {
   const t = useT();
@@ -66,7 +65,9 @@ export function SimklPanel() {
               {t("Connect your Simkl account")}
             </h2>
             <p className="text-[13.5px] leading-relaxed text-ink-muted">
-              {t("Sync and track movies, shows, and anime across everything you use. Harbor marks what you finish as watched on Simkl and keeps your plan-to-watch list in step. Free at simkl.com.")}
+              {t(
+                "Sync and track movies, shows, and anime across everything you use. Harbor marks what you finish as watched on Simkl and keeps your plan-to-watch list in step. Free at simkl.com.",
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -90,7 +91,9 @@ export function SimklPanel() {
         <>
           <Section
             title={t("Connected")}
-            subtitle={t("Harbor will mark what you finish as watched on Simkl and sync your plan-to-watch list.")}
+            subtitle={t(
+              "Harbor will mark what you finish as watched on Simkl and sync your plan-to-watch list.",
+            )}
           >
             <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
               <div className="flex items-center gap-3">
@@ -107,8 +110,12 @@ export function SimklPanel() {
                   </span>
                 )}
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] font-medium text-ink">{username || t("Connected")}</span>
-                  <span className="text-[12px] text-ink-subtle">{t("Authorized on this device")}</span>
+                  <span className="text-[14px] font-medium text-ink">
+                    {username || t("Connected")}
+                  </span>
+                  <span className="text-[12px] text-ink-subtle">
+                    {t("Authorized on this device")}
+                  </span>
                 </div>
               </div>
               {username && (
@@ -139,7 +146,9 @@ export function SimklPanel() {
             )}
             <ToggleRow
               label={t("Show Simkl rails on Home")}
-              sub={t("Display your Watching, Plan to Watch, Up Next, and Trending rows on the home screen.")}
+              sub={t(
+                "Display your Watching, Plan to Watch, Up Next, and Trending rows on the home screen.",
+              )}
               value={settings.simklHomeRailsEnabled}
               onChange={(val) => update({ simklHomeRailsEnabled: val })}
             />
@@ -157,7 +166,9 @@ export function SimklPanel() {
             />
             <ToggleRow
               label={t("Scrobble to SIMKL")}
-              sub={t("Automatically track what you are playing and save watch progress in real-time.")}
+              sub={t(
+                "Automatically track what you are playing and save watch progress in real-time.",
+              )}
               value={settings.simklScrobbleEnabled}
               onChange={(val) => update({ simklScrobbleEnabled: val })}
             />
@@ -173,21 +184,6 @@ export function SimklPanel() {
               value={settings.simklEnableUserRatings}
               onChange={(val) => update({ simklEnableUserRatings: val })}
             />
-            <div className="flex flex-col gap-1.5 pt-1">
-              <p className="text-[13px] font-medium text-ink">{t("Anime Title Language")}</p>
-              <p className="text-[12px] leading-relaxed text-ink-subtle">
-                {t("Preferred language for anime titles displayed on poster cards.")}
-              </p>
-              <select
-                value={settings.simklAnimeTitleLanguage}
-                onChange={(e) => update({ simklAnimeTitleLanguage: e.target.value as "english" | "romaji" | "native" })}
-                className="h-11 w-full max-w-[340px] rounded-xl border border-edge-soft bg-canvas/40 px-3.5 text-[13.5px] text-ink outline-none transition-colors hover:border-edge focus:border-accent cursor-pointer"
-              >
-                <option value="english" className="bg-elevated text-ink">{t("English")}</option>
-                <option value="romaji" className="bg-elevated text-ink">{t("Romaji")}</option>
-                <option value="native" className="bg-elevated text-ink">{t("Native/Japanese")}</option>
-              </select>
-            </div>
             {!confirmDisconnect ? (
               <button
                 onClick={() => setConfirmDisconnect(true)}
@@ -222,17 +218,14 @@ export function SimklPanel() {
                         simklUpNextRailEnabled: false,
                         simklTrendingRailEnabled: false,
                         showSimklBadge: true,
-                        simklAnimeTitleLanguage: "english",
                         simklGranularFilters: {
                           movies: { plantowatch: true },
                           shows: { watching: true, plantowatch: true },
-                          anime: { watching: true, plantowatch: true },
                         },
                       });
                       clearCalendarCache();
                       clearHomeRailsCache();
                       clearCalendarSourceCache();
-                      clearAnimeGroupingCache();
                       disconnect();
                       setConfirmDisconnect(false);
                     }}
@@ -289,34 +282,6 @@ export function SimklPanel() {
                       simklGranularFilters: {
                         ...settings.simklGranularFilters,
                         shows: { ...settings.simklGranularFilters.shows, plantowatch: val },
-                      },
-                    })
-                  }
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 rounded-xl border border-edge-soft/60 bg-canvas/30 p-4">
-                <h3 className="text-[14px] font-bold text-ink">{t("Anime")}</h3>
-                <ToggleRow
-                  label={t("Watching")}
-                  value={settings.simklGranularFilters.anime.watching}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        anime: { ...settings.simklGranularFilters.anime, watching: val },
-                      },
-                    })
-                  }
-                />
-                <ToggleRow
-                  label={t("Plan to Watch")}
-                  value={settings.simklGranularFilters.anime.plantowatch}
-                  onChange={(val) =>
-                    update({
-                      simklGranularFilters: {
-                        ...settings.simklGranularFilters,
-                        anime: { ...settings.simklGranularFilters.anime, plantowatch: val },
                       },
                     })
                   }

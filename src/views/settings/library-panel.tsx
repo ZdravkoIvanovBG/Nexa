@@ -9,8 +9,6 @@ import traditionalStyleImg from "@/assets/onboarding/traditional.png";
 import omdbLogo from "@/assets/addon-logos/omdb.png";
 import previewPoster1 from "@/assets/preview/poster1.webp";
 import previewPoster2 from "@/assets/preview/poster2.webp";
-import previewPoster3 from "@/assets/preview/poster3.webp";
-import previewPoster4 from "@/assets/preview/poster4.webp";
 import { SpoilerPreview } from "./spoiler-preview";
 import { HomeRowPreview } from "./home-layout-previews";
 import { HomeLanguagePicker } from "./home-language-picker";
@@ -24,7 +22,6 @@ import auddLogo from "@/assets/addon-logos/auddio.webp";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
 import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
-import { MalLogo } from "@/components/icons/mal-logo";
 import { RtFresh } from "@/components/icons/rt-fresh";
 import { RtRotten } from "@/components/icons/rt-rotten";
 import { useProfiles } from "@/lib/profiles";
@@ -82,11 +79,10 @@ export function LibraryPanel({
     showLetterboxd: settings.showLetterboxdBadge && !!settings.mdblistKey,
     showMdblist: settings.showMdblistBadge && !!settings.mdblistKey,
     showTrakt: settings.showTraktBadge && !!settings.mdblistKey,
-    showMal: settings.showMalBadge,
     showSimkl: settings.showSimklBadge,
   };
   const enabledBadgeCount =
-    (badgeFlags.showImdb || badgeFlags.showTmdb || badgeFlags.showMal ? 1 : 0) +
+    (badgeFlags.showImdb || badgeFlags.showTmdb ? 1 : 0) +
     (badgeFlags.showRt ? 1 : 0) +
     (badgeFlags.showPopcorn ? 1 : 0) +
     (badgeFlags.showMetacritic ? 1 : 0) +
@@ -118,7 +114,7 @@ export function LibraryPanel({
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
   };
-  const pushHideContent = (key: "anime" | "sports" | "liveTv" | "adult", value: boolean) => {
+  const pushHideContent = (key: "sports" | "liveTv" | "adult", value: boolean) => {
     const next = { ...settings.hideContent, [key]: value };
     update({ hideContent: next });
     if (activeProfile) updateProfile(activeProfile.id, { hideContent: next });
@@ -155,15 +151,6 @@ export function LibraryPanel({
           value={settings.showPlaylistsTab}
           onChange={(v) => update({ showPlaylistsTab: v })}
           preview={<HomeRowPreview kind="playlists-tab" />}
-        />
-        <ToggleRow
-          label={t("Keep anime in the Anime room only")}
-          sub={t(
-            "Hides anime from the Home Continue Watching row. It still appears in the Anime tab's own Continue Watching.",
-          )}
-          value={settings.animeOnlyInAnimeRoom}
-          onChange={(v) => update({ animeOnlyInAnimeRoom: v })}
-          preview={<HomeRowPreview kind="anime-room" />}
         />
         <ToggleRow
           label={t("Advance Continue Watching to the next episode")}
@@ -205,7 +192,7 @@ export function LibraryPanel({
       <Section
         title={t("Spoilers")}
         subtitle={t(
-          "Blur episode artwork, titles, and descriptions for episodes you have not watched yet, on both shows and anime. Hover an episode to peek.",
+          "Blur episode artwork, titles, and descriptions for episodes you have not watched yet. Hover an episode to peek.",
         )}
       >
         <ToggleRow
@@ -641,12 +628,6 @@ export function LibraryPanel({
                   onChange={(v) => update({ showTmdbDetail: v })}
                 />
                 <ToggleRow
-                  label={t("MAL on details page")}
-                  leading={<MalBadge compact />}
-                  value={settings.showMalDetail}
-                  onChange={(v) => update({ showMalDetail: v })}
-                />
-                <ToggleRow
                   label={t("Rotten Tomatoes on details page")}
                   leading={<RtPairBadge />}
                   value={settings.showRtDetail}
@@ -731,59 +712,6 @@ export function LibraryPanel({
               lockReason={
                 !settings.mdblistKey ? t("Add an MDBList API key to unlock this.") : undefined
               }
-            />
-            <ToggleRow
-              label={t("Show MAL score on cards")}
-              sub={t(
-                "MyAnimeList scores for anime titles. RPDB doesn't cover anime, so this stays optional.",
-              )}
-              leading={<MalBadge />}
-              value={settings.showMalBadge}
-              onChange={(v) => update({ showMalBadge: v })}
-            />
-            {settings.showMalBadge && (
-              <div className="flex items-center justify-between gap-4 rounded-xl bg-canvas/40 px-4 py-3">
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-[13.5px] font-medium text-ink">
-                    {t("Anime card rating source")}
-                  </span>
-                  <span className="text-[12px] leading-snug text-ink-muted">
-                    {t(
-                      "Pick which score anime cards show. IMDb falls back to MAL when a title has no IMDb rating yet.",
-                    )}
-                  </span>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  {(
-                    [
-                      { id: "mal", label: t("MAL") },
-                      { id: "imdb", label: t("IMDb") },
-                    ] as const
-                  ).map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => update({ animeCardRating: s.id })}
-                      aria-pressed={settings.animeCardRating === s.id}
-                      className={`rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-                        settings.animeCardRating === s.id
-                          ? "bg-ink text-canvas"
-                          : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft/60 hover:bg-elevated hover:text-ink"
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <ToggleRow
-              label={t("Show DUB badge on anime cards")}
-              sub={t(
-                "Flags anime with an English dub. Also tags dub / sub / dual on stream sources.",
-              )}
-              value={settings.showDubBadge}
-              onChange={(v) => update({ showDubBadge: v })}
             />
             <ToggleRow
               label={t("Show Metacritic score on cards")}
@@ -918,14 +846,6 @@ export function LibraryPanel({
           "Hide entire categories. Toggling these also removes the matching sidebar entries and rails.",
         )}
       >
-        <ToggleRow
-          label={t("Hide anime")}
-          sub={t(
-            "Removes the Anime tab and any Trending/Popular/Upcoming/New anime rows from Home.",
-          )}
-          value={settings.hideContent.anime}
-          onChange={(v) => pushHideContent("anime", v)}
-        />
         <ToggleRow
           label={t("Hide Live TV")}
           sub={t("Removes the Live TV tab from the sidebar.")}
@@ -1074,19 +994,6 @@ function TmdbBadge() {
   return <img src={tmdbLogo} alt="" className="h-7 w-7 shrink-0 rounded-md object-contain" />;
 }
 
-function MalBadge({ compact = false }: { compact?: boolean } = {}) {
-  return (
-    <span
-      className={`flex shrink-0 items-center justify-center rounded-md text-white shadow-[0_1px_2px_rgba(0,0,0,0.25)] ${
-        compact ? "h-[18px] w-10 px-1.5" : "h-7 w-[52px] px-2.5"
-      }`}
-      style={{ background: "#2E51A2" }}
-    >
-      <MalLogo className={compact ? "h-2.5 w-auto" : "h-[14px] w-auto"} />
-    </span>
-  );
-}
-
 function RtPairBadge() {
   return (
     <span className="flex shrink-0 items-center -space-x-2">
@@ -1147,7 +1054,6 @@ type PreviewFlags = {
   showLetterboxd: boolean;
   showMdblist: boolean;
   showTrakt: boolean;
-  showMal: boolean;
   showSimkl: boolean;
 };
 
@@ -1234,86 +1140,53 @@ const WL_PREVIEW_POS: Record<string, string> = {
 
 function PreviewCard({
   position,
-  normalPoster,
-  animePoster,
-  phase,
+  poster,
   flags,
   watchlistBadge,
   limit,
 }: {
   position: "top" | "bottom";
-  normalPoster: string;
-  animePoster: string;
-  phase: "normal" | "anime";
+  poster: string;
   flags: PreviewFlags;
   watchlistBadge: "off" | "topStart" | "topEnd" | "bottomStart" | "bottomEnd";
   limit: number;
 }) {
   const extras = previewExtras(flags);
-  const normal: React.ReactNode[] = [];
+  const nodes: React.ReactNode[] = [];
   if (flags.showImdb)
-    normal.push(
+    nodes.push(
       <span className="flex items-center gap-1">
         <ImdbIcon className="h-[10px] w-auto rounded-[2px]" />
         <span>8.4</span>
       </span>,
     );
   else if (flags.showTmdb)
-    normal.push(
+    nodes.push(
       <span className="flex items-center gap-1">
         <img src={tmdbLogo} alt="" className="h-[11px] w-auto object-contain" />
         <span>7.9</span>
       </span>,
     );
   if (flags.showRt)
-    normal.push(
+    nodes.push(
       <span className="flex items-center gap-0.5">
         <RtFresh className="h-[11px] w-auto" />
         <span>92%</span>
       </span>,
     );
-  normal.push(...extras);
-
-  const anime: React.ReactNode[] = [];
-  if (flags.showMal)
-    anime.push(
-      <span className="flex items-center gap-0.5">
-        <MalLogo className="h-[10px] w-auto text-ink-muted" />
-        <span>8.7</span>
-      </span>,
-    );
-  anime.push(...extras);
+  nodes.push(...extras);
 
   const cap = Math.max(1, limit);
   const badgePos = position === "top" ? "top-1.5" : "bottom-1.5";
   return (
     <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg shadow-[0_4px_14px_rgba(0,0,0,0.45)]">
       <img
-        src={normalPoster}
+        src={poster}
         alt=""
         draggable={false}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-          phase === "normal" ? "opacity-100" : "opacity-0"
-        }`}
+        className="absolute inset-0 h-full w-full object-cover"
       />
-      <img
-        src={animePoster}
-        alt=""
-        draggable={false}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-          phase === "anime" ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <PreviewBadgeRow
-        nodes={normal.slice(0, cap)}
-        badgePos={badgePos}
-        visible={phase === "normal"}
-      />
-      <PreviewBadgeRow
-        nodes={anime.slice(0, cap)}
-        badgePos={badgePos}
-        visible={phase === "anime"}
-      />
+      <PreviewBadgeRow nodes={nodes.slice(0, cap)} badgePos={badgePos} visible />
       {watchlistBadge !== "off" && (
         <span
           className={`absolute z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-canvas/85 text-ink ring-1 ring-edge-soft/70 ${WL_PREVIEW_POS[watchlistBadge]}`}
@@ -1504,33 +1377,23 @@ function PlacementPicker({
   limit: number;
 }) {
   const effective: "top" | "bottom" = value === "top" ? "top" : "bottom";
-  const [phase, setPhase] = useState<"normal" | "anime">("normal");
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setPhase((p) => (p === "normal" ? "anime" : "normal"));
-    }, 4000);
-    return () => window.clearInterval(id);
-  }, []);
   const options: Array<{
     id: "top" | "bottom";
     label: string;
     sub: string;
-    normal: string;
-    anime: string;
+    poster: string;
   }> = [
     {
       id: "top",
       label: "Top",
       sub: "Floats over the artwork",
-      normal: previewPoster1,
-      anime: previewPoster3,
+      poster: previewPoster1,
     },
     {
       id: "bottom",
       label: "Bottom",
       sub: "Sits above the title strip",
-      normal: previewPoster2,
-      anime: previewPoster4,
+      poster: previewPoster2,
     },
   ];
   return (
@@ -1551,9 +1414,7 @@ function PlacementPicker({
             <div className="mx-auto w-[68%]">
               <PreviewCard
                 position={opt.id}
-                normalPoster={opt.normal}
-                animePoster={opt.anime}
-                phase={phase}
+                poster={opt.poster}
                 flags={flags}
                 watchlistBadge={watchlistBadge}
                 limit={limit}

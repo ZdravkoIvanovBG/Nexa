@@ -16,7 +16,6 @@ export type TrustOptions = {
   preferredLanguages?: string[];
   preferredAudioLangs?: string[];
   requirePreferredLanguage?: boolean;
-  isAnime?: boolean;
 };
 
 export type Rejection = {
@@ -25,10 +24,13 @@ export type Rejection = {
 };
 
 const FILENAME_BLACKLIST = [".exe", ".zip", ".rar", ".lnk", ".scr", ".bat", ".iso", ".img"];
-const TRAILER_RX = /(?<![A-Za-z0-9])(?:trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)(?![A-Za-z0-9])/i;
+const TRAILER_RX =
+  /(?<![A-Za-z0-9])(?:trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)(?![A-Za-z0-9])/i;
 const UNCACHED_EMOJI_RX = /[⬇⏳⌛⏬🔽📥☁]/u;
-const PLACEHOLDER_BANNER_RX = /(?:🚫|⚠️?|❗|ℹ️?)\s*(?:no\s+streams?\s+(?:found|available)|streams?\s+filtered|streams?\s+blocked|filtered)/iu;
-const STATUS_LINE_RX = /\b(?:expires?\s+in|days?\s+left|premium\s+(?:active|expir(?:ed|ing))|api\s+limit|quota\s+used)\b/i;
+const PLACEHOLDER_BANNER_RX =
+  /(?:🚫|⚠️?|❗|ℹ️?)\s*(?:no\s+streams?\s+(?:found|available)|streams?\s+filtered|streams?\s+blocked|filtered)/iu;
+const STATUS_LINE_RX =
+  /\b(?:expires?\s+in|days?\s+left|premium\s+(?:active|expir(?:ed|ing))|api\s+limit|quota\s+used)\b/i;
 const TINY_STUB_FLOOR = 5 * 1024 ** 2;
 
 const MIB = 1024 ** 2;
@@ -50,15 +52,6 @@ const EPISODE_MIN_SIZE: Record<Resolution, [number, number, number]> = {
   SD: [50 * MIB, 30 * MIB, 8 * MIB],
 };
 
-const ANIME_EPISODE_MIN_SIZE: Record<Resolution, [number, number, number]> = {
-  "4K": [600 * MIB, 400 * MIB, 150 * MIB],
-  "1080p": [220 * MIB, 150 * MIB, 50 * MIB],
-  "720p": [100 * MIB, 60 * MIB, 20 * MIB],
-  "480p": [40 * MIB, 28 * MIB, 8 * MIB],
-  SD: [25 * MIB, 18 * MIB, 5 * MIB],
-};
-
-
 export function applyTrust(
   streams: ParsedStream[],
   opts: TrustOptions = {},
@@ -79,7 +72,8 @@ export function applyTrust(
   return { keep, rejected };
 }
 
-const SHORT_FORMAT_RX = /\b(short|shorts|mini|mini[\s.\-_]?episode|ova|special|specials|skit|sketch|chibi|micro|webisode|vignette|interlude)\b/i;
+const SHORT_FORMAT_RX =
+  /\b(short|shorts|mini|mini[\s.\-_]?episode|ova|special|specials|skit|sketch|chibi|micro|webisode|vignette|interlude)\b/i;
 
 function isShortFormat(s: ParsedStream): boolean {
   const filenameRaw = s.behaviorHints?.filename ?? s.behaviorHints?.fileName ?? "";
@@ -106,8 +100,7 @@ function checkOne(
   inCinemaWindow: boolean,
   olderCatalog: boolean,
 ): string | null {
-  const hasPlayableUrl =
-    !!s.url || !!s.infoHash || !!s.ytId || !!s.externalUrl || !!s.nzbUrl;
+  const hasPlayableUrl = !!s.url || !!s.infoHash || !!s.ytId || !!s.externalUrl || !!s.nzbUrl;
   const titleNameDesc = `${s.title ?? ""} ${s.name ?? ""} ${s.description ?? ""}`;
   if (!hasPlayableUrl) {
     return "no-playable-source";
@@ -116,7 +109,11 @@ function checkOne(
     return "addon-placeholder-banner";
   }
   if (!s.infoHash && !s.url?.match(/\.(mkv|mp4|m4v|avi|webm|mov|ts)(?:\?|$)/i)) {
-    if (STATUS_LINE_RX.test(titleNameDesc) && !s.behaviorHints?.videoSize && !s.behaviorHints?.filename) {
+    if (
+      STATUS_LINE_RX.test(titleNameDesc) &&
+      !s.behaviorHints?.videoSize &&
+      !s.behaviorHints?.filename
+    ) {
       return "addon-status-card";
     }
   }
@@ -161,7 +158,7 @@ function checkOne(
     }
   }
 
-  if (opts.kind === "movie" && !opts.isAnime) {
+  if (opts.kind === "movie") {
     if (s.seasonPack || s.season != null || s.episode != null) {
       return "series-result-for-movie";
     }
@@ -170,7 +167,6 @@ function checkOne(
   if (
     strict &&
     opts.kind === "movie" &&
-    !opts.isAnime &&
     inCinemaWindow &&
     opts.expectedYear != null &&
     s.year == null &&
@@ -212,24 +208,26 @@ function checkOne(
     if (s.source === "BluRay" || s.remux) {
       return "fresh-cinema-fake-bluray";
     }
-    if (s.resolution === "4K" && (s.source === "WEB-DL" || s.source === "WEBRip" || s.source === "BDRip" || s.source === "HDRip")) {
+    if (
+      s.resolution === "4K" &&
+      (s.source === "WEB-DL" ||
+        s.source === "WEBRip" ||
+        s.source === "BDRip" ||
+        s.source === "HDRip")
+    ) {
       return "fresh-cinema-fake-4k-web";
     }
-    if (
-      s.source === "HDTV" &&
-      (s.resolution === "4K" || s.resolution === "1080p")
-    ) {
+    if (s.source === "HDTV" && (s.resolution === "4K" || s.resolution === "1080p")) {
       return "fresh-cinema-fake-hdtv";
     }
   }
 
   if (opts.kind === "series" && s.size != null && !isShortFormat(s)) {
-    const table = opts.isAnime ? ANIME_EPISODE_MIN_SIZE : EPISODE_MIN_SIZE;
-    const floor = pickFloor(table, s.resolution, inCinemaWindow, olderCatalog);
+    const floor = pickFloor(EPISODE_MIN_SIZE, s.resolution, inCinemaWindow, olderCatalog);
     if (s.size < floor) return `episode-stub-too-small-for-${s.resolution}`;
   }
 
-  if (strict && opts.kind === "series" && !opts.isAnime && opts.expectedTitle && s.parsedTitle) {
+  if (strict && opts.kind === "series" && opts.expectedTitle && s.parsedTitle) {
     if (!titleMatches(opts.expectedTitle, s.parsedTitle, s.year, opts.expectedYear ?? null)) {
       return "title-mismatch";
     }
@@ -239,7 +237,6 @@ function checkOne(
 
   if (
     strict &&
-    !opts.isAnime &&
     !hasFileIdx &&
     opts.expectedSeason != null &&
     s.season != null &&
@@ -251,7 +248,6 @@ function checkOne(
 
   if (
     strict &&
-    !opts.isAnime &&
     !hasFileIdx &&
     !s.seasonPack &&
     opts.expectedEpisode != null &&
@@ -269,19 +265,60 @@ function checkOne(
 }
 
 const ROMAN_TO_NUM: Record<string, number> = {
-  ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10,
+  ii: 2,
+  iii: 3,
+  iv: 4,
+  v: 5,
+  vi: 6,
+  vii: 7,
+  viii: 8,
+  ix: 9,
+  x: 10,
 };
 
 const TITLE_STOPWORDS = new Set([
-  "the", "a", "an", "of", "and", "in", "to", "for", "on", "at", "by",
-  "is", "or", "as", "from", "with", "into", "movie", "film",
+  "the",
+  "a",
+  "an",
+  "of",
+  "and",
+  "in",
+  "to",
+  "for",
+  "on",
+  "at",
+  "by",
+  "is",
+  "or",
+  "as",
+  "from",
+  "with",
+  "into",
+  "movie",
+  "film",
 ]);
 
 const NUM_TO_ROMAN: Record<number, string> = {
-  2: "ii", 3: "iii", 4: "iv", 5: "v", 6: "vi", 7: "vii", 8: "viii", 9: "ix", 10: "x",
+  2: "ii",
+  3: "iii",
+  4: "iv",
+  5: "v",
+  6: "vi",
+  7: "vii",
+  8: "viii",
+  9: "ix",
+  10: "x",
 };
 const NUM_TO_WORD: Record<number, string> = {
-  2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+  2: "two",
+  3: "three",
+  4: "four",
+  5: "five",
+  6: "six",
+  7: "seven",
+  8: "eight",
+  9: "nine",
+  10: "ten",
 };
 
 function haystackHasSequelToken(haystack: string, expectedSeq: number): boolean {
@@ -299,9 +336,7 @@ function haystackHasSequelToken(haystack: string, expectedSeq: number): boolean 
 }
 
 function sequelMarker(title: string): number | null {
-  const cleaned = title
-    .replace(/\(\d{4}\)/g, "")
-    .replace(/\b(part|chapter|vol|volume)\b/gi, "");
+  const cleaned = title.replace(/\(\d{4}\)/g, "").replace(/\b(part|chapter|vol|volume)\b/gi, "");
   const m = cleaned.trim().match(/(?:\s|^)(\d{1,2}|[ivx]+)\s*$/i);
   if (!m) return null;
   const tok = m[1].toLowerCase();
@@ -314,7 +349,10 @@ function sequelMarker(title: string): number | null {
 }
 
 function tokenize(text: string): string[] {
-  const lower = text.toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
+  const lower = text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "");
   const words = lower.match(/[a-z0-9]+/g) ?? [];
   return words.filter((w) => w.length >= 3 && !TITLE_STOPWORDS.has(w));
 }

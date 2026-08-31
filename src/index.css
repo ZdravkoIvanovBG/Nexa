@@ -33,7 +33,6 @@
   --font-sans: "Switzer", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-channel: "General Sans", "Switzer", "Inter", system-ui, sans-serif;
-  --font-anime: "WonderfulFontyCure", "Sentient", "Georgia", serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -1653,6 +1652,10 @@ button.group:not([data-no-card-ring]):hover .harbor-card-ring::after {
   transition: opacity var(--row-card-wide-fade-duration) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+[data-expanding-card-title-meta]::before {
+  content: " · ";
+}
+
 .harbor-expanding-card-scope [data-expanding-card-title-meta] {
   display: none;
 }
@@ -1705,6 +1708,12 @@ button.group:not([data-no-card-ring]):hover .harbor-card-ring::after {
   font-size: 0.72rem;
   font-weight: 600;
   color: rgb(255 255 255 / 0.72);
+}
+
+.harbor-expanding-card-scope
+  [data-expanding-card]:is([data-row-card-expanded="true"], [data-row-card-title-collapsing])
+  [data-expanding-card-title-meta]::before {
+  content: none;
 }
 
 html:not([data-input-modality="pointer"])

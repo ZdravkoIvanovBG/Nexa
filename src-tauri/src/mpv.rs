@@ -42,11 +42,9 @@ pub struct MpvStartArgs {
     pub url: String,
     pub start_at_sec: Option<f64>,
     pub subtitles: Option<Vec<MpvSub>>,
-    pub anime4k: Option<bool>,
     pub hdr_to_sdr: Option<bool>,
     pub rtx_hdr: Option<bool>,
     pub embed: Option<bool>,
-    pub anime4k_shaders: Option<Vec<String>>,
     pub d3d11_flip: Option<bool>,
     pub mac_edr: Option<bool>,
     pub is_live: Option<bool>,
@@ -435,19 +433,6 @@ fn apply_pre_init(
         #[cfg(target_os = "macos")]
         {
             opt("target-colorspace-hint", "yes");
-        }
-    }
-
-    if let Some(shaders) = &args.anime4k_shaders {
-        let cleaned: Vec<&str> = shaders
-            .iter()
-            .filter(|s| !s.is_empty())
-            .map(|s| s.as_str())
-            .collect();
-        if !cleaned.is_empty() {
-            let sep = if cfg!(windows) { ";" } else { ":" };
-            let joined = cleaned.join(sep);
-            opt("glsl-shaders", &joined);
         }
     }
 

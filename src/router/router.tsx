@@ -39,11 +39,9 @@ function tabRoute(path: string) {
 const routeTree = rootRoute.addChildren([
   tabRoute("/"),
   tabRoute("/discover"),
-  tabRoute("/catalogs"),
   tabRoute("/movies"),
   tabRoute("/shows"),
   tabRoute("/kids"),
-  tabRoute("/anime"),
   tabRoute("/live"),
   tabRoute("/vod"),
   tabRoute("/calendar"),
@@ -51,7 +49,6 @@ const routeTree = rootRoute.addChildren([
   tabRoute("/downloads"),
   tabRoute("/addons"),
   tabRoute("/settings"),
-  tabRoute("/wrapped"),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/detail/$type/$id",

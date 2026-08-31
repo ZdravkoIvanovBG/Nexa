@@ -58,7 +58,7 @@ export function usePlayerWatched(params: {
       const item = await libraryGetOne(authKey, meta.id).catch(() => null);
       const watched = item?.state?.watched;
       if (!watched || cancelled) return;
-      const full = await resolveMeta(authKey, "series", meta.id).catch(() => null);
+      const full = await resolveMeta("series", meta.id).catch(() => null);
       const keys = await decodeWatchedEpisodes(watched, full?.videos);
       if (!cancelled) setStremioWatched(keys);
     })();

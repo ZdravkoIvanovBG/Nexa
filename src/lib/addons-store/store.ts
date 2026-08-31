@@ -1,9 +1,8 @@
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import type { Addon } from "@/lib/addons";
-import { useAuth } from "@/lib/auth";
-import { userAddons } from "@/lib/addons";
-import { fetchInstalledAddons } from "@/lib/addon-store";
+import { useProfiles } from "@/lib/profiles";
+import { installedAddonsResolved } from "@/lib/addon-store";
 import { listAddons } from "@/lib/providers/stremio-addons";
 import { queryKeys } from "@/lib/query/keys";
 import { isAdultText } from "./adult-filter";
@@ -30,7 +29,7 @@ export type ResolvedAddon = {
   curated?: CuratedEntry;
   manifest: Addon["manifest"] | null;
   transportUrl: string;
-  source: "curated" | "community" | "stremio-user" | "harbor-local";
+  source: "curated" | "community" | "harbor-local";
   installed: boolean;
 };
 
@@ -44,16 +43,8 @@ type BaseCatalog = {
 };
 
 /** Merge installed + directory lists into the base catalog (pure, no manifest fetches). */
-function mergeBaseCatalog(
-  local: Addon[],
-  stremio: Addon[],
-  community: Addon[],
-  saList: Addon[],
-): BaseCatalog {
-  const installed = new Set<string>([
-    ...local.map((a) => a.manifest.id),
-    ...stremio.map((a) => a.manifest.id),
-  ]);
+function mergeBaseCatalog(local: Addon[], community: Addon[], saList: Addon[]): BaseCatalog {
+  const installed = new Set<string>(local.map((a) => a.manifest.id));
 
   const map = new Map<string, ResolvedAddon>();
 
@@ -67,16 +58,6 @@ function mergeBaseCatalog(
     });
   }
 
-  for (const a of stremio) {
-    const existing = map.get(a.manifest.id);
-    map.set(a.manifest.id, {
-      curated: existing?.curated,
-      manifest: a.manifest,
-      transportUrl: a.transportUrl,
-      source: existing ? existing.source : "stremio-user",
-      installed: true,
-    });
-  }
   for (const a of local) {
     const existing = map.get(a.manifest.id);
     map.set(a.manifest.id, {
@@ -225,13 +206,9 @@ function finalizeCatalog(
   return map;
 }
 
-/** Installed addons from both sources, in parallel. Shared by store + prefetch. */
-export async function fetchInstalledAddonsPair(authKey: string | null) {
-  const [local, stremio] = await Promise.all([
-    fetchInstalledAddons().catch(() => [] as Addon[]),
-    authKey ? userAddons(authKey).catch(() => [] as Addon[]) : Promise.resolve([] as Addon[]),
-  ]);
-  return { local, stremio };
+/** The user's installed addons. Shared by store + prefetch. */
+export async function fetchInstalledAddonsList(): Promise<Addon[]> {
+  return installedAddonsResolved().catch(() => [] as Addon[]);
 }
 
 /** Community + stremio-addons directories, in parallel. Shared by store + prefetch. */
@@ -258,12 +235,12 @@ export function useAddonsCatalog(adultsAllowed: boolean): {
   installedIds: Set<string>;
   refetch: () => void;
 } {
-  const { authKey } = useAuth();
+  const { activeId: profileId } = useProfiles();
   const queryClient = useQueryClient();
 
   const installedQuery = useQuery({
-    queryKey: queryKeys.addons.installed(authKey),
-    queryFn: () => fetchInstalledAddonsPair(authKey),
+    queryKey: queryKeys.addons.installed(profileId),
+    queryFn: fetchInstalledAddonsList,
     staleTime: 60_000,
   });
 
@@ -276,8 +253,7 @@ export function useAddonsCatalog(adultsAllowed: boolean): {
   const base = useMemo(
     () =>
       mergeBaseCatalog(
-        installedQuery.data?.local ?? [],
-        installedQuery.data?.stremio ?? [],
+        installedQuery.data ?? [],
         directoryQuery.data?.community ?? [],
         directoryQuery.data?.saList ?? [],
       ),
@@ -307,18 +283,18 @@ export function useAddonsCatalog(adultsAllowed: boolean): {
   // refetch, not the whole directory pipeline.
   useEffect(() => {
     const onChange = () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.addons.installed(authKey) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.addons.installed(profileId) });
     };
     window.addEventListener("harbor:addons-changed", onChange);
     return () => window.removeEventListener("harbor:addons-changed", onChange);
-  }, [queryClient, authKey]);
+  }, [queryClient, profileId]);
 
   return {
     loading: installedQuery.isPending || directoryQuery.isPending,
     byId,
     installedIds: base.installed,
     refetch: () =>
-      void queryClient.invalidateQueries({ queryKey: queryKeys.addons.installed(authKey) }),
+      void queryClient.invalidateQueries({ queryKey: queryKeys.addons.installed(profileId) }),
   };
 }
 

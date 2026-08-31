@@ -1,9 +1,4 @@
-import { allAwardSources, awardSourceMeta, type AwardSourceId } from "@/lib/anime-awards";
-import { AWARD_ICON_REGISTRY, useAwardIcon } from "@/lib/award-icons";
-
-const ANIME_CATEGORY_KEYS = new Set<string>(
-  AWARD_ICON_REGISTRY.find((g) => g.title === "Anime categories")?.items.map((i) => i.key) ?? [],
-);
+import { useAwardIcon } from "@/lib/award-icons";
 
 const BUNDLED_AWARD_ICONS: Record<string, string> = {
   blue_dragon: "/awards/blue_dragon.png",
@@ -21,13 +16,6 @@ const BUNDLED_AWARD_ICONS: Record<string, string> = {
 export function defaultAwardIcon(type: string): string {
   const bundled = BUNDLED_AWARD_ICONS[type];
   if (bundled) return bundled;
-  const sources = allAwardSources() as string[];
-  if (sources.includes(type)) return awardSourceMeta(type as AwardSourceId).iconSmall;
-  if (type.endsWith("_logo")) {
-    const base = type.slice(0, -5);
-    if (sources.includes(base)) return awardSourceMeta(base as AwardSourceId).icon;
-  }
-  if (ANIME_CATEGORY_KEYS.has(type)) return awardSourceMeta("crunchyroll").iconSmall;
   return "/awards/trophy.png";
 }
 

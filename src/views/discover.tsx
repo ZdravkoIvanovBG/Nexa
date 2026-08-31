@@ -26,7 +26,7 @@ import { subscribe as subscribeTaste } from "@/lib/discover/store";
 import { getDownvotedIds, getUpvotedIds, subscribePrefs } from "@/lib/feed/preferences";
 import { recentlyPlayed, subscribePlayback, watchTitleKey } from "@/lib/playback-history";
 import { useSettings } from "@/lib/settings";
-import { useScrollMemory } from "@/lib/view";
+import { useScrollMemory, type GridSpec } from "@/lib/view";
 import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
@@ -36,6 +36,8 @@ import { ANCHOR_AWARDS, ANCHOR_TOP_RATED } from "@/lib/feed/daily-rows-anchors";
 import type { HomeRow } from "./home/home-types";
 import { CatalogCustomizeBar } from "@/components/catalog/customize-bar";
 import { CatalogBrowser } from "@/views/discover/catalog-browser";
+import { CatalogResults } from "@/views/discover/catalog-results";
+import { CatalogManagePanel } from "@/components/catalog/manage/catalog-manage-panel";
 import { SurpriseMe } from "@/views/discover/surprise-me";
 import { SectionEditBar } from "@/views/discover/section-edit-bar";
 import { RowControls } from "@/views/home/row-controls";
@@ -64,13 +66,55 @@ export function Discover({ active = true }: { active?: boolean }) {
   }, []);
   useScrollMemory("discover", scrollRef, active);
 
+  // Browsing a catalog or managing the catalog list takes over the page body:
+  // the hero and rails step aside until the user clears back out.
+  const [mode, setMode] = useState<
+    { kind: "browse"; token: number; title: string; spec: GridSpec } | { kind: "manage" } | null
+  >(null);
+  const railScrollTop = useRef(0);
+  const browseToken = useRef(0);
+
+  const enterMode = useCallback((next: NonNullable<typeof mode>) => {
+    railScrollTop.current = scrollRef.current?.scrollTop ?? 0;
+    setMode(next);
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, []);
+
+  const clearMode = useCallback(() => {
+    setMode(null);
+    const top = railScrollTop.current;
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top }));
+  }, []);
+
+  const openBrowse = useCallback(
+    (title: string, spec: GridSpec) => {
+      browseToken.current += 1;
+      enterMode({ kind: "browse", token: browseToken.current, title, spec });
+    },
+    [enterMode],
+  );
+  const openManage = useCallback(() => enterMode({ kind: "manage" }), [enterMode]);
+
+  useEffect(() => {
+    if (!mode || !active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clearMode();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, active, clearMode]);
+
   const { settings } = useSettings();
   const queryClient = useQueryClient();
   const scope = discoverScope(settings);
   const letterboxd = useLetterboxd();
   const t = useT();
   const pageRows = usePageRows("discover");
-  const [feat, setFeat] = useState<FeaturedResult>({ featured: [], reserve: [], pool: [] });
+  const [feat, setFeat] = useState<FeaturedResult>({
+    featured: [],
+    reserve: [],
+    pool: [],
+  });
   const featured = feat.featured;
   const poolRef = useRef<FeaturedItem[]>([]);
   poolRef.current = feat.pool;
@@ -332,7 +376,10 @@ export function Discover({ active = true }: { active?: boolean }) {
         .then((list) => {
           railPagesRef.current[railId] = next;
           if (list.length < MIN_PAGE_YIELD) railExhaustedRef.current[railId] = true;
-          setRails((prev) => ({ ...prev, [railId]: [...(prev[railId] ?? []), ...list] }));
+          setRails((prev) => ({
+            ...prev,
+            [railId]: [...(prev[railId] ?? []), ...list],
+          }));
         })
         .catch(() => {})
         .finally(() => {
@@ -395,6 +442,10 @@ export function Discover({ active = true }: { active?: boolean }) {
   const hiddenFeatured = pageRows.custom.hidden.includes("section-featured");
   const hiddenCatalog = pageRows.custom.hidden.includes("section-catalog");
   const hiddenSurprise = pageRows.custom.hidden.includes("section-surprise");
+  useEffect(() => {
+    if (pageRows.editMode && mode) clearMode();
+  }, [pageRows.editMode, mode, clearMode]);
+
   const customizeBar = (
     <CatalogCustomizeBar
       editMode={pageRows.editMode}
@@ -408,7 +459,7 @@ export function Discover({ active = true }: { active?: boolean }) {
     <main ref={scrollCb} className="flex-1 overflow-y-auto px-12 pb-20 pt-28">
       <ScrollRootContext.Provider value={scrollEl}>
         <div data-tauri-drag-region className="flex flex-col gap-14">
-          {pageRows.editMode || !hiddenFeatured ? (
+          {mode ? null : pageRows.editMode || !hiddenFeatured ? (
             <div className="relative">
               {pageRows.editMode && (
                 <SectionEditBar
@@ -439,7 +490,7 @@ export function Discover({ active = true }: { active?: boolean }) {
                   }
                 />
                 <div className={hiddenCatalog ? "pointer-events-none opacity-40" : ""}>
-                  <CatalogBrowser />
+                  <CatalogBrowser onBrowse={openBrowse} onManage={openManage} />
                 </div>
               </div>
               <div>
@@ -456,79 +507,108 @@ export function Discover({ active = true }: { active?: boolean }) {
               </div>
             </div>
           ) : (
-            (!hiddenCatalog || !hiddenSurprise) && (
+            (!hiddenCatalog || !hiddenSurprise || mode) && (
               <div
-                className={`flex flex-wrap items-stretch gap-x-6 gap-y-4 ${!hiddenFeatured ? "-mt-8" : ""}`}
+                className={`flex flex-wrap items-stretch gap-x-6 gap-y-4 ${!hiddenFeatured && !mode ? "-mt-8" : ""}`}
               >
-                {!hiddenCatalog && <CatalogBrowser />}
-                {!hiddenSurprise && <SurpriseMe pool={surprisePool} />}
+                {(!hiddenCatalog || mode) && (
+                  <CatalogBrowser onBrowse={openBrowse} onManage={openManage} />
+                )}
+                {!hiddenSurprise && !mode && <SurpriseMe pool={surprisePool} />}
               </div>
             )
           )}
 
-          {letterboxdRows.map((row, i) => {
-            const catalogId = row.key.replace("letterboxd-", "");
-            return (
-              <Row
-                key={row.key}
-                title={
-                  <>
-                    {row.name}
-                    <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
-                      Letterboxd
-                    </span>
-                  </>
-                }
-                titleExtra={
-                  <LetterboxdRowMenu
-                    canMoveUp={i > 0}
-                    canMoveDown={i < letterboxdRows.length - 1}
-                    hidden={letterboxd.hiddenCatalogs.includes(catalogId)}
-                    onMoveUp={() => letterboxd.moveCatalog(catalogId, -1)}
-                    onMoveDown={() => letterboxd.moveCatalog(catalogId, 1)}
-                    onToggleHidden={() => letterboxd.toggleHidden(catalogId)}
-                  />
-                }
-                min={148}
-                shape="portrait"
-                scrollKey={`discover:${row.key}`}
-              >
-                {row.metas.map((m) => (
-                  <PickCard key={m.id} meta={m} />
-                ))}
-              </Row>
-            );
-          })}
+          {mode?.kind === "browse" && (
+            <CatalogResults
+              key={mode.token}
+              spec={mode.spec}
+              title={mode.title}
+              onClear={clearMode}
+            />
+          )}
+          {mode?.kind === "manage" && <CatalogManagePanel onClose={clearMode} />}
 
-          {pageRows.editMode
-            ? editRails.map((item) => {
-                const hidden = pageRows.custom.hidden.includes(item.key);
-                const idx = orderKeys.indexOf(item.key);
-                return (
-                  <div key={item.key}>
-                    <RowControls
-                      name={t(item.title)}
-                      hidden={hidden}
-                      canMoveUp={idx > 0}
-                      canMoveDown={idx >= 0 && idx < orderKeys.length - 1}
-                      onMoveUp={() =>
-                        pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, -1))
-                      }
-                      onMoveDown={() =>
-                        pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, 1))
-                      }
-                      onToggleHidden={() =>
-                        pageRows.persist(togglePageRowHidden(pageRows.custom, item.key))
-                      }
-                      onRename={(label) =>
-                        pageRows.persist(renamePageRow(pageRows.custom, item.key, label))
-                      }
-                      onResetName={() =>
-                        pageRows.persist(renamePageRow(pageRows.custom, item.key, ""))
-                      }
-                      isRenamed={item.key in pageRows.custom.renamed}
+          {!mode &&
+            letterboxdRows.map((row, i) => {
+              const catalogId = row.key.replace("letterboxd-", "");
+              return (
+                <Row
+                  key={row.key}
+                  title={
+                    <>
+                      {row.name}
+                      <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+                        Letterboxd
+                      </span>
+                    </>
+                  }
+                  titleExtra={
+                    <LetterboxdRowMenu
+                      canMoveUp={i > 0}
+                      canMoveDown={i < letterboxdRows.length - 1}
+                      hidden={letterboxd.hiddenCatalogs.includes(catalogId)}
+                      onMoveUp={() => letterboxd.moveCatalog(catalogId, -1)}
+                      onMoveDown={() => letterboxd.moveCatalog(catalogId, 1)}
+                      onToggleHidden={() => letterboxd.toggleHidden(catalogId)}
                     />
-                    {!hidden && (
+                  }
+                  min={148}
+                  shape="portrait"
+                  scrollKey={`discover:${row.key}`}
+                >
+                  {row.metas.map((m) => (
+                    <PickCard key={m.id} meta={m} />
+                  ))}
+                </Row>
+              );
+            })}
+
+          {!mode &&
+            (pageRows.editMode
+              ? editRails.map((item) => {
+                  const hidden = pageRows.custom.hidden.includes(item.key);
+                  const idx = orderKeys.indexOf(item.key);
+                  return (
+                    <div key={item.key}>
+                      <RowControls
+                        name={t(item.title)}
+                        hidden={hidden}
+                        canMoveUp={idx > 0}
+                        canMoveDown={idx >= 0 && idx < orderKeys.length - 1}
+                        onMoveUp={() =>
+                          pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, -1))
+                        }
+                        onMoveDown={() =>
+                          pageRows.persist(movePageRow(pageRows.custom, railKeys, item.key, 1))
+                        }
+                        onToggleHidden={() =>
+                          pageRows.persist(togglePageRowHidden(pageRows.custom, item.key))
+                        }
+                        onRename={(label) =>
+                          pageRows.persist(renamePageRow(pageRows.custom, item.key, label))
+                        }
+                        onResetName={() =>
+                          pageRows.persist(renamePageRow(pageRows.custom, item.key, ""))
+                        }
+                        isRenamed={item.key in pageRows.custom.renamed}
+                      />
+                      {!hidden && (
+                        <Rail
+                          railId={item.key}
+                          allRails={dailyRows}
+                          deduped={deduped}
+                          loadMore={loadMore}
+                          ensureLoaded={ensureLoaded}
+                          titleOverride={item.title}
+                        />
+                      )}
+                    </div>
+                  );
+                })
+              : visibleRails.map((item, i) => (
+                  <Fragment key={item.key}>
+                    <LazyMount minHeight={340}>
                       <Rail
                         railId={item.key}
                         allRails={dailyRows}
@@ -537,39 +617,24 @@ export function Discover({ active = true }: { active?: boolean }) {
                         ensureLoaded={ensureLoaded}
                         titleOverride={item.title}
                       />
-                    )}
-                  </div>
-                );
-              })
-            : visibleRails.map((item, i) => (
-                <Fragment key={item.key}>
-                  <LazyMount minHeight={340}>
-                    <Rail
-                      railId={item.key}
-                      allRails={dailyRows}
-                      deduped={deduped}
-                      loadMore={loadMore}
-                      ensureLoaded={ensureLoaded}
-                      titleOverride={item.title}
-                    />
-                  </LazyMount>
+                    </LazyMount>
 
-                  {i === 0 && <GenreTiles />}
-                  {i === 1 && queue.length > 0 && <DiscoveryQueueCta items={queue} />}
-                  {i === 2 && <LanguageTiles />}
-                  {i === 2 && settings.tmdbKey && (
-                    <LazyMount minHeight={260}>
-                      <CollectionsRow />
-                    </LazyMount>
-                  )}
-                  {i === 3 && criticsPick && (
-                    <LazyMount minHeight={580}>
-                      <CriticsPick meta={criticsPick} />
-                    </LazyMount>
-                  )}
-                  {i === 4 && <AwardTiles />}
-                </Fragment>
-              ))}
+                    {i === 0 && <GenreTiles />}
+                    {i === 1 && queue.length > 0 && <DiscoveryQueueCta items={queue} />}
+                    {i === 2 && <LanguageTiles />}
+                    {i === 2 && settings.tmdbKey && (
+                      <LazyMount minHeight={260}>
+                        <CollectionsRow />
+                      </LazyMount>
+                    )}
+                    {i === 3 && criticsPick && (
+                      <LazyMount minHeight={580}>
+                        <CriticsPick meta={criticsPick} />
+                      </LazyMount>
+                    )}
+                    {i === 4 && <AwardTiles />}
+                  </Fragment>
+                )))}
         </div>
       </ScrollRootContext.Provider>
       <BackToTop scrollRef={scrollRef} />

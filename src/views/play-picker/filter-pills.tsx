@@ -31,17 +31,13 @@ export function LanguageFilterPill({
   on,
   hiddenCount,
   onToggle,
-  isAnime,
 }: {
   languages: string[];
   on: boolean;
   hiddenCount: number;
   onToggle: () => void;
-  isAnime: boolean;
 }) {
-  const display = isAnime
-    ? languages
-    : languages.filter((l) => normalizeLangCode(l) !== "ja");
+  const display = languages.filter((l) => normalizeLangCode(l) !== "ja");
   const label = abbreviateLanguages(display);
   return (
     <button

@@ -1,7 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { readActiveStremioAuthKey } from "./auth";
 import { setUserAddons, userAddons, type Addon } from "./addons";
-import { applyOrderToItems } from "./addons-store/reorder";
+import { applyOrderToItems, loadDisplayOrder } from "./addons-store/reorder";
 
 const STORAGE_KEY = "harbor.installed-addons";
 const SEEDED_KEY = "harbor.addons.seeded.v1";
@@ -208,9 +208,7 @@ export function findHostnameMatch(transportUrl: string): InstalledAddon | null {
   return loadInstalled().find((a) => transportHost(a.transportUrl) === host) ?? null;
 }
 
-export type AddonUrlParse =
-  | { kind: "ok"; url: string }
-  | { kind: "error"; message: string };
+export type AddonUrlParse = { kind: "ok"; url: string } | { kind: "error"; message: string };
 
 export function parseAddonUrl(input: string): AddonUrlParse {
   let raw = input.trim();
@@ -233,11 +231,15 @@ export function parseAddonUrl(input: string): AddonUrlParse {
   return { kind: "ok", url: raw };
 }
 
-function validateManifest(m: unknown): { ok: true; manifest: Addon["manifest"] } | { ok: false; error: string } {
+function validateManifest(
+  m: unknown,
+): { ok: true; manifest: Addon["manifest"] } | { ok: false; error: string } {
   if (!m || typeof m !== "object") return { ok: false, error: "Manifest is not a JSON object." };
   const obj = m as Record<string, unknown>;
-  if (typeof obj.id !== "string" || obj.id.length === 0) return { ok: false, error: "Manifest is missing an `id`." };
-  if (typeof obj.name !== "string" || obj.name.length === 0) return { ok: false, error: "Manifest is missing a `name`." };
+  if (typeof obj.id !== "string" || obj.id.length === 0)
+    return { ok: false, error: "Manifest is missing an `id`." };
+  if (typeof obj.name !== "string" || obj.name.length === 0)
+    return { ok: false, error: "Manifest is missing a `name`." };
   return { ok: true, manifest: obj as Addon["manifest"] };
 }
 
@@ -284,7 +286,9 @@ export async function installFromUrl(
   const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
   const replacedById = before.some((a) => a.id === id);
   const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);
-  const next = before.filter((a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId));
+  const next = before.filter(
+    (a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId),
+  );
   next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
@@ -331,6 +335,47 @@ export async function uninstallAddon(id: string, transportUrl?: string): Promise
   }
 }
 
+/** Installed, enabled, in display order -- the shared basis for both accessors below. */
+function orderedEnabledEntries(): InstalledAddon[] {
+  return applyOrderToItems(filterEnabled(loadInstalled()), loadDisplayOrder());
+}
+
+/**
+ * The user's addons, ready to query: enabled only, in display order.
+ *
+ * Synchronous, so it is safe to call on a render path. An addon whose manifest
+ * has not been fetched yet is skipped rather than awaited -- use
+ * installedAddonsResolved() when a missing manifest should be fetched instead.
+ */
+export function installedAddons(): Addon[] {
+  const out: Addon[] = [];
+  for (const a of orderedEnabledEntries()) {
+    if (a.manifest) out.push({ manifest: a.manifest, transportUrl: a.transportUrl });
+  }
+  return out;
+}
+
+/** installedAddons(), but manifests missing from the store are fetched and cached first. */
+export async function installedAddonsResolved(): Promise<Addon[]> {
+  const entries = orderedEnabledEntries();
+  if (entries.length === 0) return [];
+  const results = await Promise.all(
+    entries.map(async (entry): Promise<Addon | null> => {
+      if (entry.manifest) {
+        return { manifest: entry.manifest, transportUrl: entry.transportUrl };
+      }
+      try {
+        const manifest = await fetchManifestAt(entry.transportUrl);
+        saveInstalled(loadInstalled().map((e) => (e.id === entry.id ? { ...e, manifest } : e)));
+        return { manifest, transportUrl: entry.transportUrl };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return results.filter((a): a is Addon => a !== null);
+}
+
 export async function fetchInstalledAddons(): Promise<Addon[]> {
   const list = loadInstalled();
   if (list.length === 0) return [];
@@ -340,9 +385,7 @@ export async function fetchInstalledAddons(): Promise<Addon[]> {
     }
     try {
       const manifest = await fetchManifestAt(entry.transportUrl);
-      const updated = loadInstalled().map((e) =>
-        e.id === entry.id ? { ...e, manifest } : e,
-      );
+      const updated = loadInstalled().map((e) => (e.id === entry.id ? { ...e, manifest } : e));
       saveInstalled(updated);
       return { manifest, transportUrl: entry.transportUrl };
     } catch {
@@ -357,7 +400,10 @@ export function manifestToConfigureUrl(transportUrl: string): string {
   return transportUrl.replace(/manifest\.json(\?.*)?$/i, "configure");
 }
 
-export function manifestToShareUrl(transportUrl: string, scheme: "https" | "stremio" = "https"): string {
+export function manifestToShareUrl(
+  transportUrl: string,
+  scheme: "https" | "stremio" = "https",
+): string {
   if (scheme === "stremio") {
     return transportUrl.replace(/^https?:\/\//i, "stremio://");
   }

@@ -1,5 +1,5 @@
-import { userAddons, type Addon } from "@/lib/addons";
-import { fetchManifestAt, loadInstalled } from "@/lib/addon-store";
+import type { Addon } from "@/lib/addons";
+import { installedAddonsResolved } from "@/lib/addon-store";
 import { dlog } from "@/lib/debug";
 import { SUBTITLE_PROVIDER_TIMEOUT_MS, withSubtitleTimeout } from "./autoload";
 
@@ -18,48 +18,14 @@ function hasSubtitleResource(a: Addon): boolean {
   return hasSubtitles;
 }
 
-export async function gatherSubtitleAddons(authKey: string | null): Promise<Addon[]> {
+export async function gatherSubtitleAddons(): Promise<Addon[]> {
   dlog(`[addon-source] === GATHERING SUBTITLE ADDONS ===`);
-  dlog(`[addon-source] Auth key present: ${!!authKey}`);
 
-  const cloud = authKey
-    ? await withSubtitleTimeout(userAddons(authKey), SUBTITLE_PROVIDER_TIMEOUT_MS, []).catch(
-        (e) => {
-          dlog(`[addon-source] Failed to fetch cloud addons: ${e}`);
-          return [] as Addon[];
-        },
-      )
-    : [];
-  dlog(`[addon-source] Cloud addons: ${cloud.length}`);
-  if (cloud.length > 0) {
-    dlog(`[addon-source] Cloud addon names: ${cloud.map((a) => a.manifest.name).join(", ")}`);
-  }
-
-  const localInstalled = loadInstalled();
-  dlog(`[addon-source] Total local installed addons: ${localInstalled.length}`);
-  if (localInstalled.length > 0) {
-    dlog(
-      `[addon-source] Local installed names: ${localInstalled.map((l) => l.manifest?.name || "no-name").join(", ")}`,
-    );
-  }
-
-  const seen = new Set(cloud.map((a) => a.transportUrl));
-  const localOnly = localInstalled.filter((l) => !seen.has(l.transportUrl));
-  dlog(`[addon-source] Local addons (not in cloud): ${localOnly.length}`);
-
-  const localFull = await withSubtitleTimeout(
-    Promise.all(
-      localOnly.map(async (l): Promise<Addon | null> => {
-        if (l.manifest) return { manifest: l.manifest, transportUrl: l.transportUrl };
-        const manifest = await fetchManifestAt(l.transportUrl).catch(() => null);
-        return manifest ? { manifest, transportUrl: l.transportUrl } : null;
-      }),
-    ),
+  const merged = await withSubtitleTimeout(
+    installedAddonsResolved(),
     SUBTITLE_PROVIDER_TIMEOUT_MS,
-    [] as Array<Addon | null>,
+    [] as Addon[],
   );
-
-  const merged = [...cloud, ...localFull.filter((a): a is Addon => a != null)];
   dlog(`[addon-source] Total merged addons (before subtitle filter): ${merged.length}`);
 
   // Check each addon for subtitle resource

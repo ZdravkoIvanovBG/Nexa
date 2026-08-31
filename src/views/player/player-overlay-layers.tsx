@@ -106,9 +106,6 @@ export type PlayerOverlayLayersProps = {
   rememberSubChoice: Shell["rememberSubChoice"];
   cropMode: Shell["cropMode"];
   onCropMode: Shell["onCropMode"];
-  anime4kMode: Shell["anime4kMode"];
-  onAnime4kMode: Shell["onAnime4kMode"];
-  anime4kAvailable: Shell["anime4kAvailable"];
   togglePipMode: () => void;
   setDrawMode: (fn: (d: boolean) => boolean) => void;
   wakeChrome: () => void;
@@ -313,9 +310,6 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           onEnterSync={p.onEnterSync}
           cropMode={p.cropMode}
           onCropMode={p.onCropMode}
-          anime4kMode={p.anime4kMode}
-          onAnime4kMode={p.onAnime4kMode}
-          anime4kAvailable={p.anime4kAvailable}
           onPiP={() => p.togglePipMode()}
           onFullscreen={p.toggleFullscreen}
           openCastMenu={p.cast.openCastMenu}
