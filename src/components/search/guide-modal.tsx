@@ -6,9 +6,9 @@ import { getCachedPlaylist } from "@/lib/iptv/store";
 import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
-import { useEpg, useNowTick } from "@/views/live/hooks/use-epg";
-import { useIptvPlaylist } from "@/views/live/hooks/use-iptv-playlist";
-import { GuideView } from "@/views/live/guide/guide-view";
+import { useEpg, useNowTick } from "@/components/live/hooks/use-epg";
+import { useIptvPlaylist } from "@/components/live/hooks/use-iptv-playlist";
+import { GuideView } from "@/components/live/guide/guide-view";
 
 function synthChannelMeta(ch: IptvChannel): Meta {
   return {

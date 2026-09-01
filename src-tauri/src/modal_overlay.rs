@@ -71,18 +71,23 @@ pub async fn modal_overlay_open(
     let popup_size = (size.width, size.height);
     app.run_on_main_thread(move || {
         let url = WebviewUrl::App("index.html?harbor-modal=1".into());
-        let result = WebviewWindowBuilder::new(&app_clone, OVERLAY_LABEL, url)
+        #[allow(unused_mut)]
+        let mut builder = WebviewWindowBuilder::new(&app_clone, OVERLAY_LABEL, url)
             .title("Harbor Modal")
             .inner_size(popup_size.0, popup_size.1)
             .position(pos.x, pos.y)
             .resizable(false)
-            .always_on_top(true)
-            .decorations(false)
-            .skip_taskbar(true)
-            .shadow(false)
-            .visible(true)
-            .focused(true)
-            .build();
+            .visible(true);
+        #[cfg(desktop)]
+        {
+            builder = builder
+                .always_on_top(true)
+                .decorations(false)
+                .skip_taskbar(true)
+                .shadow(false)
+                .focused(true);
+        }
+        let result = builder.build();
         match result {
             Ok(window) => {
                 let _ = window.set_focus();

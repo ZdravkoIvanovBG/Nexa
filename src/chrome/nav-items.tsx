@@ -4,7 +4,6 @@ import { CalendarIcon } from "@/components/icons/calendar-icon";
 import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
@@ -20,7 +19,6 @@ export type NavItemId =
   | "movies"
   | "shows"
   | "kids"
-  | "live"
   | "vod"
   | "calendar"
   | "library"
@@ -33,7 +31,6 @@ export type NavItem = {
   label: string;
   render: (active: boolean) => ReactNode;
   view: View;
-  hideKey?: "liveTv" | "sports";
   parentalKey?: LockableTab;
   pinGated?: boolean;
 };
@@ -68,14 +65,6 @@ export const NAV_ITEMS: NavItem[] = [
     parentalKey: "shows",
   },
   { id: "kids", label: "nav.kids", render: (active) => <KidsIcon active={active} />, view: "kids" },
-  {
-    id: "live",
-    label: "nav.live",
-    render: (active) => <LiveTvIcon active={active} />,
-    view: "live",
-    hideKey: "liveTv",
-    parentalKey: "liveTv",
-  },
   {
     id: "vod",
     label: "nav.playlists",
@@ -118,9 +107,17 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export function applyNavCustomization(items: NavItem[], cfg: NavCustomization): NavItem[] {
+/** Nav entries gated by a setting rather than by theme customization or parental locks. */
+export type NavFeatures = { downloads?: boolean };
+
+export function applyNavCustomization(
+  items: NavItem[],
+  cfg: NavCustomization,
+  features?: NavFeatures,
+): NavItem[] {
   const shown = items
     .filter((it) => !cfg.hidden.includes(it.id))
+    .filter((it) => it.id !== "downloads" || features?.downloads !== false)
     .map((it) => (cfg.renamed[it.id] ? { ...it, label: cfg.renamed[it.id] } : it));
   if (cfg.order.length === 0) return shown;
   const byId = new Map<string, NavItem>(shown.map((it) => [it.id, it]));

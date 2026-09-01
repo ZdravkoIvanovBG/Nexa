@@ -1,14 +1,4 @@
-import {
-  Check,
-  ChevronLeft,
-  Loader2,
-  Lock,
-  Link2,
-  ShieldCheck,
-  Trash2,
-  Unlock,
-  User as UserIcon,
-} from "lucide-react";
+import { Check, ChevronLeft, Loader2, Lock, ShieldCheck, Trash2, Unlock } from "lucide-react";
 import { useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import simklLogo from "@/assets/simkl.png";
@@ -44,9 +34,6 @@ import { useSimkl } from "@/lib/simkl/provider";
 import { useSettings } from "@/lib/settings";
 import { AvatarRing } from "@/views/settings/account/avatar-ring";
 import { resizeAvatar } from "@/views/settings/account/avatar-utils";
-import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
-import { avatarUrl } from "@/lib/avatars/catalog";
 import { ColorPicker } from "@/views/settings/color-picker";
 import { KidToggle } from "./kid-toggle";
 import { KidsSetupPanel } from "./kids-setup-panel";
@@ -80,7 +67,6 @@ export function EditorView({
   const [loadingSimklAvatar, setLoadingSimklAvatar] = useState(false);
   const [simklAvatarError, setSimklAvatarError] = useState<string | null>(null);
   const editing = mode.kind === "edit" ? mode.profile : null;
-  const primary = profiles.find((p) => p.isPrimary);
   const activeIsPrimary = !!activeProfile?.isPrimary;
   const isOwnProfile = editing?.id === activeProfile?.id;
   const canEditAdvanced = activeIsPrimary;
@@ -90,9 +76,6 @@ export function EditorView({
     "trakt" | "simkl" | "upload" | "builtin" | "removed" | null
   >(null);
   const [color, setColor] = useState<ProfileColor>(editing?.color ?? nextProfileColor(profiles));
-  const [shareWith, setShareWith] = useState<string | null>(
-    editing ? editing.shareStremioWith : (primary?.id ?? null),
-  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [draftPin, setDraftPin] = useState<string | null>(null);
   const [draftLockedTabs, setDraftLockedTabs] = useState<HiddenTabs | null>(
@@ -101,13 +84,11 @@ export function EditorView({
   const [draftKid, setDraftKid] = useState<KidConfig | null>(editing?.kid ?? null);
   const [draftParentPin, setDraftParentPin] = useState<string | null>(null);
   const [subView, setSubView] = useState<SubView>({ kind: "main" });
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const trimmed = name.trim();
   const canSave = trimmed.length > 0;
   const isPrimary = editing?.isPrimary === true;
-  const canShare = !isPrimary && !!primary && primary.id !== editing?.id;
   const locked = editing ? !!editing.passwordHash : draftPin != null;
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,12 +164,10 @@ export function EditorView({
         avatar,
         color,
         kid: kidToSave,
-        ...(canShare ? { shareStremioWith: shareWith } : {}),
       });
     } else {
       const p = createProfile({ name: trimmed, avatar, color, kid: kidToSave });
       const patch: Parameters<typeof updateProfile>[1] = {};
-      if (canShare && shareWith !== p.shareStremioWith) patch.shareStremioWith = shareWith;
       if (draftPin) patch.passwordHash = await hashProfilePassword(draftPin);
       if (anyTabLocked(draftLockedTabs)) patch.lockedTabs = draftLockedTabs;
       if (Object.keys(patch).length > 0) updateProfile(p.id, patch);
@@ -385,13 +364,6 @@ export function EditorView({
                 </button>
               )}
             </div>
-            <AvatarFan
-              onClick={() => setAvatarPickerOpen(true)}
-              onRandomize={(id) => {
-                setAvatar(avatarUrl(id));
-                setAvatarSource("builtin");
-              }}
-            />
             {traktAvatarError && (
               <p className="text-[11.5px] text-amber-200/85">{traktAvatarError}</p>
             )}
@@ -430,30 +402,6 @@ export function EditorView({
         />
       )}
 
-      {showAdvanced && !draftKid && canShare && primary && (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
-            {t("Stremio account")}
-          </span>
-          <div className="flex flex-col gap-1.5">
-            <ShareOption
-              active={shareWith === primary.id}
-              onClick={() => setShareWith(primary.id)}
-              icon={<Link2 size={14} strokeWidth={2.2} />}
-              title={t("Share with {name}", { name: primary.name })}
-              sub={t("Use the primary profile's Stremio library, watchlist, and addons.")}
-            />
-            <ShareOption
-              active={shareWith === null}
-              onClick={() => setShareWith(null)}
-              icon={<UserIcon size={14} strokeWidth={2.2} />}
-              title={t("Use a separate Stremio account")}
-              sub={t("Sign in from the sidebar after saving. Library and addons stay separate.")}
-            />
-          </div>
-        </div>
-      )}
-
       <div className="flex items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-3">
           <button
@@ -470,30 +418,33 @@ export function EditorView({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="flex items-center gap-1.5 text-[12px] font-medium text-ink-subtle transition-colors hover:text-red-300"
+                className="flex h-10 items-center gap-1.5 rounded-xl border border-danger/40 px-4 text-[13px] font-medium text-danger transition-colors hover:border-danger hover:bg-danger/10"
               >
-                <Trash2 size={12} />
+                <Trash2 size={13} strokeWidth={2.2} />
                 {t("Delete profile")}
               </button>
             ) : (
-              <div className="flex items-center gap-2 text-[12px]">
-                <span className="text-red-200">{t("Delete this profile?")}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[12.5px] font-medium text-danger">
+                  {t("Delete {name}? This cannot be undone.", { name: editing.name })}
+                </span>
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
-                  className="text-ink-muted hover:text-ink"
+                  className="h-9 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   type="button"
+                  autoFocus
                   onClick={() => {
                     deleteProfile(editing.id);
                     onDone();
                   }}
-                  className="rounded-md bg-red-400/20 px-2 py-0.5 font-semibold text-red-200 hover:bg-red-400/30"
+                  className="h-9 rounded-lg bg-danger px-3.5 text-[12.5px] font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  {t("common.confirm")}
+                  {t("Delete profile")}
                 </button>
               </div>
             ))}
@@ -507,17 +458,6 @@ export function EditorView({
           {editing ? t("Save changes") : t("Create profile")}
         </button>
       </div>
-      {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={avatar}
-          onPick={(id) => {
-            setAvatar(avatarUrl(id));
-            setAvatarSource("builtin");
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
-      )}
     </div>
   );
 }
@@ -722,45 +662,6 @@ function SecurityView({
         </button>
       </div>
     </div>
-  );
-}
-
-function ShareOption({
-  active,
-  onClick,
-  icon,
-  title,
-  sub,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  title: string;
-  sub: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 text-start transition-colors ${
-        active
-          ? "border-ink/40 bg-canvas/60"
-          : "border-edge-soft hover:border-edge hover:bg-canvas/40"
-      }`}
-    >
-      <span
-        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          active ? "border-ink" : "border-edge"
-        }`}
-      >
-        {active && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
-      </span>
-      <span className={`mt-0.5 ${active ? "text-ink" : "text-ink-muted"}`}>{icon}</span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[13.5px] font-semibold text-ink">{title}</span>
-        <span className="text-[12px] leading-snug text-ink-subtle">{sub}</span>
-      </span>
-    </button>
   );
 }
 

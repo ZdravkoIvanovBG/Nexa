@@ -1,51 +1,42 @@
 import { ArrowRight, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { DoneStep } from "@/components/onboarding/done-step";
 import { Dots } from "@/components/onboarding/dots";
 import { LayoutStep } from "@/components/onboarding/layout-step";
 import { SplashStep } from "@/components/onboarding/splash-step";
 import { StreamingStep } from "@/components/onboarding/streaming-step";
-import { StremioStep } from "@/components/onboarding/stremio-step";
 import { SubtitlesStep } from "@/components/onboarding/subtitles-step";
 import { TmdbStep } from "@/components/onboarding/tmdb-step";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { useT } from "@/lib/i18n";
-import { useOnboarding } from "@/lib/onboarding";
+import { onboardingAwaitingCloud, subscribeOnboarding, useOnboarding } from "@/lib/onboarding";
 
-type StepId =
-  | "splash"
-  | "welcome"
-  | "layout"
-  | "tmdb"
-  | "stremio"
-  | "streaming"
-  | "subtitles"
-  | "done";
-const STEPS: StepId[] = [
-  "splash",
-  "welcome",
-  "layout",
-  "tmdb",
-  "stremio",
-  "streaming",
-  "subtitles",
-  "done",
-];
+type StepId = "splash" | "welcome" | "layout" | "tmdb" | "streaming" | "subtitles" | "done";
+const STEPS: StepId[] = ["splash", "welcome", "layout", "tmdb", "streaming", "subtitles", "done"];
 
 export function OnboardingModal() {
   const { onboarded, finishOnboarding } = useOnboarding();
+  // Signing in lifts the auth gate before the profile pull can say whether
+  // this account was set up long ago, and the onboarding flag does not
+  // survive a sign-out. Hold rather than greet a returning user by mistake.
+  const awaitingCloud = useSyncExternalStore(
+    subscribeOnboarding,
+    onboardingAwaitingCloud,
+    onboardingAwaitingCloud,
+  );
   const t = useT();
   const [stepIdx, setStepIdx] = useState(0);
   const [closing, setClosing] = useState(false);
+  const hidden = onboarded || awaitingCloud;
 
   useEffect(() => {
-    if (!onboarded) document.body.style.overflow = "hidden";
+    if (!hidden) document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [onboarded]);
+  }, [hidden]);
 
-  if (onboarded) return null;
+  if (hidden) return null;
 
   const step = STEPS[stepIdx];
   const isSplash = step === "splash";
@@ -86,7 +77,6 @@ export function OnboardingModal() {
                 {step === "welcome" && <WelcomeStep />}
                 {step === "layout" && <LayoutStep />}
                 {step === "tmdb" && <TmdbStep />}
-                {step === "stremio" && <StremioStep />}
                 {step === "streaming" && <StreamingStep />}
                 {step === "subtitles" && <SubtitlesStep />}
                 {step === "done" && <DoneStep />}
@@ -100,10 +90,7 @@ export function OnboardingModal() {
                 onJump={(i) => setStepIdx(i + 1)}
               />
               <div className="flex items-center gap-2.5">
-                {(step === "tmdb" ||
-                  step === "stremio" ||
-                  step === "streaming" ||
-                  step === "subtitles") && (
+                {(step === "tmdb" || step === "streaming" || step === "subtitles") && (
                   <button
                     key={`skip-${step}`}
                     onClick={next}

@@ -21,7 +21,6 @@ import {
   loadInstalled,
   uninstallAddon,
 } from "@/lib/addon-store";
-import { useAuth } from "@/lib/auth";
 import streamsIcon from "@/assets/category/streams.svg";
 import catalogsIcon from "@/assets/category/catalogs.svg";
 import subtitlesIcon from "@/assets/category/subtitles.svg";
@@ -68,7 +67,6 @@ void Library;
 export function AddonsView() {
   const t = useT();
   const { settings, update } = useSettings();
-  const { authKey } = useAuth();
   const { byId, installedIds, loading, refetch } = useAddonsCatalog(settings.showAdultAddons);
   const { addonDetailId, openAddonDetail, goBack } = useView();
   const [tab, setTab] = useState<Tab>(() => consumeAddonsTab() ?? "discover");
@@ -200,11 +198,6 @@ export function AddonsView() {
         manifest?.id ?? r.manifest?.id ?? r.curated?.id ?? "",
         r.transportUrl,
       );
-      window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
-          detail: { id: addon.manifest.id, installed: true },
-        }),
-      );
       refetch();
       showToast("ok", t("Installed"), {
         id: addon.manifest.id,
@@ -220,25 +213,12 @@ export function AddonsView() {
   const onInstallUrl = async (rawUrl: string): Promise<string | null> => {
     try {
       const result = await installFromUrl(rawUrl);
-      window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
-          detail: { id: result.addon.manifest.id, installed: true },
-        }),
-      );
       refetch();
-      showToast(
-        "ok",
-        result.replaced
-          ? t("Updated")
-          : result.syncedToStremio
-            ? t("Installed")
-            : t("Installed locally"),
-        {
-          id: result.addon.manifest.id,
-          name: result.addon.manifest.name,
-          logo: result.addon.manifest.logo ?? null,
-        },
-      );
+      showToast("ok", result.replaced ? t("Updated") : t("Installed"), {
+        id: result.addon.manifest.id,
+        name: result.addon.manifest.name,
+        logo: result.addon.manifest.logo ?? null,
+      });
       return result.addon.manifest.id;
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("Install failed.");
@@ -252,11 +232,6 @@ export function AddonsView() {
     if (!id) return;
     try {
       await uninstallAddon(id, r.transportUrl);
-      window.dispatchEvent(
-        new CustomEvent("harbor:addons-changed", {
-          detail: { id, installed: false },
-        }),
-      );
       refetch();
       showToast("ok", t("Removed"), {
         id,
@@ -494,7 +469,6 @@ export function AddonsView() {
             onInstall={onInstall}
             onUninstall={onUninstall}
             onCategorySelect={goToCategory}
-            authKey={authKey}
             onRefetch={refetch}
           />
         ) : tab === "browse" ? (
@@ -539,19 +513,11 @@ export function AddonsView() {
             try {
               const result = await installFromUrl(rawUrl, opts);
               refetch();
-              showToast(
-                "ok",
-                result.replaced
-                  ? t("Updated")
-                  : result.syncedToStremio
-                    ? t("Installed")
-                    : t("Installed locally"),
-                {
-                  id: result.addon.manifest.id,
-                  name: result.addon.manifest.name,
-                  logo: result.addon.manifest.logo ?? null,
-                },
-              );
+              showToast("ok", result.replaced ? t("Updated") : t("Installed"), {
+                id: result.addon.manifest.id,
+                name: result.addon.manifest.name,
+                logo: result.addon.manifest.logo ?? null,
+              });
               return { replaced: result.replaced, addon: result.addon };
             } catch (e) {
               const msg = e instanceof Error ? e.message : t("Install failed.");
@@ -563,19 +529,10 @@ export function AddonsView() {
       )}
       {reorderOpen && (
         <OrganizeAddonsPage
-          authKey={authKey}
           onClose={() => setReorderOpen(false)}
-          onSaved={(scope) => {
+          onSaved={() => {
             setReorderOpen(false);
-            window.dispatchEvent(
-              new CustomEvent("harbor:addons-changed", { detail: { reordered: true } }),
-            );
-            showToast(
-              "ok",
-              scope === "cloud"
-                ? t("Addon order synced to your Stremio account")
-                : t("Addon order saved on this device"),
-            );
+            showToast("ok", t("Addon order saved"));
           }}
         />
       )}

@@ -6,7 +6,6 @@ export const NAV_LABELS: Record<ChromeNavId, string> = {
   movies: "Movies",
   shows: "Shows",
   library: "Library",
-  live: "Live TV",
   discover: "Discover",
   calendar: "Calendar",
   settings: "Settings",
@@ -17,7 +16,6 @@ export const NAV_CATALOG: ChromeNavId[] = [
   "movies",
   "shows",
   "library",
-  "live",
   "discover",
   "calendar",
   "settings",
@@ -26,7 +24,7 @@ export const NAV_CATALOG: ChromeNavId[] = [
 export const DEFAULT_CHROME: ChromeConfig = {
   position: "sidebar",
   brand: "Harbor",
-  items: ["home", "movies", "shows", "library", "live", "settings"],
+  items: ["home", "movies", "shows", "library", "settings"],
 };
 
 function esc(s: string): string {

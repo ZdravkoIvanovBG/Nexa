@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { proactiveStorageCleanup } from "@/lib/storage-recovery";
 import { runWebhookTick } from "@/lib/webhook-engine";
@@ -10,11 +9,8 @@ const STATUS_KEY = "harbor.webhook.lastTick";
 
 export function WebhookLoopMount() {
   const { settings } = useSettings();
-  const { authKey } = useAuth();
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const authRef = useRef(authKey);
-  authRef.current = authKey;
   const runningRef = useRef(false);
 
   useEffect(() => {
@@ -30,7 +26,7 @@ export function WebhookLoopMount() {
       if (runningRef.current || cancelled) return;
       runningRef.current = true;
       try {
-        const result = await runWebhookTick(settingsRef.current, authRef.current);
+        const result = await runWebhookTick(settingsRef.current);
         try {
           localStorage.setItem(
             STATUS_KEY,

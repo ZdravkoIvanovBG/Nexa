@@ -8,7 +8,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { supabase, supabaseConfigured, SUPABASE_STORAGE_KEY } from "@/lib/supabase";
+import { wipePortableLocalData } from "@/lib/backup";
+import { readCachedSupabaseUserId, supabase, supabaseConfigured } from "@/lib/supabase";
+import { profilesSyncedFor } from "./hydrate";
+import { flush, pendingCount } from "./queue";
 
 export type CloudStatus = "loading" | "signed-in" | "signed-out";
 
@@ -27,22 +30,41 @@ type CloudSessionValue = {
   signOut: () => Promise<void>;
 };
 
-/**
- * The user id in the persisted session blob, read synchronously so a returning
- * user renders the app on frame one instead of flashing the login screen while
- * getSession() resolves -- and so sync still has an owner when we are offline
- * and holding a cached session we could not refresh.
- */
-function readCachedUserId(): string | null {
+const readCachedUserId = readCachedSupabaseUserId;
+
+const LOCAL_OWNER_KEY = "harbor.local.ownerUserId";
+
+function readLocalOwner(): string | null {
   try {
-    const raw = localStorage.getItem(SUPABASE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { refresh_token?: unknown; user?: { id?: unknown } } | null;
-    if (typeof parsed?.refresh_token !== "string") return null;
-    return typeof parsed.user?.id === "string" ? parsed.user.id : null;
+    return localStorage.getItem(LOCAL_OWNER_KEY);
   } catch {
     return null;
   }
+}
+
+function writeLocalOwner(userId: string): void {
+  try {
+    localStorage.setItem(LOCAL_OWNER_KEY, userId);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Profiles, addons, and watch data live in bare `harbor.*` keys with no
+ * per-account scoping. Without this, signing into a different account on the
+ * same device would silently adopt -- and then upload -- whatever the
+ * previous account left behind (addons especially: hydrateFromCloud always
+ * merges them local-first). Must run, and win, before anything else reads or
+ * hydrates that data, so every call site that learns of a concrete signed-in
+ * user id checks in here first.
+ */
+function claimLocalData(userId: string): boolean {
+  const owner = readLocalOwner();
+  const mismatch = !!owner && owner !== userId;
+  if (mismatch) wipePortableLocalData();
+  writeLocalOwner(userId);
+  return mismatch;
 }
 
 function isNetworkError(err: unknown): boolean {
@@ -77,8 +99,13 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) throw error;
+        const uid = data.session?.user.id ?? null;
+        if (uid && claimLocalData(uid)) {
+          window.location.reload();
+          return;
+        }
         setSession(data.session);
-        setCachedUserId(data.session?.user.id ?? null);
+        setCachedUserId(uid);
         setStatus(data.session ? "signed-in" : "signed-out");
         setOffline(false);
       })
@@ -99,12 +126,17 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       if (cancelled) return;
-      setSession(next);
       if (next) {
+        if (claimLocalData(next.user.id)) {
+          window.location.reload();
+          return;
+        }
+        setSession(next);
         setCachedUserId(next.user.id);
         setStatus("signed-in");
         setOffline(false);
       } else if (event === "SIGNED_OUT") {
+        setSession(null);
         setCachedUserId(null);
         setStatus("signed-out");
       }
@@ -122,8 +154,13 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) throw error;
+    const uid = data.session?.user.id ?? null;
+    if (uid && claimLocalData(uid)) {
+      window.location.reload();
+      return;
+    }
     setSession(data.session);
-    setCachedUserId(data.session?.user.id ?? null);
+    setCachedUserId(uid);
     setStatus(data.session ? "signed-in" : "signed-out");
     setOffline(false);
   }, []);
@@ -132,6 +169,10 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
     if (error) throw error;
     if (data.session) {
+      if (claimLocalData(data.session.user.id)) {
+        window.location.reload();
+        return { needsConfirmation: false };
+      }
       setSession(data.session);
       setCachedUserId(data.session.user.id);
       setStatus("signed-in");
@@ -143,11 +184,33 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const uid = readCachedSupabaseUserId();
+    // Drain the write queue first, while the access token is still valid.
+    // Store writes are debounced by 400ms, so a rename or avatar change made
+    // seconds before signing out is still sitting in the queue -- and the
+    // wipe + reload below would strand it there until the next sign-in, by
+    // which point hydrate has already pulled the stale server copy over it.
+    await flush().catch(() => {});
+    // Only clear what the cloud is known to have a copy of. If the roster
+    // never synced -- missing table, RLS, a first run that failed offline --
+    // wiping would destroy the only copy of the user's profiles. Account
+    // isolation does not depend on this: claimLocalData() clears the slate
+    // anyway the moment a different account signs in on this device.
+    const backedUp = pendingCount() === 0 && !!uid && profilesSyncedFor(uid);
     await supabase.auth.signOut().catch(() => {});
-    setSession(null);
-    setCachedUserId(null);
-    setStatus("signed-out");
-    setOffline(false);
+    if (backedUp) {
+      // Profiles, addons, and watch data are plain `harbor.*` keys with no
+      // per-account scoping in memory -- a reload is the only way to guarantee
+      // every store (ProfilesProvider included, which reads localStorage once
+      // at mount) starts clean for whoever signs in next on this device.
+      wipePortableLocalData();
+    } else {
+      console.warn(
+        "[cloud] signed out without clearing local data: it is not fully synced yet. " +
+          "It will be cleared automatically if a different account signs in here.",
+      );
+    }
+    window.location.reload();
   }, []);
 
   const value = useMemo<CloudSessionValue>(

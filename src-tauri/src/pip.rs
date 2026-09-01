@@ -83,17 +83,22 @@ pub async fn pip_open(
     app.run_on_main_thread(move || {
         eprintln!("[pip] >>> building window on main thread");
         let url = WebviewUrl::App("index.html".into());
-        let result = WebviewWindowBuilder::new(&app_for_main, PIP_LABEL, url)
+        #[allow(unused_mut)]
+        let mut builder = WebviewWindowBuilder::new(&app_for_main, PIP_LABEL, url)
             .title("Harbor PiP")
             .inner_size(560.0, 360.0)
             .position(200.0, 200.0)
             .resizable(true)
-            .always_on_top(true)
-            .decorations(true)
-            .skip_taskbar(false)
-            .visible(true)
-            .focused(true)
-            .build();
+            .visible(true);
+        #[cfg(desktop)]
+        {
+            builder = builder
+                .always_on_top(true)
+                .decorations(true)
+                .skip_taskbar(false)
+                .focused(true);
+        }
+        let result = builder.build();
         match result {
             Ok(window) => {
                 eprintln!("[pip] window built on main thread, label={}", window.label());
@@ -205,6 +210,7 @@ pub async fn window_pip_enter(
     }
     state.window_pip_active.store(true, Ordering::SeqCst);
 
+    #[cfg(desktop)]
     if maximized {
         let _ = main.unmaximize();
     }
@@ -232,6 +238,7 @@ pub async fn window_pip_enter(
 
     main.set_min_size(Some(LogicalSize::new(360.0, 240.0)))
         .map_err(|e| format!("set_min_size: {}", e))?;
+    #[cfg(desktop)]
     main.set_always_on_top(true)
         .map_err(|e| format!("set_always_on_top: {}", e))?;
     main.set_size(LogicalSize::new(pip_w, pip_h))
@@ -284,9 +291,11 @@ pub async fn window_pip_exit(
     state.window_pip_active.store(false, Ordering::SeqCst);
 
     if let Some(s) = saved {
+        #[cfg(desktop)]
         let _ = main.set_always_on_top(s.always_on_top);
         if s.maximized {
             let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+            #[cfg(desktop)]
             let _ = main.maximize();
         } else {
             let _ = main.set_size(LogicalSize::new(s.width.max(960.0), s.height.max(600.0)));
@@ -294,9 +303,11 @@ pub async fn window_pip_exit(
             let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
         }
     } else {
+        #[cfg(desktop)]
         let _ = main.set_always_on_top(false);
         let _ = main.set_size(LogicalSize::new(1280.0, 800.0));
         let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+        #[cfg(desktop)]
         let _ = main.center();
     }
     let _ = main.set_focus();

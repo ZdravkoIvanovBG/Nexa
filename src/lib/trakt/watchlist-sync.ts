@@ -1,4 +1,4 @@
-import { saveStremioBookmark } from "@/lib/stremio";
+import { addToWatchlist } from "@/lib/watchlist";
 import { traktRequest } from "./client";
 import { fetchWatchlist } from "./watchlist";
 import type { TraktIds, TraktItem } from "./types";
@@ -101,7 +101,6 @@ export function fetchTraktWatchlist(): Promise<TraktItem[]> {
 }
 
 export async function runImport(
-  authKey: string,
   items: TraktItem[],
   onProgress?: (done: number, total: number) => void,
 ): Promise<{ total: number; added: number }> {
@@ -111,7 +110,8 @@ export async function runImport(
     const id = traktItemToStremioId(it);
     if (id) {
       try {
-        await saveStremioBookmark(authKey, id, {
+        addToWatchlist({
+          id,
           type: it.type === "show" ? "series" : "movie",
           name: it.title,
         });

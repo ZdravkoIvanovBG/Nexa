@@ -2,6 +2,7 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { WifiOff } from "lucide-react";
 import { useDownloads } from "@/lib/download/downloads-store";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 
 function subscribe(cb: () => void) {
@@ -25,14 +26,16 @@ export function OfflineBanner() {
   const online = useOnline();
   const { view, setView } = useView();
   const items = useDownloads();
+  const { settings } = useSettings();
   const t = useT();
   const routed = useRef(false);
+  const canOpenDownloads = settings.showDownloadsNav;
   const hasSaved = items.some((d) => d.status === "done");
 
   useEffect(() => {
     if (routed.current) return;
     routed.current = true;
-    if (!navigator.onLine && hasSaved) setView("downloads");
+    if (!navigator.onLine && hasSaved && canOpenDownloads) setView("downloads");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -44,7 +47,7 @@ export function OfflineBanner() {
         <span className="text-[12.5px] font-medium text-ink-muted">
           {hasSaved ? t("You're offline. Your downloads still play.") : t("You're offline")}
         </span>
-        {hasSaved && view !== "downloads" ? (
+        {hasSaved && canOpenDownloads && view !== "downloads" ? (
           <button
             onClick={() => setView("downloads")}
             className="rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-canvas transition-opacity hover:opacity-90"

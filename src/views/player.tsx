@@ -13,7 +13,6 @@ import { queueShift, useQueue, useSleepAtEnd } from "@/lib/queue";
 import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
-import { useAuth } from "@/lib/auth";
 import { embedFlags } from "./player/player-utils";
 import { useFullscreen } from "./player/hooks/use-fullscreen";
 import { useSvpGuard } from "./player/hooks/use-svp-guard";
@@ -105,7 +104,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   }, [settings.playerMenuBlack]);
   const { avatarsCorner, chatCorner, episodesCorner, avatarsHidden, chatHidden, episodesHidden } =
     useChromeConfig(chromeTheme);
-  const { authKey } = useAuth();
   const debrids = useDebridClients();
   const {
     snapshot: roomSnapshot,
@@ -242,7 +240,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     src,
     settings,
     debrids,
-    authKey,
     inRoom,
     isHost,
     sendInvite,
@@ -315,14 +312,12 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
       snap,
       engine,
       settings,
-      authKey,
       bridgeRef,
       bridgeReady,
       bridgeKey,
       svpActive,
       videoMountRef,
       toggleFullscreen,
-      castActiveRef: cast.castActiveRef,
       season,
       episode,
     });
@@ -468,7 +463,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const [episodePanelOpen, setEpisodePanelOpen] = useState(false);
   const { watchedFor } = usePlayerWatched({
     meta: src.meta,
-    authKey,
     imdbId: resolvedImdbId,
     enabled: !!src.episode && (episodePanelOpen || !!adjacent.next),
   });
@@ -651,7 +645,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     transcodedUrl,
     season,
     episode,
-    authKey,
   });
 
   usePendingSeekApply({

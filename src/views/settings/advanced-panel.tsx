@@ -1,18 +1,8 @@
-import {
-  Check,
-  Download,
-  FlaskConical,
-  Link2,
-  Loader2,
-  Lock,
-  RotateCw,
-  Wrench,
-} from "lucide-react";
+import { Check, Download, FlaskConical, Link2, Loader2, Lock, RotateCw } from "lucide-react";
 import { Github } from "@/components/icons/github-icon";
 import { useEffect, useState, type ReactNode } from "react";
 import cornerSvg from "@/assets/corner.svg";
 import harborDiscord from "@/assets/harbor-discord.svg";
-import { useAuth } from "@/lib/auth";
 import { useOnboarding } from "@/lib/onboarding";
 import {
   resetOmdbBudget,
@@ -21,11 +11,6 @@ import {
   omdbBudget as readOmdbBudget,
 } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
-import {
-  repairStremioLibrary,
-  type RepairProgress,
-  type RepairResult,
-} from "@/lib/stremio-library-repair";
 import { openUrl } from "@/lib/window";
 import {
   checkForUpdate,
@@ -46,7 +31,6 @@ import { TrayRow } from "./tray-row";
 import { Section } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
-import { DesktopOnlyBlock } from "./player-panel/internals";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -79,7 +63,7 @@ export function AdvancedPanel() {
       <Section
         title={t("Backup & restore")}
         subtitle={t(
-          "Export your entire Harbor setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.",
+          "Export your entire Harbor setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Harbor account sign-in.",
         )}
       >
         <SettingsRecoverRow />
@@ -119,7 +103,7 @@ export function AdvancedPanel() {
         <Section
           title={t("Stremio install links")}
           subtitle={t(
-            "Harbor catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.",
+            "Harbor catches stremio:// install links so the configure-and-install flow stays inside the app.",
           )}
         >
           <StremioDeeplinkRow />
@@ -151,17 +135,6 @@ export function AdvancedPanel() {
         subtitle={t("Replay the walkthrough or unhide every dismissed tip in the app.")}
       >
         <OnboardingRow />
-      </Section>
-
-      <Section
-        title={t("Stremio library repair")}
-        subtitle={t(
-          "Scans your Stremio library and rewrites any item whose shape doesn't match Stremio's exact schema. Safe to run anytime; only items that need fixing get touched.",
-        )}
-      >
-        <DesktopOnlyBlock>
-          <LibraryRepairRow />
-        </DesktopOnlyBlock>
       </Section>
 
       <CustomCodeCard />
@@ -201,9 +174,9 @@ function LegalDisclaimer() {
       </p>
       <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
         Harbor itself does not host, distribute, or index any media. All streams come from
-        third-party addons, debrid services, or your own Stremio account that you configure
-        yourself. You are responsible for what you choose to play and for complying with the laws of
-        your jurisdiction.
+        third-party addons, debrid services, or a streaming server you configure yourself. You are
+        responsible for what you choose to play and for complying with the laws of your
+        jurisdiction.
       </p>
     </section>
   );
@@ -330,7 +303,7 @@ function StremioDeeplinkRow() {
           </span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
             {t(
-              "Harbor's in-app installer animates the manifest install and keeps you in context. Anything Harbor installs is also synced to your Stremio account, so the official app stays the canonical library. Turn this off and Stremio becomes the only handler for stremio:// links; Harbor still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).",
+              "Harbor's in-app installer animates the manifest install and keeps you in context. Turn this off and Stremio becomes the only handler for stremio:// links; Harbor still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).",
             )}
           </p>
         </div>
@@ -705,93 +678,5 @@ function ActionRow({
         </button>
       )}
     </div>
-  );
-}
-
-function LibraryRepairRow() {
-  const t = useT();
-  const { authKey } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<RepairProgress | null>(null);
-  const [result, setResult] = useState<RepairResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const run = async () => {
-    if (!authKey || busy) return;
-    setBusy(true);
-    setError(null);
-    setResult(null);
-    setProgress({ phase: "fetching" });
-    try {
-      const r = await repairStremioLibrary(authKey, (p) => setProgress(p));
-      setResult(r);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!authKey) {
-    return (
-      <ActionRow
-        label={t("Repair library")}
-        sub={t("Sign in to Stremio first. The repair scans only the active profile's library.")}
-      />
-    );
-  }
-
-  const statusLine = (() => {
-    if (error) return t("Failed: {error}", { error });
-    if (result) {
-      if (result.total === 0) return t("Library is empty. Nothing to repair.");
-      return (
-        t("{repaired} fixed, {clean} already clean", {
-          repaired: result.repaired,
-          clean: result.alreadyClean,
-        }) +
-        (result.unrepairable > 0 ? t(", {n} unrepairable", { n: result.unrepairable }) : "") +
-        "."
-      );
-    }
-    if (!progress)
-      return t(
-        "Rewrites every library item to match Stremio's exact schema. Run once if your Stremio app started crashing after Harbor synced playback.",
-      );
-    if (progress.phase === "fetching") {
-      return progress.total
-        ? t("Fetching {n} items…", { n: progress.total })
-        : t("Fetching library index…");
-    }
-    if (progress.phase === "normalizing") {
-      return progress.needsRepair != null
-        ? t("{n} items need repair.", { n: progress.needsRepair })
-        : t("Checking {n} items…", { n: progress.total ?? 0 });
-    }
-    if (progress.phase === "pushing") {
-      return t("Pushing {pushed} of {total}…", {
-        pushed: progress.pushed ?? 0,
-        total: progress.needsRepair ?? 0,
-      });
-    }
-    return t("Done.");
-  })();
-
-  return (
-    <ActionRow
-      label={t("Repair library")}
-      sub={statusLine}
-      cta={busy ? t("Working…") : result ? t("Run again") : t("Repair now")}
-      icon={
-        busy ? (
-          <Loader2 size={13} strokeWidth={2.4} className="animate-spin" />
-        ) : (
-          <Wrench size={13} strokeWidth={2.4} />
-        )
-      }
-      onClick={run}
-      disabled={busy}
-      tone={result && result.repaired > 0 && !error ? "success" : undefined}
-    />
   );
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/lib/auth";
 import type { Addon } from "@/lib/addons";
 import { gatherSubtitleAddons } from "@/lib/subtitles/addon-source";
 import { languageName } from "@/lib/subtitles/language";
@@ -25,7 +24,6 @@ function isJapanese(lang: string): boolean {
 
 export function useSubtitleChoices(src: PlayerSrc) {
   const { settings } = useSettings();
-  const { authKey } = useAuth();
   const [results, setResults] = useState<SubResult[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,7 +89,7 @@ export function useSubtitleChoices(src: PlayerSrc) {
     return () => {
       cancelled = true;
     };
-  }, [src.url, authKey, preferredLangs, settings.subProvidersEnabled]);
+  }, [src.url, preferredLangs, settings.subProvidersEnabled]);
 
   const groups = useMemo<SubtitleLangGroup[]>(() => {
     if (!results) return [];

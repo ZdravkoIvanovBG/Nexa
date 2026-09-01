@@ -7,7 +7,6 @@ import type { Settings } from "@/lib/settings";
 import { t } from "@/lib/i18n";
 
 type Args = {
-  authKey: string | null;
   traktConnected: boolean;
   settings: Settings;
   year: number;
@@ -18,7 +17,7 @@ type Args = {
  * Upcoming releases scoped to the user's own library: watchlist, Currently
  * Watching and Watched. Re-runs whenever any of those stores changes.
  */
-export function useCalendarData({ authKey, traktConnected, settings, year, month }: Args) {
+export function useCalendarData({ traktConnected, settings, year, month }: Args) {
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +39,6 @@ export function useCalendarData({ authKey, traktConnected, settings, year, month
     setLoading(true);
     fetchTrackedCalendar(year, month, {
       tmdbKey: settings.tmdbKey,
-      authKey,
       includeTrakt: traktConnected,
     })
       .then((rows) => {
@@ -55,7 +53,7 @@ export function useCalendarData({ authKey, traktConnected, settings, year, month
     return () => {
       cancelled = true;
     };
-  }, [authKey, traktConnected, settings.tmdbKey, year, month, revision]);
+  }, [traktConnected, settings.tmdbKey, year, month, revision]);
 
   return { items, loading, error };
 }

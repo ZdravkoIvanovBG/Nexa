@@ -1,14 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { LogIn, LogOut, Pencil, Search, Settings as SettingsLucide, Users } from "lucide-react";
+import { Pencil, Search, Settings as SettingsLucide, Users } from "lucide-react";
 import { createPortal } from "react-dom";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
-import { AuthModal } from "@/components/auth-modal";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { TvModalClose } from "@/components/tv-modal-close";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTvFocusScope } from "@/lib/keyboard-navigation";
 import { useProfiles } from "@/lib/profiles";
@@ -43,11 +41,12 @@ export function RoyalTopbar() {
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
 
   const isVisible = (item: NavItem) => {
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
@@ -155,7 +154,7 @@ export function RoyalTopbar() {
 
           <div className="flex shrink-0 items-center gap-1.5">
             <SearchPill onOpen={() => setSearchOpen(true)} />
-            {view !== "live" && <TogetherButton variant="ghost" />}
+            <TogetherButton variant="ghost" />
             <RoyalProfileMenu
               onOpenSettings={() => setView("settings")}
               settingsActive={view === "settings"}
@@ -316,12 +315,10 @@ function RoyalProfileMenu({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const popoverPortalRef = useRef<HTMLDivElement>(null);
 
@@ -423,10 +420,9 @@ function RoyalProfileMenu({
     };
   }, [open]);
 
-  const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const name = activeProfile?.name ?? t("profile.fallback");
   const color = activeProfile?.color ?? "#f08032";
-  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? null;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
 
   const sizing = open ? "h-14 gap-2 ps-1 pe-3" : "h-9 gap-2 ps-1 pe-3";
@@ -584,9 +580,6 @@ function RoyalProfileMenu({
                 >
                   {name}
                 </div>
-                {user?.email && (
-                  <div className="truncate pt-0.5 text-[11.5px] text-ink-subtle">{user.email}</div>
-                )}
               </div>
 
               {otherProfiles.length > 0 && (
@@ -636,22 +629,11 @@ function RoyalProfileMenu({
                 <MenuItem active={settingsActive} onClick={() => dismiss(onOpenSettings)}>
                   <SettingsLucide size={13} strokeWidth={2.2} /> {t("nav.settings")}
                 </MenuItem>
-                {user ? (
-                  <MenuItem bordered onClick={() => dismiss(signOut)}>
-                    <LogOut size={13} strokeWidth={2.2} /> {t("Sign out")}
-                  </MenuItem>
-                ) : (
-                  <MenuItem bordered onClick={() => dismiss(() => setAuthOpen(true))}>
-                    <LogIn size={13} strokeWidth={2.2} /> {t("profile.signIn")}
-                  </MenuItem>
-                )}
               </div>
             </ThreeLiquidGlassSurface>
           </div>,
           document.body,
         )}
-
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );
 }

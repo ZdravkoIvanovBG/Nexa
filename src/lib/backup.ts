@@ -27,7 +27,33 @@ function isPortable(key: string): boolean {
   // already merged with the cloud" -- restoring one onto a fresh device makes the
   // next hydrate treat local-only rows as deletions and silently drop them.
   if (key.startsWith("harbor.cloud.")) return false;
+  // Tracks which account this device's local data currently belongs to. Never
+  // part of a backup, and never wiped by wipePortableLocalData itself.
+  if (key === "harbor.local.ownerUserId") return false;
+  // "Has this installation introduced itself yet?" is a property of the
+  // device, not of the account: wiping it on sign-out meant the first-run
+  // wizard greeted a returning user every time they signed back in. The
+  // account-following half of it -- so a new device signing into an
+  // established account skips the wizard too, and dismissed nudges travel --
+  // is carried in the settings row's side-store bundle instead.
+  if (key === "harbor.onboarding") return false;
   return true;
+}
+
+/**
+ * Removes every portable (user-following) key from localStorage, leaving only
+ * device/session bookkeeping (auth token, cloud sync queue, migration gates,
+ * the local-data owner marker) untouched. This is the same boundary a backup
+ * export/restore uses -- profiles, addons, watchlist, watch progress, theme,
+ * and every other setting a user would expect to move with their account.
+ */
+export function wipePortableLocalData(): void {
+  const stale: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && isPortable(key)) stale.push(key);
+  }
+  for (const key of stale) localStorage.removeItem(key);
 }
 
 export async function buildBackup(): Promise<Backup> {
@@ -100,12 +126,7 @@ export function backupKeyCount(backup: Backup): number {
 }
 
 export async function applyBackup(backup: Backup): Promise<void> {
-  const stale: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && isPortable(key)) stale.push(key);
-  }
-  for (const key of stale) localStorage.removeItem(key);
+  wipePortableLocalData();
   for (const [k, v] of Object.entries(backup.data)) {
     if (!isPortable(k)) continue;
     try {

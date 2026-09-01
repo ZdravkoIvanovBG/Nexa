@@ -58,11 +58,13 @@ pub async fn hdr_overlay_open(app: AppHandle) -> Result<(), String> {
             .inner_size(sw, sh)
             .position(px, py)
             .resizable(false)
+            .visible(true);
+        #[cfg(desktop)]
+        let builder = builder
             .always_on_top(true)
             .decorations(false)
             .skip_taskbar(true)
             .shadow(false)
-            .visible(true)
             .focused(false);
         #[cfg(windows)]
         let builder = builder.transparent(true);

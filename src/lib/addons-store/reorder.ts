@@ -1,4 +1,4 @@
-import { getUserAddonsRaw, setUserAddonsRaw, type Addon } from "@/lib/addons";
+import type { Addon } from "@/lib/addons";
 
 const BACKUP_KEY = "harbor.addonOrderBackups";
 const ORDER_KEY = "harbor.addonOrder";
@@ -6,17 +6,7 @@ const MAX_BACKUPS = 5;
 
 export type ReorderInvalid = "empty" | "length" | "null-item" | "url-multiset" | "item-identity";
 
-export type AddonOrderBackup = { at: number; urls: string[]; names: string[]; items?: Addon[] };
-
-export type SaveStep = "checking" | "saving" | "verifying";
-
-export type SaveResult =
-  | { ok: true; items: Addon[] }
-  | { ok: false; stage: "validate"; reason: ReorderInvalid }
-  | { ok: false; stage: "fetch" }
-  | { ok: false; stage: "stale"; current: Addon[] }
-  | { ok: false; stage: "write" }
-  | { ok: false; stage: "verify"; current: Addon[] | null };
+export type AddonOrderBackup = { at: number; urls: string[]; names: string[] };
 
 export function hostOf(url: string): string {
   try {
@@ -83,10 +73,6 @@ export function validateReorder(
   return { ok: true };
 }
 
-export function collectionDrifted(baseline: Addon[], fresh: Addon[]): boolean {
-  return !bijectiveItemMatch(baseline, fresh);
-}
-
 export function sequencesEqual(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
@@ -137,25 +123,15 @@ export function loadBackups(): AddonOrderBackup[] {
   }
 }
 
-export function pushBackup(items: Addon[]): void {
-  let clone: Addon[] | undefined;
-  try {
-    clone = JSON.parse(JSON.stringify(items)) as Addon[];
-  } catch {
-    clone = undefined;
-  }
+export function pushBackup(
+  items: Array<{ transportUrl: string; manifest?: Addon["manifest"] }>,
+): void {
   const snapshot: AddonOrderBackup = {
     at: Date.now(),
     urls: items.map((i) => i.transportUrl),
     names: items.map((i) => i.manifest?.name ?? hostOf(i.transportUrl)),
-    items: clone,
   };
-  const slim: AddonOrderBackup = { ...snapshot, items: undefined };
-  const attempts = [
-    [snapshot, ...loadBackups()].slice(0, MAX_BACKUPS),
-    [slim, ...loadBackups()].slice(0, MAX_BACKUPS),
-    [slim],
-  ];
+  const attempts = [[snapshot, ...loadBackups()].slice(0, MAX_BACKUPS), [snapshot]];
   for (const list of attempts) {
     try {
       localStorage.setItem(BACKUP_KEY, JSON.stringify(list));
@@ -185,35 +161,4 @@ export function loadDisplayOrder(): string[] {
   } catch {
     return [];
   }
-}
-
-export async function saveCollectionOrder(
-  authKey: string,
-  baseline: Addon[],
-  next: Addon[],
-  alreadyBackedUp: boolean,
-  onStep?: (step: SaveStep) => void,
-): Promise<SaveResult> {
-  onStep?.("checking");
-  const valid = validateReorder(baseline, next);
-  if (!valid.ok) return { ok: false, stage: "validate", reason: valid.reason };
-  const fresh = await getUserAddonsRaw(authKey);
-  if (fresh == null) return { ok: false, stage: "fetch" };
-  if (collectionDrifted(baseline, fresh)) return { ok: false, stage: "stale", current: fresh };
-  if (!alreadyBackedUp) pushBackup(baseline);
-  onStep?.("saving");
-  const wrote = await setUserAddonsRaw(authKey, next);
-  if (!wrote) return { ok: false, stage: "write" };
-  onStep?.("verifying");
-  const readBack = await getUserAddonsRaw(authKey);
-  if (readBack == null) return { ok: false, stage: "verify", current: null };
-  if (
-    !sequencesEqual(
-      readBack.map((a) => a.transportUrl),
-      next.map((a) => a.transportUrl),
-    )
-  ) {
-    return { ok: false, stage: "verify", current: readBack };
-  }
-  return { ok: true, items: readBack };
 }

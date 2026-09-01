@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import stremioWordmark from "@/assets/stremio-wordmark.png";
-import { AuthModal } from "@/components/auth-modal";
-import { useAuth } from "@/lib/auth";
+import { LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useCloudSession } from "@/lib/cloud/session";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
@@ -10,20 +9,17 @@ import { ColorPicker } from "./color-picker";
 import { Section } from "./shared";
 import { AvatarRing } from "./account/avatar-ring";
 import { resizeAvatar } from "./account/avatar-utils";
-import { SyncedAddonsCard } from "./account/synced-addons-card";
+import { ChangePasswordRow } from "./account/change-password-row";
 import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
 import { SettingsScopeCard } from "./account/settings-scope-card";
-import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
-import { avatarUrl } from "@/lib/avatars/catalog";
 
 export function AccountStub() {
   const t = useT();
-  const { user, signOut } = useAuth();
   const { settings, update } = useSettings();
   const { displayName, setDisplayName } = useTogether();
   const { activeProfile, updateProfile } = useProfiles();
+  const { user, signOut } = useCloudSession();
   const pushIdentity = (patch: { harborColor?: string; harborAvatar?: string | null }) => {
     update(patch);
     if (!activeProfile) return;
@@ -38,21 +34,17 @@ export function AccountStub() {
       updateProfile(activeProfile.id, { name: next });
     }
   };
-  const [showAuth, setShowAuth] = useState(false);
-  const [reveal, setReveal] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName);
   const [editingName, setEditingName] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   useEffect(() => {
     setNameDraft(displayName);
   }, [displayName]);
 
-  const stremioAvatar = user?.avatar ?? null;
   const harborAvatar = settings.harborAvatar;
   const customAvatar = activeProfile?.avatar ?? harborAvatar ?? null;
-  const effectiveAvatar = customAvatar ?? stremioAvatar;
+  const effectiveAvatar = customAvatar;
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,21 +58,11 @@ export function AccountStub() {
     }
   };
 
-  const maskedEmail = useMemo(() => {
-    if (!user?.email) return "";
-    const [local, domain] = user.email.split("@");
-    if (!domain) return "*****";
-    const visible = local.slice(0, 1);
-    return `${visible}${"*".repeat(Math.max(local.length - 1, 4))}@${domain}`;
-  }, [user]);
-
   return (
     <div className="flex flex-col gap-5">
       <Section
         title={t("Harbor identity")}
-        subtitle={t(
-          "How you appear in Watch Together, sessions, and chat. Sits on top of your Stremio account.",
-        )}
+        subtitle={t("How you appear in Watch Together, sessions, and chat.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center gap-5">
@@ -129,11 +111,6 @@ export function AccountStub() {
                   <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
                     {displayName}
                   </span>
-                  {user && (
-                    <span className="text-[13px] text-ink-subtle">
-                      ({user.fullname || user.email.split("@")[0]})
-                    </span>
-                  )}
                   <svg
                     width="13"
                     height="13"
@@ -172,20 +149,42 @@ export function AccountStub() {
                     onClick={() => pushIdentity({ harborAvatar: null })}
                     className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
                   >
-                    {stremioAvatar ? t("Reset to Stremio avatar") : t("Reset to default")}
+                    {t("Reset to default")}
                   </button>
                 )}
               </div>
-              <AvatarFan
-                onClick={() => setAvatarPickerOpen(true)}
-                onRandomize={(id) => pushIdentity({ harborAvatar: avatarUrl(id) })}
-              />
               <ColorPicker
                 value={settings.harborColor}
                 onChange={(c) => pushIdentity({ harborColor: c })}
               />
             </div>
           </div>
+        </div>
+      </Section>
+
+      <Section
+        title={t("Harbor account")}
+        subtitle={t("Your Harbor account. Library, watch progress, and addons sync from here.")}
+      >
+        <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-subtle">
+                {t("Email")}
+              </span>
+              <span className="truncate text-[14.5px] font-medium text-ink">
+                {user?.email ?? "—"}
+              </span>
+            </div>
+            <button
+              onClick={() => void signOut()}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
+            >
+              <LogOut size={13} strokeWidth={2.2} />
+              {t("Sign out")}
+            </button>
+          </div>
+          <ChangePasswordRow email={user?.email ?? null} />
         </div>
       </Section>
 
@@ -201,98 +200,6 @@ export function AccountStub() {
           <SettingsScopeCard />
         </div>
       </Section>
-
-      <Section
-        title={t("Stremio account")}
-        subtitle={t("Library, watch progress, and addon collection sync from this account.")}
-      >
-        {user ? (
-          <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-            <img
-              src={stremioWordmark}
-              alt=""
-              aria-hidden
-              className="pointer-events-none absolute end-5 bottom-4 h-9 w-auto opacity-45 select-none"
-              style={{ filter: "invert(1) grayscale(1) brightness(1.1)" }}
-              draggable={false}
-            />
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-                  {t("Email")}
-                </span>
-                <span className="truncate font-mono text-[14.5px] text-ink">
-                  {reveal ? user.email : maskedEmail}
-                </span>
-              </div>
-              <button
-                onClick={() => setReveal((v) => !v)}
-                className="flex h-9 shrink-0 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-              >
-                {reveal ? t("Hide") : t("Reveal")}
-              </button>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-                  {t("Stremio ID")}
-                </span>
-                <span className="truncate font-mono text-[12.5px] text-ink-muted">{user._id}</span>
-              </div>
-            </div>
-            <div className="mt-1 flex items-center gap-2 border-t border-edge-soft/60 pt-3">
-              <button
-                onClick={() => setShowAuth(true)}
-                className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-              >
-                {t("Re-authenticate")}
-              </button>
-              <button
-                onClick={signOut}
-                className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-              >
-                {t("Sign out")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-            <div className="flex flex-col">
-              <span className="text-[14px] font-medium text-ink">{t("Not signed in")}</span>
-              <span className="text-[12.5px] text-ink-subtle">
-                {t("Sign in to sync your library, watch progress, and addons.")}
-              </span>
-            </div>
-            <button
-              onClick={() => setShowAuth(true)}
-              className="flex h-10 items-center gap-1.5 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
-            >
-              {t("Sign in")}
-            </button>
-          </div>
-        )}
-      </Section>
-
-      <Section
-        title={t("Synced addons")}
-        subtitle={t(
-          "Harbor pulls your addon collection from Stremio. Manage individual addons in Streaming sources.",
-        )}
-      >
-        <SyncedAddonsCard />
-      </Section>
-
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-      {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={effectiveAvatar}
-          onPick={(id) => {
-            pushIdentity({ harborAvatar: avatarUrl(id) });
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
-      )}
     </div>
   );
 }

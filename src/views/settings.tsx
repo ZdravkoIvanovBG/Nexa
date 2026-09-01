@@ -83,7 +83,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   account: {
     label: "Account",
-    sub: "Your Stremio sign-in. Library, watch progress, and addons sync from here.",
+    sub: "Your Harbor account. Library, watch progress, and addons sync from here.",
   },
   library: {
     label: "Library & metadata",

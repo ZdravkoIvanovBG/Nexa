@@ -12,7 +12,9 @@
 
 ## Project Snapshot
 
-Harbor is a cross-platform Stremio client built with Tauri 2, React, TypeScript, Rust, and libmpv.
+Harbor is a cross-platform media client built with Tauri 2, React, TypeScript, Rust, and libmpv.
+It speaks the Stremio addon protocol but is a standalone app with its own account; there is no
+Stremio account layer.
 
 The frontend owns the interface and user interactions. Rust owns native integrations, playback, operating-system behavior, and performance-sensitive work.
 
@@ -67,7 +69,8 @@ Keep business logic outside React components when it can be expressed as a reusa
 
 Use these repositories as implementation references:
 
-- Stremio protocol and application behavior: <https://github.com/Stremio/stremio-core>
+- Stremio addon protocol and application behavior: <https://github.com/Stremio/stremio-core>
+  (protocol reference only -- Harbor does not use Stremio accounts)
 - mpv lifecycle and desktop playback: <https://github.com/jellyfin/jellyfin-desktop>
 - Tauri and libmpv integration: <https://github.com/MaxMB15/MaxVideoPlayer>
 

@@ -1,11 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { LogOut, Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
+import { Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTvFocusScope } from "@/lib/keyboard-navigation";
 import { useProfiles } from "@/lib/profiles";
@@ -50,13 +49,14 @@ export function TopDock() {
     setView(item.view);
   };
 
-  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization)
+  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  })
     .filter(
       (item) =>
         item.id !== "settings" &&
         item.id !== "kids" &&
         (item.view !== "vod" || settings.showPlaylistsTab) &&
-        (!item.hideKey || !settings.hideContent[item.hideKey]) &&
         (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
     )
     .map((item) => {
@@ -198,7 +198,7 @@ export function TopDock() {
             <div className="ms-2 flex shrink-0 items-center gap-1">
               <RecordingPill />
 
-              {view !== "live" && <TogetherButton variant="ghost" connectStyle="tab" />}
+              <TogetherButton variant="ghost" connectStyle="tab" />
 
               <IconBtn
                 onClick={() => setSearchOpen(true)}
@@ -331,7 +331,7 @@ export function TopDock() {
             <div className="ms-2 flex shrink-0 items-center gap-1">
               <RecordingPill />
 
-              {view !== "live" && <TogetherButton variant="ghost" connectStyle="tab" />}
+              <TogetherButton variant="ghost" connectStyle="tab" />
 
               <IconBtn
                 onClick={() => setSearchOpen(true)}
@@ -491,7 +491,6 @@ function ProfileChipCompact({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
 
@@ -620,12 +619,11 @@ function ProfileChipCompact({
     };
   }, [open]);
 
-  const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const name = activeProfile?.name ?? t("profile.fallback");
 
   const color = activeProfile?.color ?? "#7cd6ff";
 
-  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const avatarSrc = activeProfile?.avatar ?? settings.harborAvatar ?? null;
 
   const otherProfiles = profiles.filter((profile) => profile.id !== activeProfile?.id);
 
@@ -716,10 +714,6 @@ function ProfileChipCompact({
 
       <div className={`border-b px-4 py-3 ${dividerClass}`}>
         <div className={`text-[13.5px] font-semibold ${strongTextClass}`}>{name}</div>
-
-        {user?.email && (
-          <div className={`truncate text-[11.5px] ${subtleTextClass}`}>{user.email}</div>
-        )}
       </div>
 
       {otherProfiles.length > 0 && (
@@ -851,27 +845,6 @@ function ProfileChipCompact({
           <SettingsIcon size={13} strokeWidth={2.2} />
           {t("nav.settings")}
         </button>
-
-        {user && (
-          <button
-            type="button"
-            data-tauri-drag-region="false"
-            onClick={() => {
-              signOut();
-              setOpen(false);
-            }}
-            className={`
-              flex items-center gap-2.5
-              border-t px-4 py-2.5 text-start
-              text-[13px] transition-colors
-              ${dividerClass}
-              ${menuButtonClass}
-            `}
-          >
-            <LogOut size={13} strokeWidth={2.2} />
-            {t("Sign out")}
-          </button>
-        )}
       </div>
     </>
   );

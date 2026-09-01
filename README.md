@@ -189,7 +189,7 @@ Harbor is organized into ten primary rooms, each with its own cinematic hero and
 | **Calendar**   | A month grid across five sources (All/TMDB, Library, Trakt watchlist, Trakt anticipated, Custom) &middot; filter pills with live counts &middot; a day modal with posters and synopses                                                                                                                                                                         |
 | **My Library** | Watchlist, History, Local files, library repair, and a full Trakt library browser when connected                                                                                                                                                                                                                                                               |
 | **Addons**     | Discover, Browse, and Installed tabs &middot; the [stremio-addons.net](https://stremio-addons.net) community index &middot; add by URL &middot; configurable addon setup viewport &middot; addon detail pages with related and recommended &middot; an adult age gate                                                                                          |
-| **Settings**   | Thirteen sections: account and profiles, library repair, Trakt, parental, relay, streaming keys, languages, player layout, hotkeys, bandwidth, themes, advanced, and onboarding replay                                                                                                                                                                         |
+| **Settings**   | Twelve sections: account and profiles, Trakt, parental, relay, streaming keys, languages, player layout, hotkeys, bandwidth, themes, advanced, and onboarding replay                                                                                                                                                                                           |
 
 Per title flows add **Detail**, **Person**, **Award**, **Service**, and **Filter** views on top of the rooms above, each with full backdrops, clickable award laurels, drill down modals, and per key scroll memory.
 
@@ -291,7 +291,7 @@ The Addons room is a full browser and installer for the Stremio ecosystem.
 - **Browse** by category and open an addon's detail page with related and recommended addons.
 - **Install** from the catalog, add by URL, or follow a `harbor://` / `stremio://` deep link.
 - **Configure** addons that require setup: Harbor opens the addon's own configuration view rather than installing without it.
-- **Manage** installed addons, which also sync to your Stremio account collection.
+- **Manage** installed addons, which sync across your devices through your Harbor account.
 - An age gate keeps adult addons behind an explicit opt in.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
@@ -322,7 +322,7 @@ Harbor's theme engine changes more than colors. A theme can reshape the entire n
 | **Fanart.tv**       | HD logos, backdrops, posters, banners, and thumbs for movies and series                                                                                                                                                           |
 | **Kitsu / AniZip**  | Anime metadata, cross database ID mapping, and per episode detail                                                                                                                                                                 |
 | **Trakt**           | OAuth device sign in, automatic scrobbling, watchlist and history, personalized movie and series recommendations, an Up Next calendar rail, and your avatar in the sidebar                                                        |
-| **Stremio**         | Account sign in, Continue Watching sync, installed-addon collection sync, and catalog, meta, stream, and subtitle resources from every installed addon                                                                            |
+| **Stremio addons**  | Catalog, meta, stream, and subtitle resources from every installed addon, plus `stremio://` install links. Harbor speaks the addon protocol; it does not use a Stremio account                                                    |
 | **Debrid**          | Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox for cached, instant playback                                                                                                                                          |
 
 Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden Globe, SAG, Cannes, Berlin, Critics Choice, and Annie/Kobe honors.
@@ -388,7 +388,7 @@ Download the latest build for macOS or Windows from the [Releases page][releases
 | **Web**     | Open in any modern browser, nothing to install                                                                      |
 | **Linux**   | [Official `.deb`, `.rpm`, Flatpak, and AppImage builds](https://github.com/harborstremio-linux/harbor-linux-builds) |
 
-**Out of the box, Harbor works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Your installed Stremio addons merge in automatically when you sign in, deduplicated against the built in rails.
+**Out of the box, Harbor works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Addons you install are deduplicated against the built in rails.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -398,7 +398,6 @@ All keys and preferences live in **Settings** and persist locally. Nothing is se
 
 | Setting                | Default      | What it does                                                                                |
 | ---------------------- | ------------ | ------------------------------------------------------------------------------------------- |
-| `Stremio sign in`      | signed out   | Library sync, Continue Watching, and installed-addon collection                             |
 | `TMDB API key`         | none         | Unlocks trending, in theaters, on the air, top rated, per service rails, and Watch on chips |
 | `RPDB API key`         | none         | Bakes rating overlays onto posters                                                          |
 | `OMDB API key`         | none         | Adds Rotten Tomatoes and Metascore ratings and award counts                                 |

@@ -9,7 +9,6 @@ import {
 } from "@/lib/calendar";
 import { CalendarSkeleton } from "./calendar/calendar-skeleton";
 import { useCalendarData } from "./calendar/use-calendar-data";
-import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useScrollMemory, useView } from "@/lib/view";
@@ -28,7 +27,6 @@ import {
 export function CalendarView() {
   const t = useT();
   const { settings, update } = useSettings();
-  const { authKey } = useAuth();
   const { openMeta } = useView();
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear());
@@ -41,7 +39,6 @@ export function CalendarView() {
   const { isConnected: traktConnected } = useTrakt();
 
   const { items, loading, error } = useCalendarData({
-    authKey,
     traktConnected,
     settings,
     year,

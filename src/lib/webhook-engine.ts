@@ -50,11 +50,7 @@ function applyContentTypeFilter(items: CalendarItem[], opts: Settings["webhooks"
   });
 }
 
-async function fetchSource(
-  source: SourceKey,
-  settings: Settings,
-  authKey: string | null,
-): Promise<CalendarItem[]> {
+async function fetchSource(source: SourceKey, settings: Settings): Promise<CalendarItem[]> {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -63,7 +59,6 @@ async function fetchSource(
     if (source === "library") {
       return await fetchTrackedCalendar(year, month, {
         tmdbKey: settings.tmdbKey,
-        authKey,
         includeTrakt: traktConnected(),
       });
     }
@@ -259,7 +254,6 @@ function commit(
 
 export async function runWebhookTick(
   settings: Settings,
-  authKey: string | null,
 ): Promise<{ fired: number; channels: ChannelResult[] }> {
   const { discordUrl, telegramUrl, sources } = settings.webhooks;
   if (!discordUrl && !telegramUrl) return { fired: 0, channels: [] };
@@ -277,7 +271,7 @@ export async function runWebhookTick(
   const sourceCache = new Map<SourceKey, CalendarItem[]>();
   const sourceFor = async (k: SourceKey): Promise<CalendarItem[]> => {
     if (sourceCache.has(k)) return sourceCache.get(k)!;
-    const rows = await fetchSource(k, settings, authKey);
+    const rows = await fetchSource(k, settings);
     sourceCache.set(k, rows);
     return rows;
   };

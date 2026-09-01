@@ -1,7 +1,5 @@
 import { Check, Download, Loader2, Upload } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/lib/auth";
-import { library } from "@/lib/stremio";
 import { readLocalEntries } from "@/lib/watchlist";
 import { useT } from "@/lib/i18n";
 import {
@@ -40,25 +38,12 @@ type Phase =
 
 export function WatchlistSync() {
   const t = useT();
-  const { authKey } = useAuth();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-
-  if (!authKey) {
-    return (
-      <p className="text-[13px] leading-relaxed text-ink-subtle">
-        {t("Sign in to Stremio first so Harbor knows which watchlist to sync.")}
-      </p>
-    );
-  }
 
   const startExport = async () => {
     setPhase({ kind: "loading", dir: "export" });
     try {
-      const lib = await library(authKey);
-      const sources = [
-        ...lib.map((i) => ({ id: i._id, type: i.type, removed: i.removed, temp: i.temp })),
-        ...readLocalEntries().map((e) => ({ id: e.id, type: e.type })),
-      ];
+      const sources = readLocalEntries().map((e) => ({ id: e.id, type: e.type }));
       const plan = planExport(sources);
       if (plan.movies.length + plan.shows.length === 0) {
         setPhase({
@@ -123,7 +108,7 @@ export function WatchlistSync() {
       label: t("Importing {done} / {total}", { done: 0, total: items.length }),
     });
     try {
-      const r = await runImport(authKey, items, (done, total) =>
+      const r = await runImport(items, (done, total) =>
         setPhase({ kind: "running", label: t("Importing {done} / {total}", { done, total }) }),
       );
       setPhase({

@@ -3,8 +3,8 @@ import { computeTvgIdCounts, epgProgramsForChannel } from "@/lib/iptv/epg-resolv
 import { findCurrent } from "@/lib/iptv/xmltv";
 import { getCachedPlaylist } from "@/lib/iptv/store";
 import type { IptvPlaylistSource } from "@/lib/iptv/types";
-import { useEpg, useNowTick } from "@/views/live/hooks/use-epg";
-import { useIptvPlaylist } from "@/views/live/hooks/use-iptv-playlist";
+import { useEpg, useNowTick } from "@/components/live/hooks/use-epg";
+import { useIptvPlaylist } from "@/components/live/hooks/use-iptv-playlist";
 import { DvrModal } from "./dvr-modal";
 
 export function LiveChannelDvr({

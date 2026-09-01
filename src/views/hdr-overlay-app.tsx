@@ -1,5 +1,4 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { AuthProvider } from "@/lib/auth";
 import { SettingsProvider } from "@/lib/settings";
 import { ShellLayer } from "./player/shell-layer";
 import { DragClickStage } from "./player/drag-click-stage";
@@ -54,13 +53,11 @@ export function HdrOverlayApp() {
     };
   }, []);
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <OverlayErrorBoundary>
-          <HdrOverlayChrome />
-        </OverlayErrorBoundary>
-      </SettingsProvider>
-    </AuthProvider>
+    <SettingsProvider>
+      <OverlayErrorBoundary>
+        <HdrOverlayChrome />
+      </OverlayErrorBoundary>
+    </SettingsProvider>
   );
 }
 

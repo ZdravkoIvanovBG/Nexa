@@ -5,8 +5,8 @@ import debridLinkLogo from "@/assets/addon-logos/debridlink.png";
 import premiumizeLogo from "@/assets/addon-logos/premiumize.png";
 import realDebridLogo from "@/assets/addon-logos/realdebrid.png";
 import torboxLogo from "@/assets/addon-logos/torbox.png";
-import { useAuth } from "@/lib/auth";
-import { userAddons, type Addon } from "@/lib/addons";
+import type { Addon } from "@/lib/addons";
+import { installedAddonsResolved } from "@/lib/addon-store";
 import { SERVICES } from "@/lib/providers/streaming";
 import { useSettings, type StreamingService } from "@/lib/settings";
 import {
@@ -515,14 +515,12 @@ function StreamSortPicker({
 }
 
 function useAioStatusHealth(): AioStatusSnapshot | null {
-  const { authKey } = useAuth();
   const [snapshot, setSnapshot] = useState<AioStatusSnapshot | null>(null);
   useEffect(() => {
-    if (!authKey) return;
     const ac = new AbortController();
     let cancelled = false;
     void (async () => {
-      const list = await userAddons(authKey).catch(() => [] as Addon[]);
+      const list = await installedAddonsResolved().catch(() => [] as Addon[]);
       if (cancelled || list.length === 0) return;
       const snap = await fetchAioStatusHealth(list, ac.signal);
       if (!cancelled) setSnapshot(snap);
@@ -531,7 +529,7 @@ function useAioStatusHealth(): AioStatusSnapshot | null {
       cancelled = true;
       ac.abort();
     };
-  }, [authKey]);
+  }, []);
   return snapshot;
 }
 

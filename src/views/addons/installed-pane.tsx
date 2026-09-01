@@ -123,9 +123,6 @@ function InstalledRow({
     const next = !enabled;
     setEnabled(next);
     setAddonEnabled(r.transportUrl, next);
-    window.dispatchEvent(
-      new CustomEvent("harbor:addons-changed", { detail: { id: idOf(r), enabled: next } }),
-    );
   };
 
   return (

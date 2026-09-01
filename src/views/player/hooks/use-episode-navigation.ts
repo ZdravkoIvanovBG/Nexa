@@ -19,7 +19,6 @@ export function useEpisodeNavigation(params: {
   src: PlayerSrc;
   settings: Settings;
   debrids: DebridStore[];
-  authKey: string | null;
   inRoom: boolean;
   isHost: boolean;
   sendInvite: (invite: PlayInvite) => void;

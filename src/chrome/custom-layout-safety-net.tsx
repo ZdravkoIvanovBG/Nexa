@@ -94,10 +94,11 @@ export function CustomLayoutSafetyNet() {
 
   if (!navMissing) return null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization).filter((item) => {
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  }).filter((item) => {
     if (item.view === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   });

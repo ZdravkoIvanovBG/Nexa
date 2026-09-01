@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
-import { readResumeMs, saveResumeMs } from "@/lib/resume";
-import { episodeFromVideoId } from "@/lib/library-item";
-import { cloudWriteId } from "@/lib/media-id";
-import { libraryGetOne } from "@/lib/stremio";
+import { readResumeMs } from "@/lib/resume";
 import type { PlayerSrc } from "@/lib/view";
-import { videoIdFor } from "./use-stremio-sync";
 import { useSettings } from "@/lib/settings";
 
 const RESUME_PROMPT_MIN_SEC = 30;
@@ -21,7 +17,6 @@ export function useBridgeLoad(params: {
   transcodedUrl: string | null;
   season: number | undefined;
   episode: number | undefined;
-  authKey: string | null;
 }): {
   pendingResumeSec: number | null;
   acknowledgeResume: (action: "resume" | "start-over") => void;
@@ -38,7 +33,6 @@ export function useBridgeLoad(params: {
     transcodedUrl,
     season,
     episode,
-    authKey,
   } = params;
 
   const { settings } = useSettings();
@@ -70,22 +64,10 @@ export function useBridgeLoad(params: {
         !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
     let cancelled = false;
     (async () => {
-      const openingVid = videoIdFor(
-        src,
-        cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
-      );
       const resolved =
         isLive || src.startFromZero
           ? { ms: 0, fromRemote: false, finished: false }
-          : await resolveStartMs(
-              src.meta.id,
-              season,
-              episode,
-              authKey,
-              src.imdbId ?? null,
-              src.imdbIdVerified === true,
-              openingVid,
-            );
+          : resolveStartMs(src.meta.id, season, episode);
       const startMs = resolved.ms;
       const runtimeMin = src.episode?.runtime ?? null;
       const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
@@ -173,7 +155,6 @@ export function useBridgeLoad(params: {
     season,
     episode,
     transcodedUrl,
-    authKey,
   ]);
 
   useEffect(() => {
@@ -189,49 +170,10 @@ export function useBridgeLoad(params: {
   return { pendingResumeSec, acknowledgeResume, pendingSeekSec, clearPendingSeek };
 }
 
-async function resolveStartMs(
+function resolveStartMs(
   metaId: string,
   season: number | undefined,
   episode: number | undefined,
-  authKey: string | null,
-  imdbId: string | null,
-  imdbVerified: boolean,
-  openingVid: string | null,
-): Promise<{ ms: number; fromRemote: boolean; finished: boolean }> {
-  const local = readResumeMs(metaId, season, episode);
-  const isEpisode = typeof season === "number" && typeof episode === "number";
-  if (!authKey) return { ms: local, fromRemote: false, finished: false };
-  const matchesEpisode = (
-    item: { state?: { season?: number; episode?: number; video_id?: string } } | null,
-  ) => {
-    if (!item) return false;
-    if (typeof season !== "number" || typeof episode !== "number") return true;
-    const vid = item.state?.video_id;
-    if (openingVid && vid && vid === openingVid) return true;
-    const fromVid = episodeFromVideoId(vid);
-    const se = item.state?.season ?? fromVid?.season;
-    const ep = item.state?.episode ?? fromVid?.episode;
-    return se === season && ep === episode;
-  };
-  const lookups: string[] = [];
-  if (metaId.startsWith("tt")) lookups.push(metaId);
-  else if (imdbVerified && imdbId?.startsWith("tt")) lookups.push(imdbId, metaId);
-  else lookups.push(metaId);
-  for (const lookupId of lookups) {
-    const remote = await libraryGetOne(authKey, lookupId).catch(() => null);
-    if (!remote || !matchesEpisode(remote)) continue;
-    const remoteMs = remote.state?.timeOffset ?? 0;
-    if (remoteMs <= 0) continue;
-    const remoteDuration = remote.state?.duration ?? 0;
-    const flaggedWatched = (remote.state as { flaggedWatched?: number })?.flaggedWatched === 1;
-    const finished =
-      isEpisode &&
-      (flaggedWatched || (remoteDuration > 0 && remoteMs / remoteDuration >= RESTART_THRESHOLD));
-    if (remoteMs >= local) {
-      if (remoteMs > local) saveResumeMs(metaId, remoteMs, season, episode);
-      return { ms: remoteMs, fromRemote: true, finished };
-    }
-    return { ms: local, fromRemote: false, finished };
-  }
-  return { ms: local, fromRemote: false, finished: false };
+): { ms: number; fromRemote: boolean; finished: boolean } {
+  return { ms: readResumeMs(metaId, season, episode), fromRemote: false, finished: false };
 }

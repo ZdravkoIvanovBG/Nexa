@@ -15,7 +15,7 @@ const SUN = "oklch(0.9 0.12 100)";
 const LEAF = "oklch(0.8 0.15 145)";
 const MIST = "oklch(0.72 0.05 150)";
 
-const PRIMARY_IDS = new Set<string>(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
+const PRIMARY_IDS = new Set<string>(["home", "discover", "movies", "shows", "kids", "vod"]);
 
 export function ForestSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -28,7 +28,6 @@ export function ForestSidebar() {
   const isVisible = (item: NavItem) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
@@ -41,7 +40,9 @@ export function ForestSidebar() {
     setView(item.view);
   };
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
   const primary = items.filter((i) => PRIMARY_IDS.has(i.id) && isVisible(i));
   const collections = items.filter((i) => !PRIMARY_IDS.has(i.id) && isVisible(i));
 

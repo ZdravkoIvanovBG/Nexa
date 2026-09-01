@@ -62,7 +62,6 @@ export type ChromeNavId =
   | "movies"
   | "shows"
   | "library"
-  | "live"
   | "discover"
   | "calendar"
   | "settings";
@@ -1326,10 +1325,6 @@ const feishinHtml = `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-re
         <button data-harbor-nav="shows" onclick="window.harbor.navigate('shows')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"></rect><path d="m8 3 4 4 4-4"></path></svg>
           <span>Shows</span>
-        </button>
-        <button data-harbor-nav="live" onclick="window.harbor.navigate('live')">
-          <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="m8 7 4-4 4 4"></path></svg>
-          <span>Live TV</span>
         </button>
         <button data-harbor-nav="vod" onclick="window.harbor.navigate('vod')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h7"></path><path d="m17 9 4 3-4 3z"></path></svg>

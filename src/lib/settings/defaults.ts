@@ -357,6 +357,7 @@ export const DEFAULT: Settings = {
   iptvForceProxy: false,
   iptvEpgOffsetHours: 0,
   sidebarCollapsed: false,
+  showDownloadsNav: false,
   feedLocaleBias: true,
   uiLanguage: "en",
   cropMode: "fit",

@@ -1,4 +1,9 @@
-import { createAddonCatalogFetcher, gatherCatalogAddons, type CatalogExtra } from "./addons";
+import {
+  createAddonCatalogFetcher,
+  gatherCatalogAddons,
+  isDebridCloudCatalog,
+  type CatalogExtra,
+} from "./addons";
 
 const NON_CONTENT = new Set(["addon_catalog"]);
 
@@ -22,6 +27,7 @@ export async function listBrowseCatalogs(): Promise<BrowseCatalog[]> {
     for (const cat of addon.manifest.catalogs ?? []) {
       if (!cat?.name || !cat.type || !cat.id) continue;
       if (NON_CONTENT.has(cat.type.toLowerCase())) continue;
+      if (isDebridCloudCatalog(cat)) continue;
       const extras = cat.extra ?? [];
       if (extras.some((e) => e.isRequired && e.name === "search")) continue;
       const genre = extras.find((e) => e.name === "genre" || e.name === "Genre");

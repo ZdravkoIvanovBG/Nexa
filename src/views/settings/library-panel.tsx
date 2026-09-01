@@ -114,7 +114,7 @@ export function LibraryPanel({
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
   };
-  const pushHideContent = (key: "sports" | "liveTv" | "adult", value: boolean) => {
+  const pushHideContent = (key: "adult", value: boolean) => {
     const next = { ...settings.hideContent, [key]: value };
     update({ hideContent: next });
     if (activeProfile) updateProfile(activeProfile.id, { hideContent: next });
@@ -840,18 +840,19 @@ export function LibraryPanel({
         </div>
       </Section>
 
+      <Section title={t("Features")} subtitle={t("Turn optional sections of the app on or off.")}>
+        <ToggleRow
+          label={t("Show Downloads")}
+          sub={t("Adds the Downloads tab to the sidebar. Off by default.")}
+          value={settings.showDownloadsNav}
+          onChange={(v) => update({ showDownloadsNav: v })}
+        />
+      </Section>
+
       <Section
         title={t("Content filters")}
-        subtitle={t(
-          "Hide entire categories. Toggling these also removes the matching sidebar entries and rails.",
-        )}
+        subtitle={t("Hide entire categories of content across catalogs and addons.")}
       >
-        <ToggleRow
-          label={t("Hide Live TV")}
-          sub={t("Removes the Live TV tab from the sidebar.")}
-          value={settings.hideContent.liveTv}
-          onChange={(v) => pushHideContent("liveTv", v)}
-        />
         <ToggleRow
           label={t("Hide adult content")}
           sub={t("Filters out streams from adult catalogs and addons. On by default.")}

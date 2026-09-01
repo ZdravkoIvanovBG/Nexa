@@ -302,11 +302,6 @@ export type WindowEvent = { name: string; payload?: string; when: string };
 
 export const WINDOW_EVENTS: WindowEvent[] = [
   {
-    name: "harbor:immersive",
-    payload: "CustomEvent<boolean>",
-    when: "Live TV enters or exits immersive mode.",
-  },
-  {
     name: "harbor:reset-row-scrolls",
     payload: "CustomEvent<{ prefix }>",
     when: "View change. Reset rail scrollers.",
@@ -334,7 +329,6 @@ export const VIEW_NAMES: ViewName[] = [
   { id: "discover", label: "Discover" },
   { id: "movies", label: "Movies" },
   { id: "shows", label: "Shows" },
-  { id: "live", label: "Live TV" },
   { id: "calendar", label: "Calendar" },
   { id: "library", label: "My Library" },
   { id: "settings", label: "Settings" },

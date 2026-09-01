@@ -423,6 +423,8 @@ export type Settings = {
   iptvForceProxy: boolean;
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
+  /** Show the Downloads entry in the sidebar. Off by default; /downloads redirects Home while off. */
+  showDownloadsNav: boolean;
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;
   cropMode: string;

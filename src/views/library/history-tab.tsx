@@ -1,8 +1,8 @@
 import { Clock } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/lib/auth";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { localToLibraryItem } from "@/lib/continue-watching";
+import { clearLocalCw, listLocalCw, localCwVersion, subscribeLocalCw } from "@/lib/local-cw";
 import { episodeFromVideoId, libraryMetaType, type LibraryItem } from "@/lib/library-item";
-import { library, removeStremioLibraryItem } from "@/lib/stremio";
 import { fetchWatchedHistory, type HistoryItem } from "@/lib/trakt/history";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useSettings } from "@/lib/settings";
@@ -36,44 +36,20 @@ type HistoryView = "posters" | "episodes";
 
 export function HistoryTab() {
   const t = useT();
-  const { authKey } = useAuth();
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
-  const [stremio, setStremio] = useState<LibraryItem[]>([]);
   const [trakt, setTrakt] = useState<HistoryItem[]>([]);
   const [traktStatus, setTraktStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
-  useEffect(() => {
-    if (!authKey) {
-      setStremio([]);
-      return;
-    }
-    let cancelled = false;
-    library(authKey)
-      .then((items) => {
-        if (cancelled) return;
-        setStremio(filterHistory(items));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey]);
+  const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
+  const local = useMemo(() => {
+    void localCwVer;
+    return filterHistory(listLocalCw().map(localToLibraryItem));
+  }, [localCwVer]);
 
-  const handleRemove = useCallback(
-    async (stremioId: string) => {
-      if (!authKey) return;
-      setStremio((prev) => prev.filter((i) => i._id !== stremioId));
-      try {
-        await removeStremioLibraryItem(authKey, stremioId);
-      } catch {
-        library(authKey)
-          .then((items) => setStremio(filterHistory(items)))
-          .catch(() => {});
-      }
-    },
-    [authKey],
-  );
+  const handleRemove = useCallback((id: string) => {
+    clearLocalCw(id);
+  }, []);
 
   useEffect(() => {
     if (!traktConnected) {
@@ -98,7 +74,7 @@ export function HistoryTab() {
     };
   }, [traktConnected]);
 
-  const merged = useMemo(() => mergeHistory(stremio, trakt), [stremio, trakt]);
+  const merged = useMemo(() => mergeHistory(local, trakt), [local, trakt]);
   const [type, setType] = useState<TypeKey>("all");
   const [query, setQuery] = useState("");
   const [flat, setFlat] = useState(() => localStorage.getItem("harbor.history.flat") === "1");
@@ -134,13 +110,13 @@ export function HistoryTab() {
     return groupByDate(visible);
   }, [visible, settings.librarySort, flat]);
 
-  if (!authKey && !traktConnected) {
+  if (local.length === 0 && !traktConnected) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-edge-soft bg-canvas/30 px-8 py-16 text-center">
         <Clock size={28} strokeWidth={1.6} className="text-ink-subtle" />
         <h2 className="text-[16px] font-semibold text-ink">{t("No history yet")}</h2>
         <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
-          {t("Sign in to Stremio or connect Trakt to see what you've been watching here.")}
+          {t("Watch something, or connect Trakt in Settings, to see it here.")}
         </p>
       </div>
     );
@@ -304,9 +280,9 @@ function episodeOf(i: LibraryItem): { season: number; episode: number } | null {
   return parsed && parsed.episode > 0 ? parsed : null;
 }
 
-function mergeHistory(stremio: LibraryItem[], trakt: HistoryItem[]): HistoryEntry[] {
+function mergeHistory(local: LibraryItem[], trakt: HistoryItem[]): HistoryEntry[] {
   const out = new Map<string, HistoryEntry>();
-  for (const item of stremio) {
+  for (const item of local) {
     const dur = item.state?.duration ?? 0;
     const off = item.state?.timeOffset ?? 0;
     const progress = dur > 0 ? Math.min(1, off / dur) : 0;

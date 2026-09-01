@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
-import { useAuth } from "@/lib/auth";
 import { downloadText } from "@/lib/download-text";
 import { getCuesAnySource } from "@/lib/subtitles/extract";
 import { toSrt } from "@/lib/subtitles/serialize";
@@ -22,7 +21,6 @@ import type { PlayerSrc } from "@/lib/view";
 import { useExitSnapshot } from "./use-exit-snapshot";
 import { usePowerInhibit } from "./use-power-inhibit";
 import { useResumeAutosave } from "./use-resume-autosave";
-import { useStremioSync } from "./use-stremio-sync";
 import { useSubDrop } from "./use-sub-drop";
 import { useSubStyleApply } from "./use-sub-style-apply";
 import { useTrackAutoload } from "./use-track-autoload";
@@ -37,14 +35,12 @@ export function usePlayerMedia(params: {
   snap: PlayerSnapshot;
   engine: "html5" | "mpv";
   settings: ReturnType<typeof useSettings>["settings"];
-  authKey: ReturnType<typeof useAuth>["authKey"];
   bridgeRef: RefObject<PlayerBridge | null>;
   bridgeReady: boolean;
   bridgeKey: string | number;
   svpActive: boolean;
   videoMountRef: RefObject<HTMLDivElement | null>;
   toggleFullscreen: () => void;
-  castActiveRef: RefObject<boolean>;
   season: number | undefined;
   episode: number | undefined;
 }) {
@@ -53,14 +49,12 @@ export function usePlayerMedia(params: {
     snap,
     engine,
     settings,
-    authKey,
     bridgeRef,
     bridgeReady,
     bridgeKey,
     svpActive,
     videoMountRef,
     toggleFullscreen,
-    castActiveRef,
     season,
     episode,
   } = params;
@@ -105,13 +99,12 @@ export function usePlayerMedia(params: {
     volumeRestoredRef.current = true;
   }, [bridgeReady, bridgeKey, snap.status]);
 
-  const { resolvedImdbId, resolvedImdbVerified, resolutionSettled } = useTrackAutoload({
+  const { resolvedImdbId, resolvedImdbVerified } = useTrackAutoload({
     bridgeRef,
     src,
     snap,
     engine,
     settings,
-    authKey,
   });
 
   useAutoSync({ bridgeRef, src, snap, engine, settings });
@@ -202,15 +195,6 @@ export function usePlayerMedia(params: {
   }, [download.start, toggleFullscreen, src.url, doDownloadSubtitle, canDownloadSub]);
 
   useResumeAutosave({ src, snap, season, episode });
-  useStremioSync({
-    src,
-    snap,
-    authKey,
-    resolvedImdbId,
-    resolvedImdbVerified,
-    resolutionSettled,
-    castActiveRef,
-  });
   usePowerInhibit(snap);
   const subDropToast = useSubDrop(bridgeRef, src.meta.id);
 

@@ -1,17 +1,24 @@
 import { supabase } from "@/lib/supabase";
 import { setItemWithRecovery } from "@/lib/storage-recovery";
-import type { AnyRow, CloudTable, Owner } from "./rows";
+import {
+  conflictTarget,
+  KEY_COLUMN,
+  TABLE,
+  type AnyRow,
+  type CloudTable,
+  type Owner,
+} from "./rows";
 
 const KEY = "harbor.cloud.queue.v1";
 const DEBOUNCE_MS = 400;
 const MAX_BACKOFF_MS = 60_000;
 
 export type PendingOp =
-  | { op: "upsert"; table: CloudTable; owner: Owner; mediaId: string; row: AnyRow }
-  | { op: "delete"; table: CloudTable; owner: Owner; mediaId: string };
+  | { op: "upsert"; table: CloudTable; owner: Owner; key: string; row: AnyRow }
+  | { op: "delete"; table: CloudTable; owner: Owner; key: string };
 
 /**
- * Coalesced by table + media id: a tier drag that reindexes a whole row emits
+ * Coalesced by table + row key: a tier drag that reindexes a whole row emits
  * one op per poster, and a rapid add/remove collapses to the final intent.
  */
 const pending = new Map<string, PendingOp>();
@@ -22,7 +29,7 @@ let backoff = 0;
 let retryTimer: number | null = null;
 
 function slot(o: PendingOp): string {
-  return `${o.table}|${o.owner.userId}|${o.owner.profileId}|${o.mediaId}`;
+  return `${o.table}|${o.owner.userId}|${o.owner.profileId}|${o.key}`;
 }
 
 function persist(): void {
@@ -40,10 +47,16 @@ function restore(): void {
     const arr = JSON.parse(raw) as unknown;
     if (!Array.isArray(arr)) return;
     for (const el of arr) {
-      const o = el as PendingOp;
-      if (!o || typeof o !== "object") continue;
-      if (o.op !== "upsert" && o.op !== "delete") continue;
-      if (typeof o.mediaId !== "string" || !o.owner?.userId) continue;
+      if (!el || typeof el !== "object") continue;
+      const raw = el as PendingOp & { mediaId?: string };
+      if (raw.op !== "upsert" && raw.op !== "delete") continue;
+      // One-release shim: the durable queue may hold `mediaId`-shaped ops
+      // written before the key was generalized. Dropping them would silently
+      // lose un-flushed edits from the upgrade.
+      const key = typeof raw.key === "string" ? raw.key : raw.mediaId;
+      if (typeof key !== "string" || !raw.owner?.userId) continue;
+      const o = { ...raw, key } as PendingOp;
+      delete (o as { mediaId?: string }).mediaId;
       pending.set(slot(o), o);
     }
   } catch {
@@ -90,6 +103,19 @@ function isAuthError(err: unknown): boolean {
   return status === 401 || code === "PGRST301" || code === "42501";
 }
 
+/**
+ * Postgres codes that will never succeed on retry: a bad onConflict target,
+ * a missing column or table, or a value the schema rejects. Retrying these
+ * loops forever at the 60s ceiling with only a console.warn, which makes a
+ * migration typo invisible in production -- so drop the op and say so loudly.
+ */
+const FATAL_CODES = new Set(["42P10", "42703", "42P01", "23514", "23503", "22001"]);
+
+function isFatalSchemaError(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return typeof code === "string" && FATAL_CODES.has(code);
+}
+
 /** Push everything queued. Safe to call at any time; concurrent calls no-op. */
 export async function flush(): Promise<void> {
   ensureRestored();
@@ -113,6 +139,17 @@ export async function flush(): Promise<void> {
         void flush();
         return;
       }
+    }
+    if (isFatalSchemaError(err)) {
+      console.error(
+        "[cloud] the server rejected a write as malformed -- this is a schema mismatch, not a " +
+          "transient failure. Dropping the batch so it cannot retry forever.",
+        err,
+      );
+      for (const op of batch) if (pending.get(slot(op)) === op) pending.delete(slot(op));
+      persist();
+      backoff = 0;
+      return;
     }
     console.warn("[cloud] flush failed, will retry", err);
     scheduleRetry();
@@ -140,27 +177,26 @@ async function sendBatch(batch: PendingOp[]): Promise<void> {
   for (const [table, rows] of upserts) {
     const { error } = await supabase
       .from(table)
-      .upsert(rows, { onConflict: "user_id,profile_id,media_id" });
+      .upsert(rows, { onConflict: conflictTarget(table) });
     if (error) throw error;
   }
 
   for (const [table, ops] of deletes) {
     // Deletes in one table always share an owner in practice, but group anyway
     // so a profile switch mid-queue cannot delete across the wrong scope.
-    const byOwner = new Map<string, { owner: Owner; ids: string[] }>();
+    const byOwner = new Map<string, { owner: Owner; keys: string[] }>();
     for (const op of ops) {
       const k = `${op.owner.userId}|${op.owner.profileId}`;
-      const g = byOwner.get(k) ?? { owner: op.owner, ids: [] };
-      g.ids.push(op.mediaId);
+      const g = byOwner.get(k) ?? { owner: op.owner, keys: [] };
+      g.keys.push(op.key);
       byOwner.set(k, g);
     }
-    for (const { owner, ids } of byOwner.values()) {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq("user_id", owner.userId)
-        .eq("profile_id", owner.profileId)
-        .in("media_id", ids);
+    for (const { owner, keys } of byOwner.values()) {
+      // `profiles` rows are scoped by user_id alone -- there is no profile_id
+      // dimension to filter on (see conflictTarget()).
+      let q = supabase.from(table).delete().eq("user_id", owner.userId);
+      if (table !== TABLE.profiles) q = q.eq("profile_id", owner.profileId);
+      const { error } = await q.in(KEY_COLUMN[table], keys);
       if (error) throw error;
     }
   }

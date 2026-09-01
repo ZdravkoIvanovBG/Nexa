@@ -409,7 +409,9 @@ export function PlayPicker({
     claimHost,
     openPlayer: openPlayerGated,
     intent,
-    onDownloadStarted: () => setView("downloads"),
+    onDownloadStarted: () => {
+      if (settings.showDownloadsNav) setView("downloads");
+    },
     autoActive,
     autoAttemptIdx,
     autoCandidatesLength: autoCandidates.length,

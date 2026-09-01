@@ -13,6 +13,10 @@ impl FullscreenState {
     }
 }
 
+// Window chrome/geometry APIs (set_fullscreen, unmaximize, center, ...) are
+// desktop-only in Tauri v2. Mobile is always full-bleed, so entering/exiting
+// "fullscreen" there is just an event round-trip for frontend state.
+#[cfg(desktop)]
 #[tauri::command]
 pub async fn window_fullscreen_enter(
     app: AppHandle,
@@ -38,6 +42,17 @@ pub async fn window_fullscreen_enter(
     Ok(())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+pub async fn window_fullscreen_enter(
+    app: AppHandle,
+    _state: State<'_, FullscreenState>,
+) -> Result<(), String> {
+    let _ = app.emit_to("main", "fs://entered", ());
+    Ok(())
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 pub async fn window_fullscreen_exit(
     app: AppHandle,
@@ -65,6 +80,17 @@ pub async fn window_fullscreen_exit(
         }
         let _ = main.set_focus();
     }
+    let _ = app.emit_to("main", "fs://exited", ());
+    Ok(())
+}
+
+#[cfg(not(desktop))]
+#[tauri::command]
+pub async fn window_fullscreen_exit(
+    app: AppHandle,
+    _state: State<'_, FullscreenState>,
+    _restore_position: Option<bool>,
+) -> Result<(), String> {
     let _ = app.emit_to("main", "fs://exited", ());
     Ok(())
 }

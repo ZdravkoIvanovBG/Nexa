@@ -1,15 +1,13 @@
-import { LogOut, Pencil, Settings as SettingsIcon, Users } from "lucide-react";
+import { Pencil, Settings as SettingsIcon, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { TvModalClose } from "@/components/tv-modal-close";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTvFocusScope } from "@/lib/keyboard-navigation";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 
 export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -26,8 +24,7 @@ export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void })
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const name = activeProfile?.name ?? t("profile.fallback");
   const color = activeProfile?.color ?? "var(--color-accent)";
   const avatar = activeProfile?.avatar ?? settings.harborAvatar;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
@@ -59,9 +56,6 @@ export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void })
           <TvModalClose onClose={() => setOpen(false)} label={t("common.close")} />
           <div className="border-b border-white/10 px-4 py-3">
             <div className="text-[13px] font-semibold text-ink">{name}</div>
-            {user?.email && (
-              <div className="truncate text-[11.5px] text-ink-subtle">{user.email}</div>
-            )}
           </div>
           {otherProfiles.length > 0 && (
             <div className="flex flex-col gap-0.5 border-b border-white/10 p-1.5">
@@ -123,18 +117,6 @@ export function ProfileBlock({ onOpenSettings }: { onOpenSettings: () => void })
             >
               <SettingsIcon size={13} strokeWidth={2.2} /> {t("nav.settings")}
             </button>
-            {user && (
-              <button
-                type="button"
-                onClick={() => {
-                  signOut();
-                  setOpen(false);
-                }}
-                className="flex items-center gap-2.5 border-t border-white/10 px-4 py-2.5 text-start text-[13px] text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
-              >
-                <LogOut size={13} strokeWidth={2.2} /> {t("Sign out")}
-              </button>
-            )}
           </div>
         </div>
       )}

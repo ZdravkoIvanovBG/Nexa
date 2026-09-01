@@ -38,13 +38,14 @@ export function CinematicOverlay() {
     setView(item.view);
   };
 
-  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization)
+  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  })
     .filter(
       (item) =>
         item.id !== "settings" &&
         item.id !== "kids" &&
         (item.view !== "vod" || settings.showPlaylistsTab) &&
-        (!item.hideKey || !settings.hideContent[item.hideKey]) &&
         (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
     )
     .map((item) => {
@@ -119,7 +120,7 @@ export function CinematicOverlay() {
 
           <div className="ms-2 flex shrink-0 items-center gap-1">
             <RecordingPill />
-            {view !== "live" && <TogetherButton variant="ghost" connectStyle="tab" />}
+            <TogetherButton variant="ghost" connectStyle="tab" />
             <IconBtn onClick={() => setSearchOpen(true)} label={t("common.search")} active={false}>
               <Search size={15} strokeWidth={2.2} />
             </IconBtn>

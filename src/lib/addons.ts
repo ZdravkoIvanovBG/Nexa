@@ -2,7 +2,6 @@ import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Meta } from "./cinemeta";
 import { installedAddonsResolved } from "./addon-store";
 
-const STREMIO_API = "https://api.strem.io/api";
 const MAX_ROWS = 24;
 
 export type CatalogDef = {
@@ -75,70 +74,6 @@ export function addonAccepts(addon: Addon, resource: string, type: string, id: s
     return false;
   }
   return true;
-}
-
-async function call<T>(path: string, body: object): Promise<T | null> {
-  try {
-    const res = await fetch(`${STREMIO_API}/${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return (json.result ?? null) as T | null;
-  } catch {
-    return null;
-  }
-}
-
-export async function userAddons(authKey: string): Promise<Addon[]> {
-  const result = await call<{ addons: Addon[] }>("addonCollectionGet", {
-    authKey,
-    type: "user",
-    update: false,
-  });
-  return result?.addons ?? [];
-}
-
-export async function setUserAddons(authKey: string, addons: Addon[]): Promise<boolean> {
-  const result = await call<{ success?: boolean }>("addonCollectionSet", {
-    authKey,
-    type: "user",
-    addons: addons.map((a) => {
-      const raw = a as Record<string, unknown>;
-      return {
-        transportUrl: a.transportUrl,
-        transportName: typeof raw.transportName === "string" ? raw.transportName : "",
-        manifest: a.manifest,
-        flags: (raw.flags as { official?: boolean; protected?: boolean } | undefined) ?? {
-          official: false,
-          protected: false,
-        },
-      };
-    }),
-  });
-  return result != null;
-}
-
-export async function getUserAddonsRaw(authKey: string): Promise<Addon[] | null> {
-  const result = await call<{ addons: Addon[] }>("addonCollectionGet", {
-    authKey,
-    type: "user",
-    update: false,
-  });
-  if (!result || !Array.isArray(result.addons)) return null;
-  return result.addons;
-}
-
-export async function setUserAddonsRaw(authKey: string, addons: Addon[]): Promise<boolean> {
-  if (addons.length === 0) return false;
-  const result = await call<{ success?: boolean }>("addonCollectionSet", {
-    authKey,
-    type: "user",
-    addons,
-  });
-  return result != null;
 }
 
 const STRIP_WORDS = ["movies", "movie", "series", "shows", "show", "tv shows", "tv"];
@@ -254,6 +189,16 @@ export async function gatherCatalogAddons(): Promise<Addon[]> {
 
 const NON_CONTENT_TYPES = new Set(["addon_catalog"]);
 
+// Catalogs of type "other" are typically raw Debrid cloud/downloads listings (no poster
+// metadata, filenames instead of titles) rather than browsable content — see search-addons.ts,
+// which already skips "other" for search targets.
+const DEBRID_CLOUD_NAME_PATTERN = /\bdebrid\b|\bcloud\b|\bdownloads?\b/i;
+
+export function isDebridCloudCatalog(cat: CatalogDef): boolean {
+  if (cat.type.toLowerCase() === "other") return true;
+  return DEBRID_CLOUD_NAME_PATTERN.test(cat.id) || DEBRID_CLOUD_NAME_PATTERN.test(cat.name);
+}
+
 function requiredCatalogExtras(cat: CatalogDef): Array<{ name: string; value: string }> | null {
   const required = (cat.extra ?? []).filter((e) => e.isRequired);
   const out: Array<{ name: string; value: string }> = [];
@@ -282,7 +227,15 @@ export async function loadAddonRows(
   const addons = await gatherCatalogAddons();
   const tasks = addons.flatMap((addon) =>
     (addon.manifest.catalogs ?? [])
-      .filter((c) => c && c.name && c.type && c.id && !NON_CONTENT_TYPES.has(c.type.toLowerCase()))
+      .filter(
+        (c) =>
+          c &&
+          c.name &&
+          c.type &&
+          c.id &&
+          !NON_CONTENT_TYPES.has(c.type.toLowerCase()) &&
+          !isDebridCloudCatalog(c),
+      )
       .map(async (cat): Promise<AddonRow | null> => {
         const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
         const url = catalogRequestUrl(base, cat);

@@ -15,7 +15,6 @@ export function DiscoverPane({
   onUninstall,
   onCategorySelect,
   installedIds,
-  authKey,
   onRefetch,
 }: {
   hero: { entry: { id: string }; resolved: ResolvedAddon } | null;
@@ -28,7 +27,6 @@ export function DiscoverPane({
   onUninstall: (r: ResolvedAddon) => Promise<void>;
   onCategorySelect: (cat: string) => void;
   installedIds: Set<string>;
-  authKey: string | null;
   onRefetch?: () => void;
 }) {
   const t = useT();
@@ -40,18 +38,6 @@ export function DiscoverPane({
 
   return (
     <div className="flex flex-col gap-12">
-      {!authKey && (
-        <div className="rounded-2xl border border-amber-300/30 bg-amber-300/[0.06] px-5 py-4 text-[13.5px] text-ink">
-          <p className="font-semibold text-amber-200">
-            {t("Sign in to sync your addons across devices")}
-          </p>
-          <p className="mt-1 text-ink-muted">
-            {t(
-              "Anything you install in Harbor pushes back to your Stremio account so it shows up on mobile too. Sign in via the avatar in the bottom-left of the sidebar.",
-            )}
-          </p>
-        </div>
-      )}
       {hero && (
         <HeroCard
           resolved={hero.resolved}

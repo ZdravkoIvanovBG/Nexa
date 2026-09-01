@@ -1,7 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
-import { readActiveStremioAuthKey } from "./auth";
-import { setUserAddons, userAddons, type Addon } from "./addons";
-import { applyOrderToItems, loadDisplayOrder } from "./addons-store/reorder";
+import type { Addon } from "./addons";
+import { applyOrderToItems } from "./addons-store/reorder";
+import { applyRemote, mirrorAddons } from "./cloud/mirror";
 
 const STORAGE_KEY = "harbor.installed-addons";
 const SEEDED_KEY = "harbor.addons.seeded.v1";
@@ -37,28 +37,17 @@ export async function seedDefaultAddonsIfFirstRun(): Promise<void> {
   }
 }
 
-function readAuthKey(): string | null {
-  return readActiveStremioAuthKey();
-}
-
-async function pushToStremio(addon: Addon, mode: "install" | "uninstall"): Promise<boolean> {
-  const authKey = readAuthKey();
-  if (!authKey) return true;
-  try {
-    const current = await userAddons(authKey);
-    const filtered = current.filter((a) => a.transportUrl !== addon.transportUrl);
-    const next = mode === "install" ? [...filtered, addon] : filtered;
-    return await setUserAddons(authKey, next);
-  } catch {
-    return false;
-  }
-}
-
 export type InstalledAddon = {
   id: string;
   transportUrl: string;
   installedAt: number;
   manifest?: Addon["manifest"];
+  /** Absent means enabled: the disabled set used to live in its own key. */
+  enabled?: boolean;
+  /** Display order. Absent means "not yet migrated from harbor.addonOrder". */
+  order?: number;
+  updatedAt?: number;
+  manifestFetchedAt?: number;
 };
 
 const SLIM_MANIFEST_KEYS = [
@@ -111,17 +100,96 @@ function slimManifest(manifest: Addon["manifest"] | undefined): Addon["manifest"
   return out as Addon["manifest"];
 }
 
-export function loadInstalled(): InstalledAddon[] {
+const KEYS_V2_FLAG = "harbor.addons.keys.v2";
+const ORDER_KEY = "harbor.addonOrder";
+
+function readRaw(): InstalledAddon[] {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return [];
   try {
-    return JSON.parse(raw) as InstalledAddon[];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as InstalledAddon[]) : [];
   } catch {
     return [];
   }
 }
 
+/**
+ * Fold the two satellite keys into the addon rows themselves.
+ *
+ * `harbor.addons.disabled` and `harbor.addonOrder` were parallel arrays keyed by
+ * transport URL. Carrying them as fields lets one write chokepoint mirror the
+ * whole state, and lets a reconfiguration keep enabled/order across a URL change.
+ * Runs once, on the first loadInstalled() after the update.
+ */
+function migrateKeysV2(): void {
+  try {
+    if (localStorage.getItem(KEYS_V2_FLAG) === "1") return;
+  } catch {
+    return;
+  }
+  try {
+    const list = readRaw();
+    if (list.length > 0) {
+      let disabled = new Set<string>();
+      try {
+        const raw = localStorage.getItem(DISABLED_KEY);
+        const parsed: unknown = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed))
+          disabled = new Set(parsed.filter((u): u is string => typeof u === "string"));
+      } catch {}
+      let order: string[] = [];
+      try {
+        const raw = localStorage.getItem(ORDER_KEY);
+        const parsed: unknown = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed)) order = parsed.filter((u): u is string => typeof u === "string");
+      } catch {}
+      const ordered = applyOrderToItems(list, order);
+      const migrated = ordered.map((a, i) => ({
+        ...a,
+        enabled: a.enabled ?? !disabled.has(a.transportUrl),
+        order: a.order ?? i,
+      }));
+      writeInstalled(migrated);
+    }
+    localStorage.setItem(KEYS_V2_FLAG, "1");
+  } catch (e) {
+    console.warn("[addons] key migration failed; leaving the old keys in place", e);
+  }
+}
+
+let migrated = false;
+
+export function loadInstalled(): InstalledAddon[] {
+  // Synchronous by contract: render paths call this directly.
+  if (!migrated) {
+    migrated = true;
+    migrateKeysV2();
+  }
+  return readRaw();
+}
+
+/**
+ * The single private writer. Everything that changes the addon list -- install,
+ * uninstall, reorder, enable/disable, seed, manifest backfill -- lands here, so
+ * this is the one place that has to mirror and announce the change.
+ */
 function saveInstalled(list: InstalledAddon[]) {
+  writeInstalled(list);
+  mirrorAddons(list);
+  try {
+    window.dispatchEvent(new CustomEvent("harbor:addons-changed"));
+  } catch {
+    /* not in a DOM context */
+  }
+}
+
+/** Applies remote state without echoing it back to the cloud. */
+export function replaceInstalled(list: InstalledAddon[]): void {
+  applyRemote(() => saveInstalled(list));
+}
+
+function writeInstalled(list: InstalledAddon[]) {
   const slim = list.map((a) => ({ ...a, manifest: slimManifest(a.manifest) }));
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
@@ -146,27 +214,19 @@ function saveInstalled(list: InstalledAddon[]) {
 export function reorderInstalled(urlSequence: string[]): void {
   const items = loadInstalled();
   if (items.length < 2) return;
-  saveInstalled(applyOrderToItems(items, urlSequence));
+  saveInstalled(applyOrderToItems(items, urlSequence).map((a, i) => ({ ...a, order: i })));
 }
 
+// Derived from the addon rows now, but the signatures are unchanged so the
+// existing call sites (views/addons.tsx, play-picker, organize) keep working.
 export function loadDisabledAddons(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DISABLED_KEY);
-    if (!raw) return new Set();
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((u): u is string => typeof u === "string"));
-  } catch {
-    return new Set();
-  }
+  const out = new Set<string>();
+  for (const a of loadInstalled()) if (a.enabled === false) out.add(a.transportUrl);
+  return out;
 }
 
 function saveDisabledAddons(set: Set<string>): void {
-  try {
-    localStorage.setItem(DISABLED_KEY, JSON.stringify([...set]));
-  } catch (e) {
-    console.warn("[addons] couldn't persist disabled addons", e);
-  }
+  saveInstalled(loadInstalled().map((a) => ({ ...a, enabled: !set.has(a.transportUrl) })));
 }
 
 export function isAddonEnabled(transportUrl: string): boolean {
@@ -210,6 +270,9 @@ export function findHostnameMatch(transportUrl: string): InstalledAddon | null {
 
 export type AddonUrlParse = { kind: "ok"; url: string } | { kind: "error"; message: string };
 
+/** Matches the user_addons.addon_url length constraint. */
+export const MAX_ADDON_URL_LENGTH = 2000;
+
 export function parseAddonUrl(input: string): AddonUrlParse {
   let raw = input.trim();
   if (!raw) return { kind: "error", message: "Paste a manifest URL or stremio:// link." };
@@ -227,6 +290,16 @@ export function parseAddonUrl(input: string): AddonUrlParse {
     new URL(raw);
   } catch {
     return { kind: "error", message: "That doesn't look like a valid URL." };
+  }
+  // Mirrors the user_addons.addon_url check constraint. Comet and AIOStreams
+  // bake a base64 config blob into the path; past ~2704 bytes the server's btree
+  // index rejects the row, which would surface as a non-auth failure and retry
+  // forever. Fail here, where the message can actually say what is wrong.
+  if (raw.length > MAX_ADDON_URL_LENGTH) {
+    return {
+      kind: "error",
+      message: `That manifest URL is too long (${raw.length} characters, limit ${MAX_ADDON_URL_LENGTH}). Reconfigure the addon with fewer options.`,
+    };
   }
   return { kind: "ok", url: raw };
 }
@@ -259,7 +332,6 @@ export async function fetchManifestAt(transportUrl: string): Promise<Addon["mani
 
 export type InstallResult = {
   addon: Addon;
-  syncedToStremio: boolean;
   replaced: boolean;
 };
 
@@ -267,11 +339,17 @@ export async function installAddon(id: string, transportUrl: string): Promise<Ad
   const manifest = await fetchManifestAt(transportUrl);
   const canonicalId = manifest.id || id;
   const next = loadInstalled().filter((a) => a.transportUrl !== transportUrl);
-  next.push({ id: canonicalId, transportUrl, installedAt: Date.now(), manifest });
+  next.push({
+    id: canonicalId,
+    transportUrl,
+    installedAt: Date.now(),
+    manifest,
+    order: next.length,
+    updatedAt: Date.now(),
+    manifestFetchedAt: Date.now(),
+  });
   saveInstalled(next);
-  const addon: Addon = { manifest, transportUrl };
-  await pushToStremio(addon, "install");
-  return addon;
+  return { manifest, transportUrl };
 }
 
 export async function installFromUrl(
@@ -286,28 +364,28 @@ export async function installFromUrl(
   const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
   const replacedById = before.some((a) => a.id === id);
   const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);
+  // A reconfiguration changes the URL, so carry the old row's enabled state and
+  // position across instead of silently resetting both.
+  const previous =
+    before.find((a) => a.transportUrl === parsed.url) ??
+    (replaceId ? before.find((a) => a.id === replaceId) : undefined) ??
+    before.find((a) => a.id === id);
   const next = before.filter(
     (a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId),
   );
-  next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
+  next.push({
+    id,
+    transportUrl: parsed.url,
+    installedAt: previous?.installedAt ?? Date.now(),
+    manifest,
+    enabled: previous?.enabled,
+    order: previous?.order ?? next.length,
+    updatedAt: Date.now(),
+    manifestFetchedAt: Date.now(),
+  });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
-  const syncedToStremio = await pushToStremio(addon, "install");
-  if (replaceId && replaceId !== id) {
-    const authKey = readAuthKey();
-    if (authKey) {
-      try {
-        const current = await userAddons(authKey);
-        const trimmed = current.filter((a) => a.manifest.id !== replaceId);
-        if (trimmed.length !== current.length) {
-          await setUserAddons(authKey, trimmed);
-        }
-      } catch {
-        /* noop */
-      }
-    }
-  }
-  return { addon, syncedToStremio, replaced: replacedById || replacedByOld };
+  return { addon, replaced: replacedById || replacedByOld };
 }
 
 export async function uninstallAddon(id: string, transportUrl?: string): Promise<void> {
@@ -324,20 +402,11 @@ export async function uninstallAddon(id: string, transportUrl?: string): Promise
     for (const a of removed) if (disabled.delete(a.transportUrl)) touched = true;
     if (touched) saveDisabledAddons(disabled);
   }
-  const authKey = readAuthKey();
-  if (!authKey) return;
-  const current = await userAddons(authKey).catch(() => [] as Addon[]);
-  const filtered = transportUrl
-    ? current.filter((a) => a.transportUrl !== transportUrl)
-    : current.filter((a) => a.manifest.id !== id);
-  if (filtered.length !== current.length) {
-    await setUserAddons(authKey, filtered).catch(() => {});
-  }
 }
 
 /** Installed, enabled, in display order -- the shared basis for both accessors below. */
 function orderedEnabledEntries(): InstalledAddon[] {
-  return applyOrderToItems(filterEnabled(loadInstalled()), loadDisplayOrder());
+  return filterEnabled(loadInstalled()).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 /**

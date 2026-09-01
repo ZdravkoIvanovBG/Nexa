@@ -115,7 +115,7 @@ export function PlayModePanel() {
           </span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
             {t(
-              "When you hit Play on something you've partly watched, show a prompt to resume from where you left off or start over. Also covers items synced from Stremio or Trakt.",
+              "When you hit Play on something you've partly watched, show a prompt to resume from where you left off or start over. Also covers items synced from Trakt.",
             )}
           </span>
         </div>

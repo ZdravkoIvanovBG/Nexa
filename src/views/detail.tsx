@@ -22,7 +22,7 @@ import {
 import { fetchAddonMeta } from "@/lib/addons";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
-import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
+import { lastPlayedEpisode } from "@/lib/resume";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { harborImdbTitle } from "@/lib/providers/harbor-imdb";
@@ -39,23 +39,12 @@ import { ParentalIcon } from "@/components/icons/parental-icon";
 import { cinemetaDetails } from "@/lib/providers/cinemeta-details";
 import { fetchParentalGuide, type ParentalGuide } from "@/lib/parental-guide";
 import { ParentalGuideHeroCard } from "./detail/parental-guide-section";
-import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
-import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
-import { CLOUD_OK, cloudWriteId } from "@/lib/media-id";
-import { libraryGetOne } from "@/lib/stremio";
-import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watched";
-import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
 import {
   isMovieWatchedLocal,
   movieWatchedVersion,
   subscribeMovieWatched,
 } from "@/lib/movie-watched";
-import {
-  manualWatchedState,
-  manualWatchedVersion,
-  subscribeManualWatched,
-} from "@/lib/manual-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
 import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
@@ -164,8 +153,6 @@ export function DetailView({
   const [cinemetaFull, setCinemetaFull] = useState<Meta | null>(
     meta.videos && meta.videos.length > 0 ? meta : null,
   );
-  const [libraryItem, setLibraryItem] = useState<LibraryItem | null>(null);
-  const { authKey } = useAuth();
   const [loading, setLoading] = useState(true);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [layout, setLayout] = useState<DetailCustomization>(loadDetailCustomization);
@@ -369,78 +356,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, meta.addonOrigin?.base, authKey, cinemetaFull?.videos?.length]);
-
-  useEffect(() => {
-    setLibraryItem(null);
-    if (!authKey || meta.id.startsWith("simkl:")) return;
-    const candidates: string[] = [];
-    if (meta.id.startsWith("tt")) candidates.push(meta.id);
-    if (detail?.imdbId?.startsWith("tt") && !candidates.includes(detail.imdbId)) {
-      candidates.push(detail.imdbId);
-    }
-    if (!meta.id.startsWith("tt") && CLOUD_OK.test(meta.id)) candidates.push(meta.id);
-    if (candidates.length === 0) return;
-    let cancelled = false;
-    void (async () => {
-      for (const cid of candidates) {
-        const item = await libraryGetOne(authKey, cid).catch(() => null);
-        if (cancelled) return;
-        if (item) {
-          setLibraryItem(item);
-          return;
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey, meta.id, detail?.imdbId]);
-
-  const [stremioWatched, setStremioWatched] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    let cancelled = false;
-    decodeWatchedEpisodes(libraryItem?.state?.watched, cinemetaFull?.videos)
-      .then((keys) => {
-        if (!cancelled) setStremioWatched(keys);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [libraryItem?.state?.watched, cinemetaFull?.videos]);
-
-  useEffect(() => {
-    if (!libraryItem?.state) return;
-    const st = libraryItem.state;
-    if (!st.timeOffset || st.timeOffset <= 0) return;
-    const stremioT = Date.parse(libraryItem._mtime ?? "");
-    if (!Number.isFinite(stremioT)) return;
-    if (libraryItem.type === "movie") {
-      const local = readResumeEntry(meta.id);
-      if (!local || stremioT > local.t) {
-        saveResumeMs(meta.id, st.timeOffset);
-        if (import.meta.env.DEV)
-          console.info(
-            `[stremio-resume] movie ${meta.id}: synced ${st.timeOffset}ms from Stremio (mtime=${libraryItem._mtime})`,
-          );
-      }
-      return;
-    }
-    const se = episodeFromVideoId(st.video_id);
-    const season = st.season ?? se?.season;
-    const episode = st.episode ?? se?.episode;
-    if (libraryItem.type === "series" && season && episode) {
-      const local = readResumeEntry(meta.id, season, episode);
-      if (!local || stremioT > local.t) {
-        saveResumeMs(meta.id, st.timeOffset, season, episode);
-        if (import.meta.env.DEV)
-          console.info(
-            `[stremio-resume] series ${meta.id} S${season}E${episode}: synced ${st.timeOffset}ms from Stremio (mtime=${libraryItem._mtime})`,
-          );
-      }
-    }
-  }, [libraryItem, meta.id]);
+  }, [meta.id, meta.type, meta.addonOrigin?.base, cinemetaFull?.videos?.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -664,8 +580,7 @@ export function DetailView({
   };
 
   useSyncExternalStore(subscribeMovieWatched, movieWatchedVersion, movieWatchedVersion);
-  const watchedMark =
-    meta.type === "movie" && (isMovieWatchedLocal(meta.id) || stremioMovieWatched(libraryItem));
+  const watchedMark = meta.type === "movie" && isMovieWatchedLocal(meta.id);
   const markThisMovieWatched = () => {
     void markMovieWatched(
       meta,
@@ -673,64 +588,6 @@ export function DetailView({
       meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null,
     );
   };
-
-  const seriesWatchedVer = useSyncExternalStore(
-    subscribeManualWatched,
-    manualWatchedVersion,
-    manualWatchedVersion,
-  );
-  const prevSeriesWatchedVerRef = useRef(-1);
-  const stremioVideosRef = useRef<{ imdb: string; videos: NonNullable<Meta["videos"]> } | null>(
-    null,
-  );
-  useEffect(() => {
-    if (seriesWatchedVer === prevSeriesWatchedVerRef.current) return;
-    if (!authKey || !isSeries) return;
-    const imdb = meta.id.startsWith("tt")
-      ? meta.id
-      : detail?.imdbId?.startsWith("tt")
-        ? detail.imdbId
-        : null;
-    const cid = cloudWriteId(meta.id, detail?.imdbId ?? null, !!detail?.imdbId);
-    if (!cid) return;
-    let cancelled = false;
-    void (async () => {
-      let videos = cinemetaFull?.videos;
-      const aligned = imdb ? (videos?.[0]?.id?.startsWith(imdb) ?? false) : true;
-      if (imdb && !aligned) {
-        if (stremioVideosRef.current?.imdb === imdb) {
-          videos = stremioVideosRef.current.videos;
-        } else {
-          const full = await fetchCinemetaMeta(narrowMediaType(meta.type), imdb).catch(() => null);
-          if (full?.videos?.length) {
-            videos = full.videos;
-            stremioVideosRef.current = { imdb, videos: full.videos };
-          }
-        }
-      }
-      if (cancelled || !videos || videos.length === 0) return;
-      const prior = await decodeWatchedEpisodes(libraryItem?.state?.watched, videos).catch(
-        () => new Set<string>(),
-      );
-      const merged = new Set<string>(prior);
-      for (const v of videos) {
-        if (v.season == null || v.episode == null) continue;
-        const k = `${v.season}:${v.episode}`;
-        const manual = manualWatchedState(meta.id, v.season, v.episode);
-        if (manual === true) merged.add(k);
-        else if (manual === false) merged.delete(k);
-      }
-      if (cancelled) return;
-      prevSeriesWatchedVerRef.current = seriesWatchedVer;
-      const unchanged = merged.size === prior.size && [...merged].every((k) => prior.has(k));
-      if (unchanged) return;
-      await setEpisodesWatchedStremio(authKey, playMeta, cid, merged, videos);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesWatchedVer, authKey, isSeries, cinemetaFull?.videos, detail?.imdbId, meta.id]);
 
   const upcoming = !loading && isTitleUpcoming(detail, meta);
 
@@ -762,25 +619,10 @@ export function DetailView({
         candidates.push({ season: lp.season, episode: lp.episode, t: lp.t });
       }
     }
-    const st = libraryItem?.state;
-    if (libraryItem?.type === "series" && st && (st.timeOffset ?? 0) > 0) {
-      const se = episodeFromVideoId(st.video_id);
-      const season = st.season ?? se?.season;
-      const episode = st.episode ?? se?.episode;
-      if (
-        typeof season === "number" &&
-        typeof episode === "number" &&
-        season >= 1 &&
-        episode >= 1
-      ) {
-        const mt = Date.parse(libraryItem._mtime ?? st.lastWatched ?? "");
-        candidates.push({ season, episode, t: Number.isFinite(mt) ? mt : 0 });
-      }
-    }
     if (candidates.length === 0) return null;
     candidates.sort((a, b) => b.t - a.t);
     return { season: candidates[0].season, episode: candidates[0].episode };
-  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, episodeHint]);
+  }, [meta.id, detail?.imdbId, detail?.id, episodeHint]);
 
   const toggleTierWatched = useCallback(() => {
     if (tracking.watched) {
@@ -874,33 +716,6 @@ export function DetailView({
         launch({ season: lastPlay.season, episode: lastPlay.episode });
         return;
       }
-      if (authKey) {
-        const candidates: string[] = [];
-        if (meta.id.startsWith("tt")) candidates.push(meta.id);
-        if (detail?.imdbId?.startsWith("tt") && !candidates.includes(detail.imdbId)) {
-          candidates.push(detail.imdbId);
-        }
-        if (!meta.id.startsWith("tt") && CLOUD_OK.test(meta.id)) candidates.push(meta.id);
-        for (const cid of candidates) {
-          const item = await libraryGetOne(authKey, cid).catch(() => null);
-          const st = item?.state;
-          if (st && (st.timeOffset ?? 0) > 0) {
-            const se = episodeFromVideoId(st.video_id);
-            const season = st.season ?? se?.season;
-            const episode = st.episode ?? se?.episode;
-            if (
-              typeof season === "number" &&
-              typeof episode === "number" &&
-              season >= 1 &&
-              episode >= 1
-            ) {
-              launch({ season, episode });
-              return;
-            }
-          }
-          if (item) break;
-        }
-      }
       launch({ season: 1, episode: 1 });
     },
     [
@@ -914,7 +729,6 @@ export function DetailView({
       update,
       inSession,
       claimHost,
-      authKey,
       meta.id,
       detail?.imdbId,
       cinemetaFull?.videos,
@@ -1354,7 +1168,6 @@ export function DetailView({
               lastEpisodeAir={detail.lastEpisodeAir}
               scrollRef={scrollRef}
               cinemetaVideos={cinemetaFull?.videos}
-              stremioWatched={stremioWatched}
               resumeSeason={lastPlay?.season}
               resumeEpisode={lastPlay?.episode}
             />

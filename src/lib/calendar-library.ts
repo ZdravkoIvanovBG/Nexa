@@ -1,6 +1,5 @@
 import { meta as cinemetaMeta } from "./cinemeta";
 import type { LibraryItem } from "@/lib/library-item";
-import { library } from "./stremio";
 import { readLocalEntries } from "./watchlist";
 import { readWatched, readWatching } from "./library-tracking";
 import { fetchWatchlist as fetchTraktWatchlist } from "./trakt/watchlist";
@@ -267,32 +266,20 @@ const curatedFirst = (a: Candidate, b: Candidate) =>
   (a.temp ? 1 : 0) - (b.temp ? 1 : 0) || b.mtime - a.mtime;
 
 /**
- * Upcoming releases for everything the user tracks: watchlist (local + Stremio
- * cloud + Trakt), Currently Watching, and Watched.
+ * Upcoming releases for everything the user tracks: watchlist (local + Trakt),
+ * Currently Watching, and Watched.
  */
 export async function fetchTrackedCalendar(
   year: number,
   month: number,
-  opts: { tmdbKey: string; authKey: string | null; includeTrakt: boolean },
+  opts: { tmdbKey: string; includeTrakt: boolean },
 ): Promise<CalendarItem[]> {
   const local = readLocalEntries();
   const tracked = trackedCandidates();
-  let stremio: LibraryItem[] = [];
-  let stremioFailed = false;
-  if (opts.authKey) {
-    try {
-      stremio = await library(opts.authKey);
-    } catch {
-      stremioFailed = true;
-    }
-  }
   const trakt = opts.includeTrakt ? await fetchTraktWatchlist().catch(() => []) : [];
 
-  const candidates = gatherCandidates(stremio, local, trakt, tracked);
-  if (candidates.length === 0) {
-    if (stremioFailed) throw new Error("Couldn't load your library");
-    return [];
-  }
+  const candidates = gatherCandidates([], local, trakt, tracked);
+  if (candidates.length === 0) return [];
   return resolveSavedCalendar(candidates, year, month, { tmdbKey: opts.tmdbKey });
 }
 

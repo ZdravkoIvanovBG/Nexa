@@ -1,27 +1,21 @@
-import { Lock, LogIn, LogOut, Pencil, Plus, Users } from "lucide-react";
+import { Lock, LogOut, Pencil, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { AuthModal } from "@/components/auth-modal";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { TvModalClose } from "@/components/tv-modal-close";
+import { useCloudSession } from "@/lib/cloud/session";
 import { useT } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
 import { useTvFocusScope } from "@/lib/keyboard-navigation";
 import { verifyProfilePassword } from "@/lib/profile-password";
 import { useProfiles, type Profile } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
-import type { User } from "@/lib/stremio";
-import { openUrl } from "@/lib/window";
-
-const STREMIO_REGISTER_URL = "https://www.stremio.com/register";
 
 export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {}) {
-  const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
+  const { status: cloudStatus, signOut } = useCloudSession();
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const [pendingSwitch, setPendingSwitch] = useState<Profile | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   useTvFocusScope(menuOpen, ref);
@@ -58,21 +52,15 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
     <div ref={ref} className="relative">
       <button
         onClick={() => setMenuOpen((o) => !o)}
-        aria-label={activeProfile?.name ?? user?.email ?? t("profile.fallback")}
+        aria-label={activeProfile?.name ?? t("profile.fallback")}
         className={`flex w-full items-center justify-center gap-3.5 rounded-xl py-2.5 text-start transition-colors hover:bg-elevated/60 ${
           collapsed ? "" : "lg:justify-start lg:px-3"
         }`}
       >
-        <ProfileAvatar profile={activeProfile} user={user} fallbackAvatar={harborAvatar} />
+        <ProfileAvatar profile={activeProfile} fallbackAvatar={harborAvatar} />
         <div className={`hidden min-w-0 flex-1 ${collapsed ? "" : "lg:block"}`}>
           <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">
-            {activeProfile?.name ??
-              user?.fullname ??
-              user?.email?.split("@")[0] ??
-              t("profile.fallback")}
-          </div>
-          <div className="truncate text-[12px] text-ink-subtle">
-            <SubtitleText active={activeProfile} profiles={profiles} user={user} />
+            {activeProfile?.name ?? t("profile.fallback")}
           </div>
         </div>
       </button>
@@ -97,7 +85,7 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-raised"
                 >
                   <span className="relative inline-flex shrink-0">
-                    <ProfileAvatar profile={p} user={null} fallbackAvatar={null} compact />
+                    <ProfileAvatar profile={p} fallbackAvatar={null} compact />
                     {p.passwordHash && (
                       <span className="absolute -bottom-0.5 -end-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink shadow-sm ring-1 ring-edge">
                         <Lock size={8} strokeWidth={2.6} />
@@ -155,27 +143,16 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
                   {t("profile.new")}
                 </button>
               )}
-              {user ? (
+              {cloudStatus === "signed-in" && (
                 <button
                   onClick={() => {
-                    signOut();
                     setMenuOpen(false);
+                    void signOut();
                   }}
-                  className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+                  className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-subtle transition-colors hover:bg-raised hover:text-danger"
                 >
                   <LogOut size={14} strokeWidth={2.2} />
-                  {t("profile.signOut")}
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setAuthOpen(true);
-                    setMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2.5 border-t border-edge-soft px-4 py-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
-                >
-                  <LogIn size={14} strokeWidth={2.2} />
-                  {t("profile.signIn")}
+                  {t("Sign out")}
                 </button>
               )}
             </div>
@@ -183,7 +160,6 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
         </div>
       )}
 
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
       {pendingSwitch && activeProfile?.kid?.parentPinHash && (
         <ParentalPinModal
           mode={{
@@ -205,17 +181,15 @@ export function ProfileChip({ collapsed = false }: { collapsed?: boolean } = {})
 
 function ProfileAvatar({
   profile,
-  user,
   fallbackAvatar,
   compact,
 }: {
   profile: Profile | null;
-  user: User | null;
   fallbackAvatar: string | null;
   compact?: boolean;
 }) {
   const dim = compact ? "h-9 w-9" : "h-12 w-12";
-  const src = profile?.avatar ?? fallbackAvatar ?? user?.avatar ?? null;
+  const src = profile?.avatar ?? fallbackAvatar ?? null;
   const ringStyle = profile?.color ? { boxShadow: `0 0 0 2px ${profile.color}` } : undefined;
   return (
     <div className={`${dim} shrink-0 overflow-hidden rounded-full bg-elevated`} style={ringStyle}>
@@ -225,47 +199,5 @@ function ProfileAvatar({
         <CatAvatar className="h-full w-full" />
       )}
     </div>
-  );
-}
-
-function SubtitleText({
-  active,
-  profiles,
-  user,
-}: {
-  active: Profile | null;
-  profiles: Profile[];
-  user: User | null;
-}) {
-  const t = useT();
-  if (active?.shareStremioWith) {
-    const src = profiles.find((p) => p.id === active.shareStremioWith);
-    if (src) return <>{t("Sharing {name}'s Stremio", { name: src.name })}</>;
-  }
-  if (user) {
-    return <>{t("profile.signedIn")}</>;
-  }
-  return (
-    <>
-      {t("Sign in to")}{" "}
-      <span
-        role="link"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          openUrl(STREMIO_REGISTER_URL);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            openUrl(STREMIO_REGISTER_URL);
-          }
-        }}
-        className="cursor-pointer text-ink transition-colors hover:text-accent"
-      >
-        Stremio
-      </span>
-    </>
   );
 }

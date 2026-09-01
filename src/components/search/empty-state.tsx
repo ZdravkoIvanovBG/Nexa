@@ -5,7 +5,6 @@ import { CalendarIcon } from "@/components/icons/calendar-icon";
 import { DiscoverIcon } from "@/components/icons/discover-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
-import { LiveTvIcon } from "@/components/icons/live-tv-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { MOVIE_GENRES } from "@/lib/feed/tags";
@@ -49,7 +48,6 @@ const JUMP_TARGETS: Jump[] = [
   { view: "discover", label: "Discover", parentalKey: "discover", icon: <DiscoverIcon /> },
   { view: "movies", label: "Movies", parentalKey: "movies", icon: <MoviesIcon /> },
   { view: "shows", label: "Shows", parentalKey: "shows", icon: <TvIcon /> },
-  { view: "live", label: "Live TV", parentalKey: "liveTv", icon: <LiveTvIcon /> },
   { view: "calendar", label: "Calendar", parentalKey: "calendar", icon: <CalendarIcon /> },
   { view: "library", label: "My Library", parentalKey: "library", icon: <LibraryIcon /> },
   { view: "addons", label: "Addons", parentalKey: "addons", icon: <AddonsIcon /> },

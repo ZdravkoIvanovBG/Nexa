@@ -18,6 +18,7 @@ import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setUiLanguage } from "@/lib/i18n";
 import { setSnapshotRetentionDays } from "@/lib/snapshots";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
+import { mirrorSettings } from "./cloud/mirror";
 import { STORAGE_KEY } from "./settings/defaults";
 import { readSettingsFile, writeSettingsFile } from "./settings/file-store";
 import { loadFontData, saveFontData } from "./font-storage";
@@ -26,6 +27,7 @@ import {
   loadEffective,
   persistEffective,
   seedSharedFromLegacy,
+  settingsScopeOf,
   sourceKeyFor,
 } from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
@@ -44,6 +46,8 @@ type SettingsValue = {
   toggleStreaming: (s: StreamingService) => void;
   switchProfile: (profileId: string, linked: boolean) => void;
   setSettingsLinked: (linked: boolean) => void;
+  /** Re-reads the active source from local storage, e.g. after cloud hydrate wrote it. */
+  reloadFromStorage: () => void;
 };
 
 type SettingsSource = { profileId: string; linked: boolean };
@@ -130,6 +134,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         sourceRef.current.profileId,
         sourceRef.current.linked,
       );
+      mirrorSettings(settingsScopeOf(sourceRef.current.profileId, sourceRef.current.linked), json);
       window.clearTimeout(fileTimerRef.current);
       fileTimerRef.current = window.setTimeout(() => void writeSettingsFile(json), 600);
     } catch (e) {
@@ -392,14 +397,27 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       sourceRef.current = { profileId, linked };
       return;
     }
-    persistEffective(settingsRef.current, cur.profileId, cur.linked);
+    const curJson = persistEffective(settingsRef.current, cur.profileId, cur.linked);
+    mirrorSettings(settingsScopeOf(cur.profileId, cur.linked), curJson);
     const next = loadEffective(profileId, linked);
     setUiLanguage(next.uiLanguage);
     setTmdbLanguage(next.tmdbLanguage);
     tmdbLangRef.current = effectiveTmdbLanguage();
     imgLangRef.current = next.tmdbImageLangs.join(",");
     sourceRef.current = { profileId, linked };
-    persistEffective(next, profileId, linked);
+    const nextJson = persistEffective(next, profileId, linked);
+    mirrorSettings(settingsScopeOf(profileId, linked), nextJson);
+    settingsRef.current = next;
+    setSettings(next);
+  }, []);
+
+  const reloadFromStorage = useCallback(() => {
+    const src = sourceRef.current;
+    const next = loadEffective(src.profileId, src.linked);
+    setUiLanguage(next.uiLanguage);
+    setTmdbLanguage(next.tmdbLanguage);
+    tmdbLangRef.current = effectiveTmdbLanguage();
+    imgLangRef.current = next.tmdbImageLangs.join(",");
     settingsRef.current = next;
     setSettings(next);
   }, []);
@@ -415,8 +433,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ settings, update, toggleStreaming, switchProfile, setSettingsLinked }),
-    [settings, update, toggleStreaming, switchProfile, setSettingsLinked],
+    () => ({
+      settings,
+      update,
+      toggleStreaming,
+      switchProfile,
+      setSettingsLinked,
+      reloadFromStorage,
+    }),
+    [settings, update, toggleStreaming, switchProfile, setSettingsLinked, reloadFromStorage],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

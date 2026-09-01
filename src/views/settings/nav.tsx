@@ -1218,10 +1218,16 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Content filters (hide live tv / sports / adult)",
+    label: "Content filters (hide adult)",
     section: "library",
     anchorTitle: "Content filters",
-    keywords: ["content filters", "hide live tv", "hide sports", "hide adult", "age", "filter"],
+    keywords: ["content filters", "hide adult", "age", "filter"],
+  },
+  {
+    label: "Show Downloads",
+    section: "library",
+    anchorTitle: "Features",
+    keywords: ["downloads", "downloads tab", "sidebar", "show downloads", "enable downloads"],
   },
 
   {
@@ -1526,12 +1532,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["onboarding", "walkthrough", "tutorial", "replay", "restore hints", "tips"],
   },
   {
-    label: "Stremio library repair",
-    section: "advanced",
-    anchorTitle: "Stremio library repair",
-    keywords: ["stremio library repair", "fix library", "schema", "repair"],
-  },
-  {
     label: "About (version / build)",
     section: "advanced",
     anchorTitle: "About",
@@ -1545,10 +1545,10 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["avatar", "profile photo", "upload photo", "color", "identity", "picture"],
   },
   {
-    label: "Stremio account (email / sign out)",
+    label: "Harbor account (email / sign out)",
     section: "account",
-    anchorTitle: "Stremio account",
-    keywords: ["stremio", "email", "sign out", "logout", "re-authenticate", "login", "account"],
+    anchorTitle: "Harbor account",
+    keywords: ["email", "sign out", "logout", "password", "account"],
   },
   {
     label: "Synced addons",
@@ -1635,9 +1635,10 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Sign in to Stremio",
-    section: "basics",
-    keywords: ["sign in", "login", "stremio account", "sync", "manage account", "email", "log in"],
+    label: "Harbor account",
+    section: "account",
+    anchorTitle: "Harbor account",
+    keywords: ["sign in", "login", "sync", "manage account", "email", "log in", "sign out"],
   },
   {
     label: "Streaming quality",
@@ -1699,26 +1700,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["avatar", "upload", "profile picture", "custom photo", "image", "change avatar"],
   },
   {
-    label: "or use one of our avatars",
-    section: "account",
-    anchorTitle: "Harbor identity",
-    keywords: [
-      "avatar catalog",
-      "built-in avatars",
-      "browse avatars",
-      "picker",
-      "characters",
-      "netflix style",
-    ],
-  },
-  {
-    label: "Random avatar",
-    section: "account",
-    anchorTitle: "Harbor identity",
-    keywords: ["random", "shuffle", "surprise avatar", "dice"],
-  },
-  {
-    label: "Reset to Stremio avatar",
+    label: "Reset to default avatar",
     section: "account",
     anchorTitle: "Harbor identity",
     keywords: ["reset avatar", "default avatar", "remove photo", "revert", "reset to default"],
@@ -1762,28 +1744,16 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Sign in",
-    section: "account",
-    anchorTitle: "Stremio account",
-    keywords: ["login", "sign in", "stremio", "connect account", "not signed in"],
-  },
-  {
-    label: "Re-authenticate",
-    section: "account",
-    anchorTitle: "Stremio account",
-    keywords: ["reauth", "refresh session", "login again", "expired token", "re-login"],
-  },
-  {
     label: "Sign out",
     section: "account",
-    anchorTitle: "Stremio account",
+    anchorTitle: "Harbor account",
     keywords: ["logout", "sign out", "log off", "disconnect account"],
   },
   {
-    label: "Reveal",
+    label: "Change password",
     section: "account",
-    anchorTitle: "Stremio account",
-    keywords: ["show email", "hide email", "mask email", "privacy", "stremio id"],
+    anchorTitle: "Harbor account",
+    keywords: ["change password", "reset password", "new password", "forgot password"],
   },
   {
     label: "Sync now",
@@ -2284,12 +2254,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "bottom left",
       "bottom right",
     ],
-  },
-  {
-    label: "Hide Live TV",
-    section: "library",
-    anchorTitle: "Content filters",
-    keywords: ["hide live tv", "remove tv tab", "no live", "sidebar"],
   },
   {
     label: "Hide adult content",
@@ -5100,6 +5064,7 @@ export function SettingsNav({
     settings.tmdbKey,
     settings.omdbKey,
     settings.rpdbKey,
+    settings.mdblistKey,
     settings.fanartKey,
     settings.tvdbKey,
   ].filter(Boolean).length;
@@ -5112,7 +5077,7 @@ export function SettingsNav({
     settings.dlKey,
   ].filter(Boolean).length;
 
-  const debridChip = libraryKeys > 0 ? `${libraryKeys}/5` : null;
+  const debridChip = libraryKeys > 0 ? `${libraryKeys}/6` : null;
 
   const relayLive = settings.togetherRelayUrl ? "live" : null;
   const webhookActive =
@@ -5122,7 +5087,7 @@ export function SettingsNav({
   const status: Record<SectionId, string | null> = {
     basics: null,
     account: null,
-    library: libraryKeys > 0 ? `${libraryKeys}/5` : null,
+    library: libraryKeys > 0 ? `${libraryKeys}/6` : null,
     trakt: null,
     simkl: null,
     letterboxd: settings.letterboxd.enabled

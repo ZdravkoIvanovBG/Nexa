@@ -32,7 +32,7 @@ export function WelcomeStep() {
         <Bullet title={t("Current")}>
           {t("Trending, in theaters, what's on every streamer.")}
         </Bullet>
-        <Bullet title={t("Yours")}>{t("Your Stremio library + addons sync in untouched.")}</Bullet>
+        <Bullet title={t("Yours")}>{t("Any Stremio addon manifest just works, untouched.")}</Bullet>
         <Bullet title={t("Quiet")}>{t("No telemetry, no servers, no bundled keys.")}</Bullet>
       </div>
     </div>

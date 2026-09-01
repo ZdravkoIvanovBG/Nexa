@@ -5,7 +5,10 @@ import { clearEpg } from "@/lib/iptv/epg-store";
 import { purgePlaylistState } from "@/lib/iptv/source-cleanup";
 import { useFavorites } from "@/lib/iptv/favorites";
 import type { IptvPlaylistSource } from "@/lib/iptv/types";
-import { buildXtreamUrls, type PlaylistFormValue } from "@/views/live/source-picker/playlist-form";
+import {
+  buildXtreamUrls,
+  type PlaylistFormValue,
+} from "@/components/live/source-picker/playlist-form";
 import { clearXtreamVodLibraryCache } from "./use-xtream-vod-library";
 
 const ACTIVE_KEY = "harbor.vod.active";

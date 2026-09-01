@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { clearResume } from "./resume";
+import { clearLocalCw } from "./local-cw";
 import { episodeFromVideoId, type LibraryItem } from "@/lib/library-item";
-import { libraryPut } from "./stremio";
 
 const SIMKL_KEY = "harbor.cw.dismissed.simkl";
 const dismissed = new Set<string>();
@@ -31,7 +31,7 @@ export function isCwDismissed(item: LibraryItem): boolean {
   );
 }
 
-export function dismissCw(item: LibraryItem, authKey: string | null): void {
+export function dismissCw(item: LibraryItem): void {
   const id = item._id;
   dismissed.add(id);
   if (item.external === "simkl") {
@@ -46,7 +46,10 @@ export function dismissCw(item: LibraryItem, authKey: string | null): void {
     return;
   }
   emit();
-  if (!authKey || !item.state) return;
+  // Local Continue Watching is the store now, so the row has to go or it is
+  // rebuilt on the next read and the dismissal appears not to stick.
+  clearLocalCw(id);
+  if (!item.state) return;
   const vid = item.state.video_id ?? "";
   const kitsuThreeSeg = /^(kitsu|mal|anilist|anidb):/.test(id) && vid.split(":").length === 3;
   const se = kitsuThreeSeg ? null : episodeFromVideoId(item.state.video_id);
@@ -55,11 +58,6 @@ export function dismissCw(item: LibraryItem, authKey: string | null): void {
     item.state.season ?? (kitsuThreeSeg ? 1 : se?.season),
     item.state.episode ?? (kitsuThreeSeg ? Number(vid.split(":")[2]) : se?.episode),
   );
-  void libraryPut(authKey, {
-    ...item,
-    state: { ...item.state, timeOffset: 0 },
-    _mtime: new Date().toISOString(),
-  }).catch(() => {});
 }
 
 function subscribe(cb: () => void): () => void {

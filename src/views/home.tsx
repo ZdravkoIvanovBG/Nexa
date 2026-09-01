@@ -20,18 +20,17 @@ import { useCustomLists } from "@/lib/custom-lists";
 import { StreamingRail } from "@/components/streaming-rail";
 import { TopRankCard } from "@/components/top-rank-card";
 import { useQueryClient } from "@tanstack/react-query";
-import { hasTmdbProviderAddon, loadAddonRows, userAddons, type AddonRow } from "@/lib/addons";
+import { hasTmdbProviderAddon, loadAddonRows, type AddonRow } from "@/lib/addons";
+import { installedAddons } from "@/lib/addon-store";
 import { queryKeys } from "@/lib/query";
 import { buildArabicHomeRows } from "@/lib/arabic/home-rows";
-import { useAuth } from "@/lib/auth";
 import { useProfiles } from "@/lib/profiles";
 import { type Meta } from "@/lib/cinemeta";
 import { t, useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings, type StreamingService } from "@/lib/settings";
-import { trackEvent } from "@/lib/discover";
 import { publishResumeStates } from "@/lib/hover-preview/store";
-import { readResumeEntry, saveResumeBatch } from "@/lib/resume";
 import { dismissCw, isCwDismissed, useCwDismissVersion } from "@/lib/cw-dismiss";
+import { localToLibraryItem } from "@/lib/continue-watching";
 import { clearLocalCw, listLocalCw, localCwVersion, subscribeLocalCw } from "@/lib/local-cw";
 import {
   dismissManualWatched,
@@ -39,9 +38,7 @@ import {
   manualWatchedVersion,
   subscribeManualWatched,
 } from "@/lib/manual-watched";
-import { repairLibraryNames } from "@/lib/stremio-repair";
-import { cwSortKey, episodeFromVideoId, isCwMember, type LibraryItem } from "@/lib/library-item";
-import { library } from "@/lib/stremio";
+import { cwSortKey, isCwMember, type LibraryItem } from "@/lib/library-item";
 import { useTrakt } from "@/lib/trakt/provider";
 import { buildTraktHomeRows } from "@/lib/trakt/home-rails";
 import { fetchWatchedKeySet } from "@/lib/trakt/history";
@@ -77,7 +74,6 @@ import { AddSourceModal } from "@/components/add-source-modal";
 import type { SourceRow } from "@/lib/custom-sources";
 
 export function Home({ active = true, onReady }: { active?: boolean; onReady?: () => void }) {
-  const { authKey, user } = useAuth();
   const { activeId: profileId } = useProfiles();
   const { settings, update } = useSettings();
   const queryClient = useQueryClient();
@@ -104,7 +100,6 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     if (!active || !heroReady) return;
     onReady?.();
   }, [active, heroReady, onReady]);
-  const [items, setItems] = useState<LibraryItem[]>([]);
   const cwVersion = useCwDismissVersion();
   const [tmdbProvidedByAddon, setTmdbProvidedByAddon] = useState(false);
   const [addonsTick, setAddonsTick] = useState(0);
@@ -193,17 +188,12 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
       const filtered = isClassic ? addons : addons.filter((a) => !isStreamingServiceRow(a.name));
       setRows(mergeRows(built.rows, filtered, { dedup: dedupRows }));
 
-      if (authKey) {
-        const installed = await userAddons(authKey).catch(() => []);
-        if (cancelled) return;
-        setTmdbProvidedByAddon(hasTmdbProviderAddon(installed));
-      }
+      setTmdbProvidedByAddon(hasTmdbProviderAddon(installedAddons()));
     })().catch(console.error);
     return () => {
       cancelled = true;
     };
   }, [
-    authKey,
     profileId,
     queryClient,
     settings.tmdbKey,
@@ -354,121 +344,19 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     letterboxd.listRefs,
   ]);
 
-  const trackedRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!authKey) {
-      setItems([]);
-      return;
-    }
-    let cancelled = false;
-    const load = () => {
-      library(authKey)
-        .then((libItems) => {
-          if (cancelled) return;
-          setItems(libItems);
-          const importKey = `harbor.discover.libImported.${user?._id ?? "anon"}`;
-          let importedSince = 0;
-          try {
-            importedSince = Number(localStorage.getItem(importKey) ?? 0) || 0;
-          } catch {}
-          const resumeEntries: {
-            id: string;
-            ms: number;
-            season?: number;
-            episode?: number;
-            t?: number;
-          }[] = [];
-          for (const i of libItems) {
-            const mt = Date.parse(i._mtime ?? "");
-            if (i.state?.timeOffset && i.state.timeOffset > 0) {
-              const se = episodeFromVideoId(i.state.video_id);
-              const s = i.state.season ?? se?.season;
-              const e = i.state.episode ?? se?.episode;
-              const local = readResumeEntry(i._id, s, e);
-              if (!local || (Number.isFinite(mt) && mt > local.t)) {
-                resumeEntries.push({
-                  id: i._id,
-                  ms: i.state.timeOffset,
-                  season: s,
-                  episode: e,
-                  t: Number.isFinite(mt) ? mt : undefined,
-                });
-              }
-            }
-            if ((i.removed && !i.temp) || trackedRef.current.has(i._id)) continue;
-            trackedRef.current.add(i._id);
-            if (!Number.isFinite(mt) || Date.now() - mt > 14 * 864e5) continue;
-            if (importedSince > 0 && mt <= importedSince) continue;
-            const offset = i.state?.timeOffset ?? 0;
-            const duration = i.state?.duration ?? 0;
-            const progress = duration > 0 ? offset / duration : 0;
-            const flagged = (i.state?.flaggedWatched ?? 0) > 0;
-            if (flagged || progress > 0.85) trackEvent(i._id, "watched", undefined, mt);
-            else if (progress > 0.05) trackEvent(i._id, "play", undefined, mt);
-            else if (!i.temp) trackEvent(i._id, "watchlist", undefined, mt);
-          }
-          saveResumeBatch(resumeEntries);
-          try {
-            localStorage.setItem(importKey, String(Date.now()));
-          } catch {}
-          void repairLibraryNames(authKey, libItems, user?._id ?? "", settings.tmdbKey);
-        })
-        .catch(console.error);
-    };
-    load();
-    if (active) {
-      const refresh = () => {
-        if (document.visibilityState === "visible") load();
-      };
-      window.addEventListener("focus", refresh);
-      document.addEventListener("visibilitychange", refresh);
-      const poll = window.setInterval(() => {
-        if (document.visibilityState === "visible") load();
-      }, 30000);
-      return () => {
-        cancelled = true;
-        window.removeEventListener("focus", refresh);
-        document.removeEventListener("visibilitychange", refresh);
-        window.clearInterval(poll);
-      };
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey, active]);
-
   const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
   const manualWatchedVer = useSyncExternalStore(subscribeManualWatched, manualWatchedVersion);
+  const items = useMemo<LibraryItem[]>(() => {
+    void localCwVer;
+    return listLocalCw().map(localToLibraryItem);
+  }, [localCwVer]);
   const stremioWatchedIds = useMemo(() => {
     const s = new Set<string>();
     for (const i of items) if ((i.state?.flaggedWatched ?? 0) > 0) s.add(i._id);
     return s;
   }, [items]);
   const continueWatching = useMemo(() => {
-    const localCwItems: LibraryItem[] = listLocalCw().map((e) => ({
-      _id: e.id,
-      type: e.type,
-      name: e.name,
-      poster: e.poster,
-      background: e.background,
-      state: {
-        timeOffset: e.positionMs,
-        duration: e.durationMs,
-        season: e.season,
-        episode: e.episode,
-        video_id:
-          e.videoId ??
-          (e.season != null && e.episode != null ? `${e.id}:${e.season}:${e.episode}` : undefined),
-        flaggedWatched: e.durationMs > 0 && e.positionMs / e.durationMs >= 0.9 ? 1 : 0,
-        lastWatched: new Date(e.t).toISOString(),
-      },
-      removed: false,
-      temp: false,
-      _ctime: new Date(e.t).toISOString(),
-      _mtime: new Date(e.t).toISOString(),
-      local: true,
-    }));
-    const eligible = [...items, ...simklCw, ...localCwItems]
+    const eligible = [...items, ...simklCw]
       .filter(
         (i) =>
           (i.type as string) !== "other" &&
@@ -525,14 +413,11 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
     publishResumeStates(cwItems);
   }, [cwItems]);
 
-  const onDismissCw = useCallback(
-    (item: LibraryItem) => {
-      if (item.manualWatched) dismissManualWatched(item._id);
-      else if (item.local) clearLocalCw(item._id);
-      else dismissCw(item, authKey);
-    },
-    [authKey],
-  );
+  const onDismissCw = useCallback((item: LibraryItem) => {
+    if (item.manualWatched) dismissManualWatched(item._id);
+    else if (item.local) clearLocalCw(item._id);
+    else dismissCw(item);
+  }, []);
 
   const { items: favItems } = useMediaFavorites();
   const { items: localItems } = useLocalWatchlist();
@@ -903,12 +788,7 @@ export function Home({ active = true, onReady }: { active?: boolean; onReady?: (
               </div>
             )}
           <div data-scroll-anchor="cw">
-            <CWSection
-              signedIn={!!authKey}
-              items={cwItems}
-              watchedSet={traktWatched}
-              onDismiss={onDismissCw}
-            />
+            <CWSection items={cwItems} watchedSet={traktWatched} onDismiss={onDismissCw} />
           </div>
           {settings.homeMode !== "classic" && (
             <div data-scroll-anchor="streaming">

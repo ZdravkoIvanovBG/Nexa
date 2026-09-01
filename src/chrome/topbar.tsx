@@ -1,8 +1,7 @@
-import { ArrowLeft, Search, Users } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { BackChrome } from "@/chrome/back-chrome";
-import { HarborMark } from "@/components/icons/harbor-mark";
 import { TogetherPopover } from "@/components/together-modal";
 import { DownloadsButton } from "@/components/downloads-popover";
 import { RecordingPill } from "@/chrome/recording-pill";
@@ -29,7 +28,7 @@ import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
-  const { chromeHidden, canGoBack, view, setView, topKind } = useView();
+  const { chromeHidden, canGoBack, view, topKind } = useView();
   const { settings } = useSettings();
   const kid = useActiveKid();
   const t = useT();
@@ -38,8 +37,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const fullscreen = useWindowFullscreen();
   if (chromeHidden && !connecting) return null;
   const layout = kid ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
-  const onLiveRoot = topKind === "live";
-  const sidebarHidden = connecting || view === "settings" || onLiveRoot || topKind === "picker";
+  const sidebarHidden = connecting || view === "settings" || topKind === "picker";
   const hideSearch = view === "addons" || connecting || topKind === "picker";
   const sidebarOffset =
     layout === "stremio"
@@ -67,25 +65,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
               : `flex h-full min-w-0 items-center justify-start ${sidebarOffset}`
           }
         >
-          {onLiveRoot && (
-            <button
-              onClick={() => setView("home")}
-              aria-label={t("common.back")}
-              className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-edge-soft/60 bg-canvas/85 ps-3 pe-4 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
-            >
-              <ArrowLeft size={15} strokeWidth={2.2} className="dir-icon" />
-              {t("common.back")}
-            </button>
-          )}
-          {onLiveRoot && (
-            <div className="flex items-center gap-1.5 text-ink">
-              <HarborMark className="h-7 w-7" />
-              <span className="font-display text-[18px] font-semibold leading-none tracking-tight">
-                {t("Live")}
-              </span>
-            </div>
-          )}
-          {!onLiveRoot && !connecting && <BackChrome />}
+          {!connecting && <BackChrome />}
         </div>
         <div
           {...dragProps}
@@ -96,7 +76,7 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
         <div {...dragProps} className="flex h-full min-w-0 items-center justify-end gap-2">
           <RecordingPill />
           <DownloadsButton />
-          {!onLiveRoot && !kid && <TogetherButton />}
+          {!kid && <TogetherButton />}
           {IS_TAURI && !settings.useNativeTitleBar && (
             <div className="ms-1 flex items-center gap-2">
               <Control label={t("chrome.minimize")} onClick={minimize}>

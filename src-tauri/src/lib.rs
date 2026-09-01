@@ -16,8 +16,13 @@ mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
 mod modal_overlay;
+// libmpv is desktop-only (see Cargo.toml). `mpv_stub` mirrors `mpv`'s command
+// surface so the `generate_handler![]` list below stays identical everywhere.
+#[cfg(desktop)]
 mod mpv;
-mod multiview;
+#[cfg(not(desktop))]
+#[path = "mpv_stub.rs"]
+mod mpv;
 mod proc_mem;
 mod roku;
 #[cfg(target_os = "macos")]
@@ -34,7 +39,6 @@ mod settings_store;
 mod song_id;
 mod stream_proxy;
 mod streams;
-mod stremio_auth;
 mod sub_extract;
 mod subsync;
 mod svp;
@@ -42,6 +46,7 @@ mod thumbs;
 mod torrent_engine;
 mod trailer;
 mod transcode;
+#[cfg(desktop)]
 mod tray;
 mod web_server;
 mod webview_helpers;
@@ -428,12 +433,11 @@ pub fn run() {
     let fullscreen_state = fullscreen::FullscreenState::new();
     let thumbs_state = thumbs::ThumbsState::new();
     let dvr_state = dvr::DvrState::new();
-    let multiview_state = multiview::MultiviewState::new();
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
     let app_builder = tauri::Builder::default();
     // Let a Linux development build run alongside the installed Harbor app.
     // Packaged builds keep the normal single-instance behavior.
-    #[cfg(not(all(target_os = "linux", debug_assertions)))]
+    #[cfg(all(desktop, not(all(target_os = "linux", debug_assertions))))]
     let app_builder = app_builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             use tauri::{Emitter, Manager};
@@ -459,8 +463,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_process::init());
+    #[cfg(desktop)]
+    let app_builder = app_builder
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(
@@ -470,14 +476,14 @@ pub fn run() {
                         | tauri_plugin_window_state::StateFlags::FULLSCREEN,
                 )
                 .build(),
-        )
+        );
+    let app_builder = app_builder
         .manage(proxy_state)
         .manage(mpv_state)
         .manage(pip_state)
         .manage(fullscreen_state)
         .manage(thumbs_state)
         .manage(dvr_state)
-        .manage(multiview_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
         .manage(download::DownloadState::new());
@@ -593,10 +599,13 @@ pub fn run() {
             use tauri::Manager;
             match event {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
+                    #[cfg(desktop)]
                     if tray::close_to_tray() {
                         api.prevent_close();
                         let _ = window.hide();
-                    } else if !CLOSE_IN_PROGRESS.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                        return;
+                    }
+                    if !CLOSE_IN_PROGRESS.swap(true, std::sync::atomic::Ordering::SeqCst) {
                         use tauri::Emitter;
                         api.prevent_close();
                         CLOSE_FLUSH_DONE.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -729,13 +738,6 @@ pub fn run() {
             dvr::dvr_list,
             dvr::dvr_default_dir,
             dvr::dvr_reveal,
-            multiview::multiview_open,
-            multiview::multiview_prespawn,
-            multiview::multiview_geometry,
-            multiview::multiview_audio_focus,
-            multiview::multiview_close,
-            multiview::multiview_visibility,
-            multiview::multiview_stop_all,
             http_fetch::harbor_fetch,
             http_fetch::harbor_fetch_cancel,
             discord_rp::discord_set_presence,
@@ -765,9 +767,10 @@ pub fn run() {
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::harbor_scan_folder,
+            #[cfg(desktop)]
             tray::tray_set_prefs,
+            #[cfg(desktop)]
             tray::tray_set_custom_themes,
-            stremio_auth::stremio_auth_start,
             song_id::recognize_now_playing,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,

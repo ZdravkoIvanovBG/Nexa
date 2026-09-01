@@ -11,9 +11,6 @@ import {
 import { stremioIdToSimklTarget } from "@/lib/simkl/ids";
 import { isAuthenticated as simklConnected } from "@/lib/simkl/session";
 import { setItemWithRecovery, freeStorageSpace } from "@/lib/storage-recovery";
-import { cloudWriteId } from "@/lib/media-id";
-import { saveStremioBookmark, removeStremioBookmark } from "@/lib/stremio";
-import { readActiveStremioAuthKey } from "@/lib/auth";
 import { applyRemote, mirrorWatchlist } from "@/lib/cloud/mirror";
 
 const KEY = "harbor.watchlist.v1";
@@ -213,7 +210,6 @@ export function toggleWatchlist(input: string | WatchlistInput): boolean {
   write(map);
   void syncWithTrakt(id, !has);
   void syncWithSimkl(id, !has);
-  void syncWithStremio(input, !has);
   return !has;
 }
 
@@ -237,28 +233,6 @@ async function syncWithSimkl(metaId: string, added: boolean): Promise<void> {
     else await simklRemove(r.target);
   } catch {
     /* swallow */
-  }
-}
-
-async function syncWithStremio(input: string | WatchlistInput, added: boolean): Promise<void> {
-  const authKey = readActiveStremioAuthKey();
-  if (!authKey) return;
-  const id = typeof input === "string" ? input : input.id;
-  const imdb = typeof input === "string" ? null : (input.imdbId ?? null);
-  const writeId = cloudWriteId(id, imdb, !!imdb);
-  if (!writeId) return;
-  try {
-    if (added) {
-      const meta =
-        typeof input === "string"
-          ? {}
-          : { type: input.type, name: input.name, poster: input.poster };
-      await saveStremioBookmark(authKey, writeId, meta);
-    } else {
-      await removeStremioBookmark(authKey, writeId);
-    }
-  } catch (e) {
-    console.warn("[watchlist] stremio sync failed", e);
   }
 }
 

@@ -1,103 +1,65 @@
 import { ArrowLeft, ChevronDown, History, Info, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getUserAddonsRaw, type Addon } from "@/lib/addons";
 import { loadInstalled, reorderInstalled, type InstalledAddon } from "@/lib/addon-store";
 import {
   applyOrderToItems,
   loadBackups,
   moveItem,
   pushBackup,
-  saveCollectionOrder,
   saveDisplayOrder,
   sequencesEqual,
   type AddonOrderBackup,
-  type SaveStep,
 } from "@/lib/addons-store/reorder";
 import { pushOverlayPin } from "@/lib/overlay-pin";
 import { useSearch } from "@/lib/search-context";
 import { useT } from "@/lib/i18n";
 import { BackupsPanel } from "./backups-card";
 import { OrganizeList, SectionCard, SkeletonRows } from "./section-card";
-import { entriesOf, noticeFor, stepLabel as stepLabelFor, urlsOf, type Notice } from "./utils";
+import { entriesOf, urlsOf, type Notice } from "./utils";
 import { useDragList } from "./use-drag-list";
 
-type Phase =
-  | { kind: "loading" }
-  | { kind: "loadError" }
-  | { kind: "ready" }
-  | { kind: "saving"; step: SaveStep };
+type Phase = { kind: "loading" } | { kind: "ready" } | { kind: "saving" };
 
 export function OrganizeAddonsPage({
-  authKey,
   onClose,
   onSaved,
 }: {
-  authKey: string | null;
   onClose: () => void;
-  onSaved: (scope: "cloud" | "local") => void;
+  onSaved: (scope: "local") => void;
 }) {
   const t = useT();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [baselineCloud, setBaselineCloud] = useState<Addon[]>([]);
-  const [workingCloud, setWorkingCloud] = useState<Addon[]>([]);
-  const [baselineDevice, setBaselineDevice] = useState<InstalledAddon[]>([]);
-  const [workingDevice, setWorkingDevice] = useState<InstalledAddon[]>([]);
+  const [baseline, setBaseline] = useState<InstalledAddon[]>([]);
+  const [working, setWorking] = useState<InstalledAddon[]>([]);
   const [backupsKey, setBackupsKey] = useState(0);
   const [backupsOpen, setBackupsOpen] = useState(false);
   const backupsWrapRef = useRef<HTMLDivElement>(null);
-  const backedUpRef = useRef(false);
   const backupCount = useMemo(() => loadBackups().length, [backupsKey]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setPhase({ kind: "loading" });
     setNotice(null);
-    if (!authKey) {
-      const device = loadInstalled();
-      setBaselineCloud([]);
-      setWorkingCloud([]);
-      setBaselineDevice(device);
-      setWorkingDevice(device);
-      setPhase({ kind: "ready" });
-      return;
-    }
-    const cloud = await getUserAddonsRaw(authKey);
-    if (cloud == null) {
-      setPhase({ kind: "loadError" });
-      return;
-    }
-    const cloudUrls = new Set(cloud.map((a) => a.transportUrl));
-    const device = loadInstalled().filter((d) => !cloudUrls.has(d.transportUrl));
-    setBaselineCloud(cloud);
-    setWorkingCloud(cloud);
-    setBaselineDevice(device);
-    setWorkingDevice(device);
+    const device = loadInstalled();
+    setBaseline(device);
+    setWorking(device);
     setPhase({ kind: "ready" });
-  }, [authKey]);
+  }, []);
 
   useEffect(() => {
-    void load();
+    load();
   }, [load]);
 
   useEffect(() => pushOverlayPin(), []);
 
-  const cloudDrag = useDragList(workingCloud.length, (from, to) =>
-    setWorkingCloud((l) => moveItem(l, from, to)),
-  );
-  const deviceDrag = useDragList(workingDevice.length, (from, to) =>
-    setWorkingDevice((l) => moveItem(l, from, to)),
-  );
+  const drag = useDragList(working.length, (from, to) => setWorking((l) => moveItem(l, from, to)));
 
   const search = useSearch();
   const escBlockRef = useRef(false);
   const backupsOpenRef = useRef(false);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
-    escBlockRef.current =
-      search.open ||
-      phase.kind === "saving" ||
-      cloudDrag.dragIndex != null ||
-      deviceDrag.dragIndex != null;
+    escBlockRef.current = search.open || phase.kind === "saving" || drag.dragIndex != null;
     backupsOpenRef.current = backupsOpen;
     onCloseRef.current = onClose;
   });
@@ -127,76 +89,40 @@ export function OrganizeAddonsPage({
     return () => window.removeEventListener("pointerdown", onDown);
   }, [backupsOpen]);
 
-  const cloudDirty = !sequencesEqual(urlsOf(workingCloud), urlsOf(baselineCloud));
-  const deviceDirty = !sequencesEqual(urlsOf(workingDevice), urlsOf(baselineDevice));
-  const dirty = cloudDirty || deviceDirty;
+  const dirty = !sequencesEqual(urlsOf(working), urlsOf(baseline));
   const saving = phase.kind === "saving";
 
-  const mirrorLocal = () => {
-    const urls = [...urlsOf(workingCloud), ...urlsOf(workingDevice)];
+  const handleSave = () => {
+    if (!dirty || phase.kind !== "ready") return;
+    setNotice(null);
+    const urls = urlsOf(working);
     try {
       saveDisplayOrder(urls);
       reorderInstalled(urls);
-    } catch (e) {
-      console.warn("[addons] local order mirror failed", e);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!dirty || phase.kind !== "ready") return;
-    setNotice(null);
-    try {
-      if (cloudDirty && authKey) {
-        setPhase({ kind: "saving", step: "checking" });
-        const result = await saveCollectionOrder(
-          authKey,
-          baselineCloud,
-          workingCloud,
-          backedUpRef.current,
-          (step) => setPhase({ kind: "saving", step }),
-        );
-        if (!result.ok) {
-          if (result.stage === "write" || result.stage === "verify") backedUpRef.current = true;
-          if (result.stage === "validate") {
-            console.warn("[addons] reorder blocked by validation", result.reason);
-          }
-          setBackupsKey((k) => k + 1);
-          setPhase({ kind: "ready" });
-          setNotice(noticeFor(result));
-          return;
-        }
-        backedUpRef.current = true;
-        mirrorLocal();
-        onSaved("cloud");
-        return;
-      }
-      mirrorLocal();
       onSaved("local");
     } catch (e) {
       console.warn("[addons] reorder save failed", e);
       setPhase({ kind: "ready" });
       setNotice({
         tone: "danger",
-        text: t(
-          "Something unexpected went wrong. Nothing may have been written. Retry to re-check.",
-        ),
+        text: t("Couldn't save the new order. Nothing was changed."),
         retry: true,
       });
     }
   };
 
   const handleBackupNow = () => {
-    if (workingCloud.length === 0) return;
-    pushBackup(workingCloud);
+    if (working.length === 0) return;
+    pushBackup(working);
     setBackupsKey((k) => k + 1);
     setNotice({
       tone: "info",
-      text: t("Backed up. The current account order is saved in the Backups panel."),
+      text: t("Backed up. The current order is saved in the Backups panel."),
     });
   };
 
   const handleRestore = (backup: AddonOrderBackup) => {
-    setWorkingCloud(applyOrderToItems(baselineCloud, backup.urls));
+    setWorking(applyOrderToItems(baseline, backup.urls));
     setBackupsOpen(false);
     setNotice({
       tone: "info",
@@ -206,8 +132,7 @@ export function OrganizeAddonsPage({
     });
   };
 
-  const stepLabel = phase.kind === "saving" ? stepLabelFor(phase.step) : null;
-  const showBackups = !!authKey && phase.kind !== "loadError";
+  const showBackups = true;
 
   return (
     <div className="fixed inset-0 z-[140] flex flex-col bg-canvas animate-in fade-in duration-150">
@@ -263,7 +188,7 @@ export function OrganizeAddonsPage({
                   <BackupsPanel
                     refreshKey={backupsKey}
                     busy={saving}
-                    canBackup={workingCloud.length > 0 && phase.kind === "ready"}
+                    canBackup={working.length > 0 && phase.kind === "ready"}
                     onBackupNow={handleBackupNow}
                     onRestore={handleRestore}
                   />
@@ -271,7 +196,7 @@ export function OrganizeAddonsPage({
               )}
             </div>
           )}
-          {phase.kind !== "loadError" && (
+          {
             <div className="flex shrink-0 items-center gap-2.5">
               <button
                 onClick={onClose}
@@ -281,51 +206,29 @@ export function OrganizeAddonsPage({
                 {t("Cancel")}
               </button>
               <button
-                onClick={() => void handleSave()}
+                onClick={handleSave}
                 disabled={!dirty || phase.kind !== "ready"}
                 className={`flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 ${
                   dirty && !saving ? "ring-2 ring-accent/50" : ""
                 }`}
               >
-                {stepLabel ? (
+                {saving ? (
                   <>
                     <Loader2 size={15} className="animate-spin" />
-                    {stepLabel}
+                    {t("Saving…")}
                   </>
                 ) : (
                   t("Save order")
                 )}
               </button>
             </div>
-          )}
+          }
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1160px] px-6 py-8 sm:px-10">
-          {phase.kind === "loadError" ? (
-            <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-20 text-center">
-              <p className="text-[15px] leading-relaxed text-ink-muted">
-                {t(
-                  "Couldn't load your Stremio collection. Nothing can be reordered safely without it.",
-                )}
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => void load()}
-                  className="flex h-12 items-center rounded-full bg-ink px-6 text-[14.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
-                >
-                  {t("Try again")}
-                </button>
-                <button
-                  onClick={onClose}
-                  className="flex h-12 items-center rounded-full bg-elevated px-6 text-[14.5px] font-semibold text-ink-muted ring-1 ring-edge-soft transition-colors hover:bg-raised hover:text-ink"
-                >
-                  {t("Go back")}
-                </button>
-              </div>
-            </div>
-          ) : (
+          {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="flex min-w-0 flex-col gap-6">
                 {notice && (
@@ -341,7 +244,7 @@ export function OrganizeAddonsPage({
                       <div className="flex items-center gap-2.5">
                         {notice.retry && (
                           <button
-                            onClick={() => void handleSave()}
+                            onClick={handleSave}
                             className="rounded-full bg-raised px-4 py-1.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
                           >
                             {t("Retry")}
@@ -349,7 +252,7 @@ export function OrganizeAddonsPage({
                         )}
                         {notice.reload && (
                           <button
-                            onClick={() => void load()}
+                            onClick={load}
                             className="rounded-full bg-raised px-4 py-1.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
                           >
                             {t("Reload list")}
@@ -359,66 +262,27 @@ export function OrganizeAddonsPage({
                     )}
                   </div>
                 )}
-                {authKey ? (
-                  <>
-                    <SectionCard
-                      title={t("Your Stremio account")}
-                      sub={t("This order syncs to every Stremio app signed into this account.")}
-                      count={workingCloud.length}
-                    >
-                      {phase.kind === "loading" ? (
-                        <SkeletonRows />
-                      ) : workingCloud.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-edge-soft bg-canvas/30 px-5 py-4 text-[13.5px] text-ink-subtle">
-                          {t("No addons are synced to this account yet.")}
-                        </p>
-                      ) : (
-                        <OrganizeList
-                          entries={entriesOf(workingCloud)}
-                          drag={cloudDrag}
-                          busy={saving}
-                          onMove={(i, delta) => setWorkingCloud((l) => moveItem(l, i, i + delta))}
-                          onMoveTop={(i) => setWorkingCloud((l) => moveItem(l, i, 0))}
-                        />
-                      )}
-                    </SectionCard>
-                    {workingDevice.length > 0 && (
-                      <SectionCard
-                        title={t("On this device only")}
-                        sub={t(
-                          "These live in Harbor on this computer and never touch your account.",
-                        )}
-                        count={workingDevice.length}
-                      >
-                        <OrganizeList
-                          entries={entriesOf(workingDevice)}
-                          drag={deviceDrag}
-                          busy={saving}
-                          onMove={(i, delta) => setWorkingDevice((l) => moveItem(l, i, i + delta))}
-                          onMoveTop={(i) => setWorkingDevice((l) => moveItem(l, i, 0))}
-                        />
-                      </SectionCard>
-                    )}
-                  </>
-                ) : (
-                  <SectionCard
-                    title={t("On this device")}
-                    sub={t("Sign in to Stremio to organize the addons synced to your account.")}
-                    count={workingDevice.length}
-                  >
-                    {phase.kind === "loading" ? (
-                      <SkeletonRows />
-                    ) : (
-                      <OrganizeList
-                        entries={entriesOf(workingDevice)}
-                        drag={deviceDrag}
-                        busy={saving}
-                        onMove={(i, delta) => setWorkingDevice((l) => moveItem(l, i, i + delta))}
-                        onMoveTop={(i) => setWorkingDevice((l) => moveItem(l, i, 0))}
-                      />
-                    )}
-                  </SectionCard>
-                )}
+                <SectionCard
+                  title={t("Your addons")}
+                  sub={t("The order decides who answers first when you press Play.")}
+                  count={working.length}
+                >
+                  {phase.kind === "loading" ? (
+                    <SkeletonRows />
+                  ) : working.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-edge-soft bg-canvas/30 px-5 py-4 text-[13.5px] text-ink-subtle">
+                      {t("No addons installed yet.")}
+                    </p>
+                  ) : (
+                    <OrganizeList
+                      entries={entriesOf(working)}
+                      drag={drag}
+                      busy={saving}
+                      onMove={(i, delta) => setWorking((l) => moveItem(l, i, i + delta))}
+                      onMoveTop={(i) => setWorking((l) => moveItem(l, i, 0))}
+                    />
+                  )}
+                </SectionCard>
               </div>
 
               <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
@@ -442,16 +306,11 @@ export function OrganizeAddonsPage({
                         "The Backups button at the top keeps your last five orders. One click restores any of them.",
                       )}
                     </li>
-                    <li>
-                      {t(
-                        "Harbor double-checks with Stremio after saving, so a half-written order can't slip through.",
-                      )}
-                    </li>
                   </ul>
                 </section>
               </div>
             </div>
-          )}
+          }
         </div>
         <div className="h-10" />
       </div>

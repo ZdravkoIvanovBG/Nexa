@@ -46,7 +46,6 @@ export function DiagnosticsCard({ diag }: { diag: Diagnostics | null }) {
             <Pair k="TMDB key" v={diag.flags.hasTmdb ? "yes" : "no"} />
             <Pair k="RPDB key" v={diag.flags.hasRpdb ? "yes" : "no"} />
             <Pair k="Trakt" v={diag.flags.hasTrakt ? "yes" : "no"} />
-            <Pair k="Stremio" v={diag.flags.hasStremio ? "signed in" : "guest"} />
             <Pair k="Debrid keys" v={String(diag.flags.debridCount)} />
             <Pair k="Addons" v={String(diag.flags.addonCount)} />
             <Pair k="IPTV lists" v={String(diag.flags.iptvCount)} />

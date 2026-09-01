@@ -9,6 +9,7 @@ import {
   type DownloadItem,
 } from "@/lib/download/downloads-store";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 
 type T = (key: string) => string;
@@ -16,6 +17,7 @@ type T = (key: string) => string;
 export function DownloadsButton() {
   const downloads = useDownloads();
   const t = useT();
+  const { settings } = useSettings();
   const { openMeta, setView } = useView();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -67,15 +69,17 @@ export function DownloadsButton() {
         <div className="absolute end-0 top-[calc(100%+8px)] z-50 w-[20rem] overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] animate-popover-in">
           <div className="flex items-center justify-between px-4 pb-2 pt-3">
             <span className="text-[13.5px] font-semibold text-ink">{t("Downloads")}</span>
-            <button
-              onClick={() => {
-                setOpen(false);
-                setView("downloads");
-              }}
-              className="text-[12px] font-medium text-ink-subtle transition-colors hover:text-ink"
-            >
-              {t("See all")}
-            </button>
+            {settings.showDownloadsNav && (
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setView("downloads");
+                }}
+                className="text-[12px] font-medium text-ink-subtle transition-colors hover:text-ink"
+              >
+                {t("See all")}
+              </button>
+            )}
           </div>
           <div className="flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto px-2 pb-2">
             {downloads.slice(0, 8).map((d) => (

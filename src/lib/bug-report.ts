@@ -31,7 +31,6 @@ export type Diagnostics = {
     hasTmdb: boolean;
     hasRpdb: boolean;
     hasTrakt: boolean;
-    hasStremio: boolean;
     debridCount: number;
     addonCount: number;
     iptvCount: number;
@@ -74,7 +73,6 @@ export async function collectDiagnostics(opts: {
   hasTmdb: boolean;
   hasRpdb: boolean;
   hasTrakt: boolean;
-  hasStremio: boolean;
   debridCount: number;
   addonCount: number;
   iptvCount: number;

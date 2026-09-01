@@ -109,7 +109,6 @@ const CHROME_NAV = new Set<ChromeNavId>([
   "movies",
   "shows",
   "library",
-  "live",
   "discover",
   "calendar",
   "settings",

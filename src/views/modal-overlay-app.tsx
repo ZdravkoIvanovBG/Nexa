@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AuthProvider } from "@/lib/auth";
 import { SettingsProvider } from "@/lib/settings";
 import {
   modalOverlayClose,
@@ -21,11 +20,9 @@ export function ModalOverlayApp() {
   }, []);
 
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <ModalRouter />
-      </SettingsProvider>
-    </AuthProvider>
+    <SettingsProvider>
+      <ModalRouter />
+    </SettingsProvider>
   );
 }
 

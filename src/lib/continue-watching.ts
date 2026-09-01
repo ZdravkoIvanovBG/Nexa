@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/lib/auth";
 import { listLocalCw, subscribeLocalCw } from "@/lib/local-cw";
 import { cwSortKey, episodeFromVideoId, isCwMember, type LibraryItem } from "@/lib/library-item";
-import { library } from "@/lib/stremio";
 
 export type CwCard = {
   id: string;
@@ -16,7 +14,8 @@ export type CwCard = {
   progress: number;
 };
 
-function localToLibraryItem(e: ReturnType<typeof listLocalCw>[number]): LibraryItem {
+/** Present a local Continue Watching row as a LibraryItem. */
+export function localToLibraryItem(e: ReturnType<typeof listLocalCw>[number]): LibraryItem {
   return {
     _id: e.id,
     type: e.type,
@@ -28,7 +27,9 @@ function localToLibraryItem(e: ReturnType<typeof listLocalCw>[number]): LibraryI
       duration: e.durationMs,
       season: e.season,
       episode: e.episode,
-      video_id: e.videoId,
+      video_id:
+        e.videoId ??
+        (e.season != null && e.episode != null ? `${e.id}:${e.season}:${e.episode}` : undefined),
       flaggedWatched: e.durationMs > 0 && e.positionMs / e.durationMs >= 0.9 ? 1 : 0,
       lastWatched: new Date(e.t).toISOString(),
     },
@@ -71,31 +72,14 @@ function toCard(i: LibraryItem): CwCard {
 }
 
 export function useContinueWatching(excludeId?: string, limit = 12): CwCard[] {
-  const { authKey } = useAuth();
-  const [items, setItems] = useState<LibraryItem[]>([]);
   const [localVersion, setLocalVersion] = useState(0);
-
-  useEffect(() => {
-    if (!authKey) {
-      setItems([]);
-      return;
-    }
-    let cancelled = false;
-    library(authKey)
-      .then((li) => {
-        if (!cancelled) setItems(li);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey]);
 
   useEffect(() => subscribeLocalCw(() => setLocalVersion((v) => v + 1)), []);
 
   return useMemo(() => {
     void localVersion;
-    const merged = [...items, ...listLocalCw().map(localToLibraryItem)]
+    const merged = listLocalCw()
+      .map(localToLibraryItem)
       .filter((i) => (i.type as string) !== "other" && !i._id.startsWith("iptv:") && isCwMember(i))
       .map((i) => ({ i, k: cwSortKey(i) }))
       .sort((a, b) => b.k - a.k)
@@ -109,5 +93,5 @@ export function useContinueWatching(excludeId?: string, limit = 12): CwCard[] {
       if (out.length >= limit) break;
     }
     return out;
-  }, [items, localVersion, excludeId, limit]);
+  }, [localVersion, excludeId, limit]);
 }

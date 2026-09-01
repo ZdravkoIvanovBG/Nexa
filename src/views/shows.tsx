@@ -8,7 +8,8 @@ import { PeekHero } from "@/components/peek-hero";
 import { Row, ScrollRootContext } from "@/components/row";
 import { TmdbNudge } from "@/components/nudge";
 import { TopRankCard } from "@/components/top-rank-card";
-import { useAuth } from "@/lib/auth";
+import { localToLibraryItem } from "@/lib/continue-watching";
+import { listLocalCw, localCwVersion, subscribeLocalCw } from "@/lib/local-cw";
 import { topSeries, type Meta } from "@/lib/cinemeta";
 import { useCatalogPage, type CatalogRowSpec } from "@/lib/catalog-page";
 import { useT } from "@/lib/i18n";
@@ -16,7 +17,6 @@ import { publishResumeStates } from "@/lib/hover-preview/store";
 import { hasPageRowChanges, resetPageRows, usePageRows } from "@/lib/page-rows";
 import { useSettings } from "@/lib/settings";
 import { cwSortKey, isCwMember, type LibraryItem } from "@/lib/library-item";
-import { library } from "@/lib/stremio";
 import { clearLocalCw } from "@/lib/local-cw";
 import {
   dismissManualWatched,
@@ -75,12 +75,10 @@ function cinemetaShowSpecs(): CatalogRowSpec[] {
 
 export function Shows({ active = true }: { active?: boolean }) {
   const { settings } = useSettings();
-  const { authKey } = useAuth();
   const cwVersion = useCwDismissVersion();
   const { openGrid } = useView();
   const t = useT();
   const pageRows = usePageRows("shows");
-  const [items, setItems] = useState<LibraryItem[]>([]);
   const scrollRef = useRef<HTMLElement>(null);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
 
@@ -115,15 +113,11 @@ export function Shows({ active = true }: { active?: boolean }) {
     setScrollEl(el);
   }, []);
 
-  useEffect(() => {
-    if (!authKey) {
-      setItems([]);
-      return;
-    }
-    library(authKey)
-      .then(setItems)
-      .catch(() => {});
-  }, [authKey]);
+  const localCwVer = useSyncExternalStore(subscribeLocalCw, localCwVersion);
+  const items = useMemo<LibraryItem[]>(() => {
+    void localCwVer;
+    return listLocalCw().map(localToLibraryItem);
+  }, [localCwVer]);
 
   const continueWatching = useMemo(
     () =>
@@ -230,7 +224,7 @@ export function Shows({ active = true }: { active?: boolean }) {
                       ? dismissManualWatched(item._id)
                       : item.local
                         ? clearLocalCw(item._id)
-                        : dismissCw(item, authKey)
+                        : dismissCw(item)
                   }
                 />
               ))}

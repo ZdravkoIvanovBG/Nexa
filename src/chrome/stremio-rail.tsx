@@ -4,7 +4,6 @@ import { CatAvatar } from "@/components/icons/cat-avatar";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { NAV_ITEMS, applyNavCustomization } from "@/chrome/nav-items";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
 import { useProfiles } from "@/lib/profiles";
@@ -23,11 +22,12 @@ export function StremioRail() {
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
   const visible = items.filter((item) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   });
@@ -100,14 +100,12 @@ export function StremioRail() {
 }
 
 function RailAvatar() {
-  const { user } = useAuth();
   const { settings } = useSettings();
   const { activeProfile, openPicker } = useProfiles();
   const t = useT();
-  const src = activeProfile?.avatar ?? settings.harborAvatar ?? user?.avatar ?? null;
+  const src = activeProfile?.avatar ?? settings.harborAvatar ?? null;
   const ring = activeProfile?.color ? { boxShadow: `0 0 0 2px ${activeProfile.color}` } : undefined;
-  const label =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const label = activeProfile?.name ?? t("profile.fallback");
   return (
     <button
       type="button"

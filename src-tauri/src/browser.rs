@@ -105,10 +105,12 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
                 .inner_size(target_w, target_h)
                 .position(target_x, target_y)
                 .resizable(true)
-                .decorations(true)
-                .shadow(true)
-                .focused(true)
                 .initialization_script(&init_script);
+
+        #[cfg(desktop)]
+        {
+            builder = builder.decorations(true).shadow(true).focused(true);
+        }
 
         #[cfg(target_os = "linux")]
         {

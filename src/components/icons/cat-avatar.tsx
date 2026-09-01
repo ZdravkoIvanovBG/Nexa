@@ -1,9 +1,9 @@
-import stremioDefaultAvatar from "@/assets/stremio-default-avatar.png";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 export function CatAvatar({ className }: { className?: string }) {
   return (
     <img
-      src={stremioDefaultAvatar}
+      src={defaultAvatar}
       alt=""
       draggable={false}
       className={`${className ?? ""} object-cover`}

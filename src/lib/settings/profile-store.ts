@@ -12,6 +12,11 @@ export function sourceKeyFor(profileId: string, linked: boolean): string {
   return linked ? SHARED_KEY : profileKey(profileId);
 }
 
+/** The cloud sync scope for a settings source: "" for the shared blob, or the profile id. */
+export function settingsScopeOf(profileId: string, linked: boolean): string {
+  return linked ? "" : profileId;
+}
+
 export function serializeSettings(settings: Settings): string {
   const { backgroundImage: _drop, ...themeRest } = settings.theme;
   void _drop;

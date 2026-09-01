@@ -22,9 +22,8 @@ export function useTrackAutoload(params: {
   snap: PlayerSnapshot;
   engine: "html5" | "mpv";
   settings: Settings;
-  authKey: string | null;
 }) {
-  const { bridgeRef, src, snap, engine, settings, authKey } = params;
+  const { bridgeRef, src, snap, engine, settings } = params;
   const snapRef = useRef(snap);
   snapRef.current = snap;
 
@@ -68,24 +67,20 @@ export function useTrackAutoload(params: {
     };
   }, [src.imdbId, src.imdbIdVerified, src.meta.id, settings.tmdbKey]);
 
-  const [userAddonsState, setUserAddonsState] = useState<{
-    authKey: string | null;
-    addons: Addon[] | null;
-  }>({ authKey, addons: null });
-  const userAddons = userAddonsState.authKey === authKey ? userAddonsState.addons : null;
+  const [userAddons, setUserAddons] = useState<Addon[] | null>(null);
   useEffect(() => {
     let cancelled = false;
     gatherSubtitleAddons()
       .then((a) => {
-        if (!cancelled) setUserAddonsState({ authKey, addons: a });
+        if (!cancelled) setUserAddons(a);
       })
       .catch(() => {
-        if (!cancelled) setUserAddonsState({ authKey, addons: [] });
+        if (!cancelled) setUserAddons([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [authKey]);
+  }, []);
 
   const autoSubLoadKeyRef = useRef<string | null>(null);
   useEffect(() => {

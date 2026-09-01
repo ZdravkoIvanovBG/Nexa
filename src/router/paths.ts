@@ -7,7 +7,6 @@ export const VIEW_PATH: Record<View, string> = {
   movies: "/movies",
   shows: "/shows",
   kids: "/kids",
-  live: "/live",
   vod: "/vod",
   calendar: "/calendar",
   library: "/library",

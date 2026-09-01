@@ -2,7 +2,6 @@ import { Globe, Library, Star } from "lucide-react";
 import { useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import { fireWebhook, type WebhookKind, type WebhookPayload } from "@/lib/calendar";
-import { useAuth } from "@/lib/auth";
 import { useSettings, type Settings } from "@/lib/settings";
 import { useTrakt } from "@/lib/trakt/provider";
 import { useT } from "@/lib/i18n";
@@ -25,16 +24,16 @@ type SourceMeta = {
   label: string;
   description: string;
   icon: () => React.ReactNode;
-  prereq: (s: Settings, opts: { authKey: string | null; traktConnected: boolean }) => string | null;
+  prereq: (s: Settings, opts: { traktConnected: boolean }) => string | null;
 };
 
 const SOURCES: SourceMeta[] = [
   {
     id: "library",
     label: "My library",
-    description: "Episodes and movies from shows you've saved on Stremio.",
+    description: "Episodes and movies from your watchlist and what you're watching.",
     icon: () => <Library size={14} strokeWidth={2} />,
-    prereq: (_s, { authKey }) => (authKey ? null : "Sign in to Stremio first."),
+    prereq: () => null,
   },
   {
     id: "all",
@@ -70,7 +69,6 @@ const SOURCES: SourceMeta[] = [
 export function WebhooksPanel() {
   const t = useT();
   const { settings, update } = useSettings();
-  const { authKey } = useAuth();
   const { isConnected: traktConnected } = useTrakt();
   const [discordStatus, setDiscordStatus] = useState<FieldStatus>(idleStatus);
   const [telegramStatus, setTelegramStatus] = useState<FieldStatus>(idleStatus);
@@ -152,7 +150,7 @@ export function WebhooksPanel() {
       >
         <div className="flex flex-col gap-2">
           {SOURCES.map((s) => {
-            const blocker = s.prereq(settings, { authKey, traktConnected });
+            const blocker = s.prereq(settings, { traktConnected });
             const on = settings.webhooks.sources[s.id];
             return (
               <SourceToggle

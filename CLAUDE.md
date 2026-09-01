@@ -53,9 +53,25 @@ cast-receiver/        web cast receiver app (separate from the main frontend)
 - `views/` — one entry point per room/screen (home, movies, shows, anime, live, player, settings, ...), each usually paired with a same-named folder for its sub-components.
 - `chrome/` — the app shell around views: sidebar/topbar/dock variants per theme (nord, dracula, forest, royal, minui, stremio-rail), window controls.
 - `components/` — shared, reusable UI components used across views.
-- `lib/` — framework-independent business logic, one concern per module (addons, auth, cast, debrid, discover, i18n, player, streams, trakt, iptv/dvr, theme, together (watch parties), ...). Prefer putting logic here over inside components; components should stay thin.
+- `lib/` — framework-independent business logic, one concern per module (addons, cast, cloud (Supabase sync), debrid, discover, i18n, player, streams, trakt, iptv/dvr, theme, together (watch parties), ...). Prefer putting logic here over inside components; components should stay thin.
 - `lib/player/` — the mpv-facing player logic (bridge, subtitle handling, HDR/tonemap policy, SVP, anime4k modes). `lib/player/bridge.ts` defines the pure/derived state shape (`PlayerStatus`, loading-surface logic) kept in sync with native mpv events — see Playback rules in AGENTS.md.
 - `lib/streams/` — the frontend half of the stream ranking pipeline (see below).
+
+### Accounts and sync
+
+Harbor has **one** account system: a Supabase-backed Harbor account (`src/lib/cloud/`). It syncs
+watchlist, currently-watching, the tier list, and installed addons (`user_addons`), all scoped
+per profile. There is no Stremio account — the `api.strem.io` client, its auth flow and the
+library/collection endpoints were removed. Harbor still speaks the **Stremio addon protocol**
+(manifest URLs, catalogs, streams, `stremio://` install links) and unauthenticated services like
+Cinemeta; those are protocol and metadata, not an account.
+
+`cloud/queue.ts` is a durable, coalescing write queue keyed per table by `KEY_COLUMN`
+(`media_id`, or `addon_url` for addons). `cloud/mirror.ts` holds the module-level `owner` and
+`applyingRemote` singletons — every store's single `write()` chokepoint calls into it, so adding
+a second mirror module would drift on profile switch. `cloud/hydrate.ts` merges cloud rows into
+local stores on sign-in; addons merge local-first behind their own migration gate
+(`harbor.cloud.addons.migrated.v1.*`), deliberately separate from `harbor.cloud.migrated.v1.*`.
 
 ### The stream ranking pipeline (parse → trust → score → rank)
 

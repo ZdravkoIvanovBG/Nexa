@@ -1,11 +1,10 @@
-import { ArrowLeft, LogOut, Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
+import { ArrowLeft, Pencil, Search, Settings as SettingsIcon, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { TvModalClose } from "@/components/tv-modal-close";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
-import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { useTvFocusScope } from "@/lib/keyboard-navigation";
 import { useProfiles } from "@/lib/profiles";
@@ -26,7 +25,6 @@ export function FloatingTop() {
   const themePreset =
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
-  const liveActive = view === "live";
   const showBack = canGoBack && topKind !== "home" && topKind !== "picker";
   const onBack = () => (topKind === "picker" ? exitPlayback() : goBack());
 
@@ -62,7 +60,7 @@ export function FloatingTop() {
       <div className="flex flex-1" data-tauri-drag-region />
       <div className="pointer-events-auto flex shrink-0 items-center gap-1.5">
         <RecordingPill />
-        {!liveActive && <TogetherButton variant="ghost" popoverPlacement="below-right" />}
+        <TogetherButton variant="ghost" popoverPlacement="below-right" />
         <PillBtn label={t("common.search")} onClick={() => setSearchOpen(true)}>
           <Search size={16} strokeWidth={2.2} />
           <span className="hidden sm:inline">{t("common.search")}</span>
@@ -157,7 +155,6 @@ function ProfilePill({
   onOpenSettings: () => void;
   settingsActive: boolean;
 }) {
-  const { user, signOut } = useAuth();
   const { settings } = useSettings();
   const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
   const t = useT();
@@ -174,8 +171,7 @@ function ProfilePill({
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  const name =
-    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const name = activeProfile?.name ?? t("profile.fallback");
   const color = activeProfile?.color ?? "var(--color-accent)";
   const harborAvatar = settings.harborAvatar;
   const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
@@ -212,9 +208,6 @@ function ProfilePill({
           <TvModalClose onClose={() => setOpen(false)} label={t("common.close")} />
           <div className="border-b border-edge-soft px-4 py-3">
             <div className="text-[13.5px] font-semibold text-ink">{name}</div>
-            {user?.email && (
-              <div className="truncate text-[11.5px] text-ink-subtle">{user.email}</div>
-            )}
           </div>
           {otherProfiles.length > 0 && (
             <div className="flex flex-col gap-0.5 border-b border-edge-soft p-1.5">
@@ -274,18 +267,6 @@ function ProfilePill({
             >
               {t("nav.settings")}
             </MenuRow>
-            {user && (
-              <MenuRow
-                onClick={() => {
-                  signOut();
-                  setOpen(false);
-                }}
-                icon={<LogOut size={14} strokeWidth={2.2} />}
-                separator
-              >
-                {t("Sign out")}
-              </MenuRow>
-            )}
           </div>
         </div>
       )}

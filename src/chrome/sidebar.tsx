@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
+import { useProfiles } from "@/lib/profiles";
 import { preloadNavPage } from "@/lib/query";
 import { useSettings } from "@/lib/settings";
 import { useHarborLogo } from "@/lib/harbor-logo";
@@ -16,7 +16,7 @@ import { KidsSidebarDoodles } from "./kids-sidebar-doodles";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
 
 export function Sidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -186,19 +186,20 @@ function ScrollableNav({
   onPinNav: (v: View) => void;
 }) {
   const { settings } = useSettings();
-  const { authKey } = useAuth();
+  const { activeId: profileId } = useProfiles();
   const queryClient = useQueryClient();
   const kid = useActiveKid();
   const t = useT();
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
   const warm = (view: View) => {
-    preloadNavPage(queryClient, view, settings.tmdbKey, settings.region, authKey, settings);
+    preloadNavPage(queryClient, view, settings.tmdbKey, settings.region, profileId, settings);
   };
   const isItemVisible = (item: NavItem) => {
     if (kid) return item.view === "kids";
     if (item.view === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };

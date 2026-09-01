@@ -13,7 +13,7 @@ import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 
 const FROST = "#88c0d0";
 const RAIL = "linear-gradient(180deg, #8fbcbb59, #88c0d033 44%, #b48ead2b 78%, #81a1c14d)";
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
 
 export function NordSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -26,12 +26,13 @@ export function NordSidebar() {
   const isVisible = (item: NavItem) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization).filter(isVisible);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  }).filter(isVisible);
   const primary = items.filter((item) => PRIMARY_IDS.has(item.id));
   const collections = items.filter((item) => !PRIMARY_IDS.has(item.id));
 

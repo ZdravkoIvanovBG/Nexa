@@ -11,7 +11,7 @@ import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
 
 export function DraculaSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -21,14 +21,15 @@ export function DraculaSidebar() {
   const collapsed = settings.sidebarCollapsed;
   const [pinFor, setPinFor] = useState<View | null>(null);
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
   const primary = items.filter((i) => PRIMARY_IDS.has(i.id));
   const collections = items.filter((i) => !PRIMARY_IDS.has(i.id));
 
   const isVisible = (item: NavItem) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
   };

@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { metaPath, pathFromView, viewFromPath } from "./paths";
 
@@ -9,7 +10,9 @@ import { metaPath, pathFromView, viewFromPath } from "./paths";
  */
 export function ViewRouterSync() {
   const router = useRouter();
+  const { settings } = useSettings();
   const { view, setView, topKind, meta } = useView();
+  const downloadsEnabled = settings.showDownloadsNav;
   const metaId = meta?.id;
   const metaType = meta?.type;
   const lastPath = useRef(router.state.location.pathname);
@@ -54,6 +57,13 @@ export function ViewRouterSync() {
       }
     });
   }, [router, setView]);
+
+  // Downloads is opt-in. Bounce back to Home whichever way the view was reached
+  // (a /downloads URL, back/forward, or a programmatic setView) while it is off;
+  // the View → Router effect above then rewrites the path to "/".
+  useEffect(() => {
+    if (view === "downloads" && !downloadsEnabled) setView("home");
+  }, [view, downloadsEnabled, setView]);
 
   return null;
 }

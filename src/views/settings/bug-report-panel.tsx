@@ -2,7 +2,6 @@ import { AtSign, User } from "lucide-react";
 import { Github } from "@/components/icons/github-icon";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useAuth } from "@/lib/auth";
 import {
   collectDiagnostics,
   installBugReportErrorCapture,
@@ -22,7 +21,6 @@ import { SuccessCard } from "./bug-report/success-card";
 export function BugReportPanel() {
   const t = useT();
   const { settings } = useSettings();
-  const auth = useAuth();
   const [summary, setSummary] = useState("");
   const [severity, setSeverity] = useState<Severity>("normal");
   const [steps, setSteps] = useState("");
@@ -48,7 +46,6 @@ export function BugReportPanel() {
       hasTmdb: !!settings.tmdbKey,
       hasRpdb: !!settings.rpdbKey,
       hasTrakt: !!settings.traktAccessToken,
-      hasStremio: !!auth.authKey,
       debridCount: [
         settings.rdKey,
         settings.tbKey,
@@ -76,7 +73,6 @@ export function BugReportPanel() {
     settings.adKey,
     settings.pmKey,
     settings.dlKey,
-    auth.authKey,
   ]);
 
   const canSubmit = summary.trim().length >= 6 && diag && !submitting;

@@ -12,7 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
@@ -20,10 +20,7 @@ tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-deep-link = "2"
-tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
-tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
-tauri-plugin-window-state = "2"
 walkdir = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -31,7 +28,7 @@ tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io", "rt"] }
 axum = { version = "0.8", features = ["ws"] }
 reqwest = { version = "0.12", default-features = false, features = [
-  "native-tls",
+  "rustls-tls",
   "stream",
   "multipart",
   "json",
@@ -42,8 +39,6 @@ flate2 = "1"
 encoding_rs = "0.8"
 uuid = { version = "1", features = ["v4"] }
 futures-util = "0.3"
-libmpv2 = "4"
-libmpv2-sys = "4"
 libc = "0.2"
 base64 = "0.22"
 png = "0.17"
@@ -62,6 +57,17 @@ librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls
 url = "2"
 realfft = "3"
 hickory-resolver = "0.25"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-window-state = "2"
+tauri-plugin-updater = "2"
+# libmpv2-sys's build script emits an unconditional `cargo:rustc-link-lib=mpv`.
+# There is no Android/iOS libmpv in this repo, so linking fails on those targets.
+# Keep these desktop-only; `src/mpv_stub.rs` stands in for `src/mpv.rs` on mobile.
+libmpv2 = "4"
+libmpv2-sys = "4"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = [

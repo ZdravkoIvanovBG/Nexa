@@ -48,7 +48,7 @@
         "role": "Viewer"
       }
     ],
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "targets": ["app", "dmg", "deb", "rpm", "appimage", "nsis"],
     "externalBin": ["binaries/yt-dlp", "binaries/ffmpeg", "binaries/ffprobe"],
     "resources": {
@@ -111,8 +111,10 @@
       }
     },
     "updater": {
-      "endpoints": ["https://harbor.site/updates/latest.json"],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIyNjlEMjU4NjQ4OTM2MjAKUldRZ05vbGtXTkpwc3ZDQnlvZUYyL2VEWHgwODdJa2dkZ2xlNWk3emRWL1V0dXVrcUJlVmhCWEUK",
+      "endpoints": [
+        "https://github.com/ZdravkoIvanovBG/CustomHarbor/releases/latest/download/latest.json"
+      ],
+      "pubkey": "REPLACE_WITH_PUBKEY_FROM_tauri_signer_generate",
       "windows": {
         "installMode": "passive"
       }

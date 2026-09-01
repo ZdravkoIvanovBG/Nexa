@@ -12,6 +12,28 @@ export const SUPABASE_STORAGE_KEY = "harbor.supabase.auth";
 /** False when the build has no credentials -- callers degrade instead of throwing. */
 export const supabaseConfigured = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
 
+/**
+ * The user id in the persisted session blob, read synchronously.
+ *
+ * Two callers depend on knowing "is somebody signed in on this device?"
+ * before getSession() can resolve: the session provider, so a returning user
+ * renders the app on frame one instead of flashing the login screen, and the
+ * profile store, so it does not invent a placeholder profile in the moments
+ * before the real roster arrives from the cloud.
+ */
+export function readCachedSupabaseUserId(): string | null {
+  if (!supabaseConfigured) return null;
+  try {
+    const raw = localStorage.getItem(SUPABASE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { refresh_token?: unknown; user?: { id?: unknown } } | null;
+    if (typeof parsed?.refresh_token !== "string") return null;
+    return typeof parsed.user?.id === "string" ? parsed.user.id : null;
+  } catch {
+    return null;
+  }
+}
+
 // createClient throws on an empty URL, so a credential-less build gets a stub
 // whose every call rejects. Keeps `import { supabase }` safe at module scope.
 function createStub(): SupabaseClient {

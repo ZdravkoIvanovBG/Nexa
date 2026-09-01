@@ -14,7 +14,6 @@ import type { Meta } from "./cinemeta";
 import { profileFromMeta, trackEvent } from "./discover";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
-import type { SportsGame } from "./sports/espn";
 import { beginMarathonAdvance } from "./fullscreen-state";
 import { armRemoteStickyHop } from "./remote/session";
 
@@ -28,7 +27,6 @@ export type View =
   | "shows"
   | "kids"
   | "library"
-  | "live"
   | "vod"
   | "downloads";
 
@@ -112,7 +110,6 @@ export type Frame =
   | { kind: "shows" }
   | { kind: "kids" }
   | { kind: "library" }
-  | { kind: "live" }
   | { kind: "vod" }
   | { kind: "downloads" }
   | { kind: "service"; service: StreamingService }
@@ -139,8 +136,7 @@ export type Frame =
       intent?: "play" | "download";
       resume?: boolean;
     }
-  | { kind: "player"; src: PlayerSrc }
-  | { kind: "match-detail"; game: SportsGame };
+  | { kind: "player"; src: PlayerSrc };
 
 const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   home: "home",
@@ -154,7 +150,6 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   shows: "shows",
   kids: "kids",
   library: "library",
-  live: "live",
   vod: "vod",
   downloads: "downloads",
   service: null,
@@ -168,7 +163,6 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   award: null,
   picker: null,
   player: null,
-  "match-detail": null,
 };
 
 function rootViewFromStack(stack: Frame[]): View {
@@ -222,8 +216,6 @@ type ViewValue = {
   ) => void;
   episodeDetail: { seriesId: string; season: number; episode: number; seriesMeta?: Meta } | null;
   openEpisodeDetail: (seriesId: string, season: number, episode: number, seriesMeta?: Meta) => void;
-  matchDetailGame: SportsGame | null;
-  openMatchDetail: (game: SportsGame) => void;
   promoteMetaToRoot: () => void;
   personId: number | null;
   openPerson: (id: number | null) => void;
@@ -318,8 +310,6 @@ function frameKey(f: Frame): string {
       return "kids";
     case "library":
       return "library";
-    case "live":
-      return "live";
     case "vod":
       return "vod";
     case "downloads":
@@ -350,8 +340,6 @@ function frameKey(f: Frame): string {
     }
     case "player":
       return `player:${f.src.meta.id}:${f.src.url.slice(-32)}`;
-    case "match-detail":
-      return `match-detail:${f.game.id}`;
   }
 }
 
@@ -459,7 +447,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const gridFrame = lastOfKind(stack, "grid");
   const grid = gridFrame ? gridFrame.grid : null;
   const awardType = top.kind === "award" ? top.awardType : null;
-  const matchDetailGame = top.kind === "match-detail" ? top.game : null;
   const picker =
     top.kind === "picker"
       ? {
@@ -610,11 +597,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           rowScrollMem.current.clear();
           return [{ kind: "library" }];
         }
-        if (v === "live") {
-          scrollMem.current.clear();
-          rowScrollMem.current.clear();
-          return [{ kind: "live" }];
-        }
         if (v === "vod") {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
@@ -733,17 +715,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         const t = cur[cur.length - 1];
         if (t.kind === "collection" && t.id === id) return cur;
         return pushFrame(cur, { kind: "collection", id });
-      });
-    },
-    [setNavStack],
-  );
-
-  const openMatchDetail = useCallback(
-    (game: SportsGame) => {
-      setNavStack((cur) => {
-        const t = cur[cur.length - 1];
-        if (t.kind === "match-detail" && t.game.id === game.id) return cur;
-        return pushFrame(cur, { kind: "match-detail", game });
       });
     },
     [setNavStack],
@@ -938,8 +909,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openCollection,
       episodeDetail,
       openEpisodeDetail,
-      matchDetailGame,
-      openMatchDetail,
       openQueue,
       filter,
       openFilter,
@@ -990,8 +959,6 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openCollection,
       episodeDetail,
       openEpisodeDetail,
-      matchDetailGame,
-      openMatchDetail,
       filter,
       stackKinds,
       awardType,

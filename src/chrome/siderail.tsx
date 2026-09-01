@@ -16,7 +16,7 @@ import { close, minimize, toggleMaximize } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "live", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
 
 export function SideRail() {
   const { view, setView, chromeHidden } = useView();
@@ -40,7 +40,9 @@ export function SideRail() {
     (item.view !== "vod" || settings.showPlaylistsTab) &&
     (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]);
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
+    downloads: settings.showDownloadsNav,
+  });
   const primary = items.filter((item) => PRIMARY_IDS.has(item.id) && isVisible(item));
   const secondary = items.filter(
     (item) => item.id !== "settings" && !PRIMARY_IDS.has(item.id) && isVisible(item),
@@ -155,9 +157,7 @@ export function SideRail() {
               <Search size={15} strokeWidth={1.8} />
             </button>
             {!collapsed && <RecordingPill />}
-            {!collapsed && view !== "live" && (
-              <TogetherButton variant="ghost" popoverPlacement="above-left" />
-            )}
+            {!collapsed && <TogetherButton variant="ghost" popoverPlacement="above-left" />}
           </div>
           <div className={`flex ${collapsed ? "justify-center" : ""}`}>
             <CollapseToggle collapsed={collapsed} />

@@ -1,50 +1,22 @@
 import { useEffect } from "react";
-import { useAuth } from "@/lib/auth";
-import { library } from "@/lib/stremio";
 import { fetchWatchlist } from "@/lib/trakt/watchlist";
 import { useTrakt } from "@/lib/trakt/provider";
 import { fetchWatchlist as fetchSimklWatchlist } from "@/lib/simkl/watchlist";
 import { useSimkl } from "@/lib/simkl/provider";
 import { setWatchlistAggregate } from "@/lib/watchlist";
 
-const STORE: { stremio: string[]; trakt: string[]; simkl: string[] } = {
-  stremio: [],
+const STORE: { trakt: string[]; simkl: string[] } = {
   trakt: [],
   simkl: [],
 };
 
 function pushAggregate() {
-  setWatchlistAggregate([...STORE.stremio, ...STORE.trakt, ...STORE.simkl]);
+  setWatchlistAggregate([...STORE.trakt, ...STORE.simkl]);
 }
 
 export function WatchlistSync() {
-  const { authKey } = useAuth();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: simklConnected } = useSimkl();
-
-  useEffect(() => {
-    if (!authKey) {
-      STORE.stremio = [];
-      pushAggregate();
-      return;
-    }
-    let cancelled = false;
-    library(authKey)
-      .then((items) => {
-        if (cancelled) return;
-        const ids: string[] = [];
-        for (const it of items) {
-          if (it.removed) continue;
-          ids.push(it._id);
-        }
-        STORE.stremio = ids;
-        pushAggregate();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [authKey]);
 
   useEffect(() => {
     if (!traktConnected) {

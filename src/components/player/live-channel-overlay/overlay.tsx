@@ -1,7 +1,7 @@
 import { CalendarRange, List, Loader2, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CategorySidebar } from "@/views/live/category-sidebar";
-import { GuideView } from "@/views/live/guide/guide-view";
+import { CategorySidebar } from "@/components/live/category-sidebar";
+import { GuideView } from "@/components/live/guide/guide-view";
 import {
   filterChannelsByRegion,
   promoteTopChannelsToFront,
@@ -13,10 +13,10 @@ import { FAVORITES_GROUP_KEY, useFavorites } from "@/lib/iptv/favorites";
 import { getCachedPlaylist } from "@/lib/iptv/store";
 import { findCurrent } from "@/lib/iptv/xmltv";
 import type { IptvChannel, IptvPlaylistSource } from "@/lib/iptv/types";
-import { useAllPlaylists } from "@/views/live/hooks/use-all-playlists";
-import { useChannelFilter } from "@/views/live/hooks/use-channel-filter";
-import { useEpg, useNowTick } from "@/views/live/hooks/use-epg";
-import { useIptvPlaylist } from "@/views/live/hooks/use-iptv-playlist";
+import { useAllPlaylists } from "@/components/live/hooks/use-all-playlists";
+import { useChannelFilter } from "@/components/live/hooks/use-channel-filter";
+import { useEpg, useNowTick } from "@/components/live/hooks/use-epg";
+import { useIptvPlaylist } from "@/components/live/hooks/use-iptv-playlist";
 import { useScrollMemory } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";

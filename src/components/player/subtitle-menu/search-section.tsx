@@ -1,7 +1,6 @@
 import { Check, ChevronDown, Loader2, Plus, Save, Search as SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "@/components/flag";
-import { useAuth } from "@/lib/auth";
 import type { Addon } from "@/lib/addons";
 import { useContextMenu } from "@/lib/context-menu";
 import { gatherSubtitleAddons } from "@/lib/subtitles/addon-source";
@@ -18,7 +17,6 @@ export function SearchSection(props: SubtitleMenuProps) {
   const t = useT();
   const { metaImdbId, metaTitle, season, episode, onAddSubtitle } = props;
   const { settings } = useSettings();
-  const { authKey } = useAuth();
   const [query, setQuery] = useState(
     metaTitle && season != null && episode != null
       ? `${metaTitle} S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`
@@ -51,7 +49,7 @@ export function SearchSection(props: SubtitleMenuProps) {
     return () => {
       cancelled = true;
     };
-  }, [authKey]);
+  }, []);
 
   useEffect(() => {
     // Only run initial auto-search once, after addons are loaded
