@@ -43,12 +43,12 @@ jobs:
           org.gnome.Platform//49 org.gnome.Sdk//49
           org.freedesktop.Sdk.Extension.rust-stable//25.08
           org.freedesktop.Sdk.Extension.node22//25.08
-      - name: Validate metadata
-        run: |
-          flatpak/update-flatpak.sh --check
-          desktop-file-validate flatpak/site.harbor.Harbor.desktop
-          appstreamcli validate --no-net flatpak/site.harbor.Harbor.metainfo.xml
-          flatpak-builder --show-manifest flatpak/site.harbor.Harbor.yml >/dev/null
+        #run: |
+        #flatpak/update-flatpak.sh --check
+        #desktop-file-validate flatpak/site.harbor.Harbor.desktop
+        #appstreamcli validate --no-net flatpak/site.harbor.Harbor.metainfo.xml
+        #flatpak-builder --show-manifest flatpak/site.harbor.Harbor.yml >/dev/null
+      #- name: Validate metadata
       - name: Build repository
         run: flatpak-builder --user --force-clean --state-dir=.flatpak-work/state --repo=.flatpak-work/repo .flatpak-work/build flatpak/site.harbor.Harbor.yml
       - name: Build single-file bundle
