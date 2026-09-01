@@ -33,7 +33,7 @@ if [[ "${1:-}" == "--check" ]]; then
   exit 0
 fi
 
-read -r existing_version existing_date < <(python3 - "$metadata" <<'PY'
+read -r existing_version existing_date < <(python - "$metadata" <<'PY'
 import re, sys
 text = open(sys.argv[1], encoding="utf-8").read()
 match = re.search(r'<release version="([^"]+)" date="([^"]+)"\s*/>', text)
@@ -72,7 +72,7 @@ git -C "$tools_dir" fetch origin "$tools_commit"
 git -C "$tools_dir" checkout --detach "$tools_commit"
 
 if [[ ! -x "$venv/bin/flatpak-node-generator" ]]; then
-  python3 -m venv "$venv"
+  python -m venv "$venv"
   "$venv/bin/pip" install "$tools_dir/node" aiohttp PyYAML tomlkit
 fi
 
@@ -83,7 +83,7 @@ pnpm_sha256="$(sha256sum "$pnpm_archive" | cut -d' ' -f1)"
   --pnpm-store-version v11 \
   --node-sdk-extension org.freedesktop.Sdk.Extension.node22//25.08 \
   -o "$node_output"
-python3 - "$node_output" <<'PY'
+python - "$node_output" <<'PY'
 import json
 import sys
 
@@ -112,7 +112,7 @@ mv "$node_output" flatpak/node-sources.json
 mv "$cargo_output" flatpak/cargo-sources.json
 vp fmt flatpak/node-sources.json
 
-python3 - "$metadata" "$manifest" "$version" "$release_date" "$pnpm_version" "$pnpm_sha256" <<'PY'
+python - "$metadata" "$manifest" "$version" "$release_date" "$pnpm_version" "$pnpm_sha256" <<'PY'
 import os
 import re
 import sys
