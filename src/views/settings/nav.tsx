@@ -251,6 +251,17 @@ function IconSimkl(p: IconProps) {
   );
 }
 
+function IconGames(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path d="M6 8.5h12a4 4 0 0 1 4 4l.6 4.7a1.9 1.9 0 0 1-3.3 1.5L18 17H6l-1.3 1.7a1.9 1.9 0 0 1-3.3-1.5L2 12.5a4 4 0 0 1 4-4z" />
+      <path d="M7.2 11v3M5.7 12.5h3" strokeWidth="1.4" />
+      <circle cx="17" cy="11.5" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="14.8" cy="13.5" r="0.9" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
 function IconLetterboxd(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -552,6 +563,29 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         label: "Report a bug",
         Icon: IconBug,
         keywords: ["report", "feedback", "issue", "crash"],
+      },
+    ],
+  },
+  {
+    heading: "Games",
+    items: [
+      {
+        id: "games",
+        label: "Games",
+        Icon: IconGames,
+        keywords: [
+          "games",
+          "game launcher",
+          "steam",
+          "epic",
+          "achievements",
+          "steam web api key",
+          "steamid64",
+          "steamgriddb",
+          "cover art",
+          "artwork",
+          "playtime",
+        ],
       },
     ],
   },
@@ -5119,6 +5153,7 @@ export function SettingsNav({
     hotkeys: null,
     bug: null,
     advanced: null,
+    games: settings.steamApiKey && settings.steamId64 ? "steam" : null,
   };
 
   const renderItem = ({ id, label, Icon }: NavItem) => {

@@ -28,7 +28,8 @@ export type View =
   | "kids"
   | "library"
   | "vod"
-  | "downloads";
+  | "downloads"
+  | "games";
 
 export type PlayEpisode = {
   season: number;
@@ -112,6 +113,8 @@ export type Frame =
   | { kind: "library" }
   | { kind: "vod" }
   | { kind: "downloads" }
+  | { kind: "games" }
+  | { kind: "game-detail"; id: string }
   | { kind: "service"; service: StreamingService }
   | {
       kind: "meta";
@@ -152,6 +155,8 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   library: "library",
   vod: "vod",
   downloads: "downloads",
+  games: "games",
+  "game-detail": null,
   service: null,
   meta: null,
   "episode-detail": null,
@@ -190,7 +195,8 @@ export type SettingsSection =
   | "streaming"
   | "language"
   | "player"
-  | "advanced";
+  | "advanced"
+  | "games";
 
 type ViewValue = {
   view: View;
@@ -221,6 +227,8 @@ type ViewValue = {
   openPerson: (id: number | null) => void;
   collectionId: number | null;
   openCollection: (id: number) => void;
+  gameDetailId: string | null;
+  openGameDetail: (id: string | null) => void;
   openQueue: () => void;
   filter: MetaFilter | null;
   openFilter: (f: MetaFilter) => void;
@@ -314,6 +322,10 @@ function frameKey(f: Frame): string {
       return "vod";
     case "downloads":
       return "downloads";
+    case "games":
+      return "games";
+    case "game-detail":
+      return `game-detail:${f.id}`;
     case "service":
       return `service:${f.service}`;
     case "meta":
@@ -424,6 +436,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const personId = personFrame ? personFrame.id : null;
   const collectionFrame = lastOfKind(stack, "collection");
   const collectionId = collectionFrame ? collectionFrame.id : null;
+  const gameDetailId = top.kind === "game-detail" ? top.id : null;
   const episodeDetail = useMemo(
     () =>
       top.kind === "episode-detail"
@@ -577,6 +590,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           rowScrollMem.current.clear();
           return [{ kind: "downloads" }];
         }
+        if (v === "games") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "games" }];
+        }
         if (v === "movies") {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
@@ -715,6 +733,21 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         const t = cur[cur.length - 1];
         if (t.kind === "collection" && t.id === id) return cur;
         return pushFrame(cur, { kind: "collection", id });
+      });
+    },
+    [setNavStack],
+  );
+
+  const openGameDetail = useCallback(
+    (id: string | null) => {
+      if (id === null) {
+        setNavStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+        return;
+      }
+      setNavStack((cur) => {
+        const t = cur[cur.length - 1];
+        if (t.kind === "game-detail" && t.id === id) return cur;
+        return pushFrame(cur, { kind: "game-detail", id });
       });
     },
     [setNavStack],
@@ -907,6 +940,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openPerson,
       collectionId,
       openCollection,
+      gameDetailId,
+      openGameDetail,
       episodeDetail,
       openEpisodeDetail,
       openQueue,
@@ -957,6 +992,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       personId,
       collectionId,
       openCollection,
+      gameDetailId,
+      openGameDetail,
       episodeDetail,
       openEpisodeDetail,
       filter,

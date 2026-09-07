@@ -924,6 +924,21 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
   transform-origin: left bottom;
 }
 
+@keyframes harbor-games-blip {
+  0%,
+  60%,
+  100% {
+    opacity: 0.85;
+  }
+  30% {
+    opacity: 0.25;
+  }
+}
+
+.animate-games-blip {
+  animation: harbor-games-blip 1.4s var(--ease-out) infinite;
+}
+
 @keyframes harbor-calendar-date {
   0%,
   100% {

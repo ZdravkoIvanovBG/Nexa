@@ -10,6 +10,7 @@ import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { KidsIcon } from "@/components/icons/kids-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
+import { GamesIcon } from "@/components/icons/games-icon";
 import type { LockableTab } from "@/lib/parental";
 import type { View } from "@/lib/view";
 
@@ -24,6 +25,7 @@ export type NavItemId =
   | "library"
   | "downloads"
   | "addons"
+  | "games"
   | "settings";
 
 export type NavItem = {
@@ -97,6 +99,12 @@ export const NAV_ITEMS: NavItem[] = [
     render: (active) => <AddonsIcon active={active} />,
     view: "addons",
     parentalKey: "addons",
+  },
+  {
+    id: "games",
+    label: "nav.games",
+    render: (active) => <GamesIcon active={active} />,
+    view: "games",
   },
   {
     id: "settings",

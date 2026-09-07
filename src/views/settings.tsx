@@ -66,6 +66,9 @@ const StreamFiltersPanel = lazy(() =>
 const ThemePanel = lazy(() =>
   import("./settings/theme-panel").then((m) => ({ default: m.ThemePanel })),
 );
+const GamesPanel = lazy(() =>
+  import("./settings/games-panel").then((m) => ({ default: m.GamesPanel })),
+);
 const WebhooksPanel = lazy(() =>
   import("./settings/webhooks-panel").then((m) => ({ default: m.WebhooksPanel })),
 );
@@ -158,6 +161,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   advanced: {
     label: "Advanced",
     sub: "Diagnostics, manual overrides, things most users never need.",
+  },
+  games: {
+    label: "Games",
+    sub: "Steam achievements and launcher scanning for your Games library.",
   },
 };
 
@@ -357,6 +364,8 @@ export function Settings() {
               {active === "bug" && <BugReportPanel />}
 
               {active === "advanced" && <AdvancedPanel />}
+
+              {active === "games" && <GamesPanel />}
             </Suspense>
           </div>
         </main>

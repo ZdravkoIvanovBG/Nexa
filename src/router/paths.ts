@@ -12,6 +12,7 @@ export const VIEW_PATH: Record<View, string> = {
   library: "/library",
   downloads: "/downloads",
   addons: "/addons",
+  games: "/games",
   settings: "/settings",
 };
 

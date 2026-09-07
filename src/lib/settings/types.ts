@@ -76,6 +76,9 @@ export type Settings = {
   adKey: string;
   pmKey: string;
   dlKey: string;
+  steamApiKey: string;
+  steamId64: string;
+  steamgriddbApiKey: string;
   region: string;
   preferredLanguages: string[];
   requirePreferredLanguage: boolean;

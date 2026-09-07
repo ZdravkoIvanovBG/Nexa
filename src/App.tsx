@@ -73,6 +73,7 @@ import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
+import { GamesProvider } from "@/lib/games/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
 import { MediaFavoritesProvider } from "@/lib/media-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
@@ -118,6 +119,8 @@ const importShows = () => import("@/views/shows");
 const importLibrary = () => import("@/views/library");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
+const importGames = () => import("@/views/games");
+const importGameDetail = () => import("@/views/games/detail");
 const importOnboarding = () => import("@/components/onboarding");
 
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
@@ -149,6 +152,8 @@ const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
+const GamesView = lazy(() => importGames().then((m) => ({ default: m.GamesView })));
+const GameDetailView = lazy(() => importGameDetail().then((m) => ({ default: m.GameDetailView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -192,6 +197,7 @@ function useViewPreloader() {
       void importKids();
       void importVod();
       void importDownloads();
+      void importGames();
     }, 2800);
 
     return () => {
@@ -277,56 +283,58 @@ export function App({ onReady }: { onReady?: () => void }) {
                               <IdlePagePrefetch />
                               <SearchProvider>
                                 <DvrProvider>
-                                  <FavoritesProvider>
-                                    <MediaFavoritesProvider>
-                                      <LocalWatchlistProvider>
-                                        <ContextMenuProvider>
-                                          <TopRankModalProvider>
-                                            <HarborErrorBoundary>
-                                              <RemoteHostMount />
-                                              <ProfileIdentitySync />
-                                              <SettingsProfileBridge />
-                                              <TrackerProfileBridge />
-                                              <MiddleClickScroll />
-                                              <ThemeBackdrop />
-                                              <WatchlistSync />
-                                              <CloudSync />
-                                              <SettingsCloudSync />
-                                              <Shell onReady={onReady} />
-                                              <Suspense fallback={null}>
-                                                <OnboardingModal />
-                                              </Suspense>
-                                              <TogetherInviteToast />
-                                              <TogetherFloater />
-                                              <TogetherHostLeavingPrompt />
-                                              <TogetherSummonToast />
-                                              <TogetherParticipantLeftToast />
-                                              <ListToastHost />
-                                              <TogetherLeaveForLiveModal />
-                                              <TogetherLocationPublisher />
-                                              <DiscordPresence />
-                                              <ContextMenu />
-                                              <WatchLocalModal />
-                                              <LocalEpisodesModal />
-                                              <HoverPreview />
-                                              <CustomHoverCssMount />
-                                              <TopRankModal />
-                                              <ProfilePickerModal />
-                                              <CurfewGuard />
-                                              <CloudAuthGate />
-                                              <SearchOverlay />
-                                              <SearchHotkey />
-                                              <EmbedViewportRoot />
-                                              <InstallerViewportRoot />
-                                              <UpdateRoot />
-                                            </HarborErrorBoundary>
-                                            <ErrorView />
-                                            <DevErrorTrigger />
-                                          </TopRankModalProvider>
-                                        </ContextMenuProvider>
-                                      </LocalWatchlistProvider>
-                                    </MediaFavoritesProvider>
-                                  </FavoritesProvider>
+                                  <GamesProvider>
+                                    <FavoritesProvider>
+                                      <MediaFavoritesProvider>
+                                        <LocalWatchlistProvider>
+                                          <ContextMenuProvider>
+                                            <TopRankModalProvider>
+                                              <HarborErrorBoundary>
+                                                <RemoteHostMount />
+                                                <ProfileIdentitySync />
+                                                <SettingsProfileBridge />
+                                                <TrackerProfileBridge />
+                                                <MiddleClickScroll />
+                                                <ThemeBackdrop />
+                                                <WatchlistSync />
+                                                <CloudSync />
+                                                <SettingsCloudSync />
+                                                <Shell onReady={onReady} />
+                                                <Suspense fallback={null}>
+                                                  <OnboardingModal />
+                                                </Suspense>
+                                                <TogetherInviteToast />
+                                                <TogetherFloater />
+                                                <TogetherHostLeavingPrompt />
+                                                <TogetherSummonToast />
+                                                <TogetherParticipantLeftToast />
+                                                <ListToastHost />
+                                                <TogetherLeaveForLiveModal />
+                                                <TogetherLocationPublisher />
+                                                <DiscordPresence />
+                                                <ContextMenu />
+                                                <WatchLocalModal />
+                                                <LocalEpisodesModal />
+                                                <HoverPreview />
+                                                <CustomHoverCssMount />
+                                                <TopRankModal />
+                                                <ProfilePickerModal />
+                                                <CurfewGuard />
+                                                <CloudAuthGate />
+                                                <SearchOverlay />
+                                                <SearchHotkey />
+                                                <EmbedViewportRoot />
+                                                <InstallerViewportRoot />
+                                                <UpdateRoot />
+                                              </HarborErrorBoundary>
+                                              <ErrorView />
+                                              <DevErrorTrigger />
+                                            </TopRankModalProvider>
+                                          </ContextMenuProvider>
+                                        </LocalWatchlistProvider>
+                                      </MediaFavoritesProvider>
+                                    </FavoritesProvider>
+                                  </GamesProvider>
                                 </DvrProvider>
                               </SearchProvider>
                             </ViewProvider>
@@ -468,6 +476,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     episodeDetail,
     personId,
     collectionId,
+    gameDetailId,
     filter,
     grid,
     awardType,
@@ -882,6 +891,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const libraryTop = topKind === "library";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const gamesTop = topKind === "games";
+  const gameDetailTop = topKind === "game-detail";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -927,6 +938,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const libraryAlive = useIdleEvict(libraryTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const gamesAlive = useIdleEvict(gamesTop);
+  const gameDetailAlive = useKeepAlive(gameDetailTop, gameDetailId !== null);
 
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
@@ -1036,6 +1049,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
             </Suspense>
           </div>
         )}
+        {gamesAlive && (
+          <div className={layer(gamesTop)}>
+            <Suspense fallback={null}>
+              <GamesView active={gamesTop} />
+            </Suspense>
+          </div>
+        )}
         {queueAlive && (
           <div className={layer(queueTop)}>
             <Suspense fallback={null}>
@@ -1081,6 +1101,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(collectionTop)}>
             <Suspense fallback={null}>
               <CollectionView key={`collection-${collectionId}`} collectionId={collectionId} />
+            </Suspense>
+          </div>
+        )}
+        {gameDetailAlive && gameDetailId !== null && (
+          <div className={layer(gameDetailTop)}>
+            <Suspense fallback={null}>
+              <GameDetailView key={`game-${gameDetailId}`} gameId={gameDetailId} />
             </Suspense>
           </div>
         )}

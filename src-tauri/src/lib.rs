@@ -12,16 +12,11 @@ mod download;
 mod dvr;
 mod fonts;
 mod fullscreen;
+mod games;
 mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
 mod modal_overlay;
-// libmpv is desktop-only (see Cargo.toml). `mpv_stub` mirrors `mpv`'s command
-// surface so the `generate_handler![]` list below stays identical everywhere.
-#[cfg(desktop)]
-mod mpv;
-#[cfg(not(desktop))]
-#[path = "mpv_stub.rs"]
 mod mpv;
 mod proc_mem;
 mod roku;
@@ -407,7 +402,6 @@ fn harbor_take_pending_file() -> Option<String> {
     pending_open_file().lock().ok().and_then(|mut g| g.take())
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     {
         let args: Vec<String> = std::env::args().skip(1).collect();
@@ -486,7 +480,8 @@ pub fn run() {
         .manage(dvr_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
-        .manage(download::DownloadState::new());
+        .manage(download::DownloadState::new())
+        .manage(games::process::GamesProcessState::new());
 
     #[cfg(target_os = "macos")]
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
@@ -514,6 +509,15 @@ pub fn run() {
         .setup(move |app| {
             if let Err(error) = crash_report::initialize(app.handle()) {
                 eprintln!("[harbor::crash-report] initialization failed: {error}");
+            }
+            {
+                use tauri::Manager;
+                match games::store::GamesDbState::new(app.handle()) {
+                    Ok(state) => {
+                        app.manage(state);
+                    }
+                    Err(e) => eprintln!("[harbor::games] db init failed: {e}"),
+                }
             }
             #[cfg(windows)]
             {
@@ -767,6 +771,23 @@ pub fn run() {
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::harbor_scan_folder,
+            games::store::games_add_manual,
+            games::store::games_library_list,
+            games::store::games_get,
+            games::store::games_update,
+            games::store::games_delete,
+            games::store::games_sessions_list,
+            games::store::games_achievements_list,
+            games::process::games_launch,
+            games::process::games_active_sessions,
+            games::process::games_force_stop,
+            games::steam::games_steam_scan_start,
+            games::epic::games_epic_scan_start,
+            games::artwork::games_artwork_search,
+            games::artwork::games_artwork_fetch,
+            games::artwork::games_artwork_upload,
+            games::achievements::games_steam_verify_key,
+            games::achievements::games_achievements_fetch,
             #[cfg(desktop)]
             tray::tray_set_prefs,
             #[cfg(desktop)]
