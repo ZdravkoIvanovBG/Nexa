@@ -11,6 +11,7 @@ export const LoaderLayer = memo(function LoaderLayer({
   snap,
   isLocalSrc,
   forceShow,
+  suppressed,
   onCancel,
   engineStats,
   onShowingChange,
@@ -21,6 +22,11 @@ export const LoaderLayer = memo(function LoaderLayer({
   snap: PlayerSnapshot;
   isLocalSrc: boolean;
   forceShow: boolean;
+  // Hides the loader entirely regardless of forceShow -- used once
+  // auto-play has halted and opened the source switcher, so a still-loading
+  // spinner (e.g. from a timeout-based halt with no mpv error code) can't
+  // render on top of it.
+  suppressed?: boolean;
   onCancel: () => void;
   engineStats: ComponentProps<typeof CinematicPlayerLoader>["engineStats"];
   onShowingChange: (showing: boolean) => void;
@@ -35,6 +41,7 @@ export const LoaderLayer = memo(function LoaderLayer({
           src={src}
           snap={snap}
           forceShow={forceShow}
+          suppressed={suppressed}
           onCancel={onCancel}
           engineStats={engineStats}
           onShowingChange={onShowingChange}

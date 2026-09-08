@@ -59,6 +59,9 @@ export type PlayerOverlayLayersProps = {
   isLocalSrc: boolean;
   swappingEp: boolean;
   swapResolvingKey: string | null;
+  // True once auto-play has halted and handed off to the source switcher --
+  // suppresses the loader so it can't cover the switcher underneath.
+  autoHalted: boolean;
   closePlayer: () => void;
   cancelToPicker: () => void;
   engineStats: Loader["engineStats"];
@@ -227,6 +230,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         snap={p.snap}
         isLocalSrc={p.isLocalSrc}
         forceShow={p.swappingEp || p.swapResolvingKey != null}
+        suppressed={p.autoHalted}
         onCancel={p.cancelToPicker}
         engineStats={p.engineStats}
         onShowingChange={p.setLoaderShowing}

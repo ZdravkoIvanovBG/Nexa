@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 import { loadInstalled, replaceInstalled, type InstalledAddon } from "@/lib/addon-store";
 import {
   ensureLocalProfile,
-  isDisposableDefaultProfile,
+  isAutoCreatedProfile,
   loadProfiles,
   replaceProfiles,
   type Profile,
@@ -332,16 +332,15 @@ async function pullProfiles(userId: string): Promise<ProfileRow[]> {
 }
 
 /**
- * At most one profile may be `isPrimary`. The disposable-default filter above
- * only catches a local profile that was never touched -- one that already
- * picked up a custom avatar or color before the user ever signed in survives
- * the merge, and since it has its own locally-generated id it lands beside
- * the cloud's real primary rather than replacing it, leaving two. Without
- * this, that second "primary" both wins the roster's `.find(isPrimary)`
- * lookup ahead of the real one (map insertion order puts local entries
- * first) -- which is what actually reset the active profile's name and
- * surfaced first-run UI on a login that should have adopted the existing
- * account -- and gets uploaded to the cloud as a rival primary.
+ * At most one profile may be `isPrimary`. isAutoCreatedProfile() above is now
+ * the primary defense (provenance, not a name/avatar guess), so this is a
+ * safety net rather than the main fix: if a rival local primary ever does
+ * slip through -- a profile stored before the autoCreated flag existed and
+ * personalised enough to dodge the legacy heuristic too, say -- it would
+ * otherwise win the roster's `.find(isPrimary)` lookup ahead of the real one
+ * (map insertion order puts local entries first), reset the active profile's
+ * name, surface first-run UI on a login that should have adopted the
+ * existing account, and get uploaded as a second primary.
  */
 function enforceSinglePrimary(entries: Profile[], rows: ProfileRow[]): Profile[] {
   const primaries = entries.filter((p) => p.isPrimary);
@@ -374,7 +373,12 @@ export async function hydrateProfilesFromCloud(userId: string): Promise<void> {
   // Once the account has a roster, a placeholder this device invented while
   // it had none is not an offline edit worth keeping -- drop it rather than
   // merging it in beside the real profiles (and uploading it forever).
-  const local = rows.length > 0 ? stored.filter((p) => !isDisposableDefaultProfile(p)) : stored;
+  // isAutoCreatedProfile() checks provenance (the autoCreated flag) rather
+  // than guessing from name/avatar, so a device-invented default that picked
+  // up a Together display name or a settings avatar before sign-in is still
+  // caught -- see makeDefaultPrimary() and the comment on enforceSinglePrimary
+  // below for the bug this used to let through.
+  const local = rows.length > 0 ? stored.filter((p) => !isAutoCreatedProfile(p)) : stored;
 
   const result = merge<Profile, ProfileRow>(
     firstRun ? local : [],
@@ -401,9 +405,11 @@ export async function hydrateProfilesFromCloud(userId: string): Promise<void> {
   replaceProfiles(entries);
   primeProfilesSnapshot(entries);
   // Cloud had nothing and neither did we: this account has no roster yet, so
-  // seed one now that waiting has been proven pointless. Mirrors, so it
-  // becomes the account's first profile rather than a device-local orphan.
-  ensureLocalProfile();
+  // seed one now that waiting has been proven pointless. This is the ONLY
+  // place `adopt: true` is used -- the pull above genuinely succeeded and
+  // came back empty, so this really is the account's first profile, and it
+  // mirrors rather than living only on this device.
+  ensureLocalProfile({ adopt: true });
 
   for (const p of uploads) {
     enqueue({

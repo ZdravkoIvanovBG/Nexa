@@ -104,12 +104,17 @@ export function searchLiveTvChannels(
   return hits;
 }
 
-export async function searchCinemeta(query: string): Promise<{ movies: Meta[]; series: Meta[] }> {
+export async function searchCinemeta(
+  query: string,
+  signal?: AbortSignal,
+): Promise<{ movies: Meta[]; series: Meta[] }> {
   const q = query.trim();
   if (q.length < 2) return { movies: [], series: [] };
   const fetchKind = async (type: "movie" | "series"): Promise<Meta[]> => {
     const url = `https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(q)}.json`;
-    const res = await safeFetch(url, { headers: { Accept: "application/json" } }).catch(() => null);
+    const res = await safeFetch(url, { headers: { Accept: "application/json" }, signal }).catch(
+      () => null,
+    );
     if (!res || !res.ok) return [];
     const data = (await res.json().catch(() => null)) as { metas?: Meta[] } | null;
     return (data?.metas ?? []).slice(0, 12);
@@ -121,7 +126,7 @@ export async function searchCinemeta(query: string): Promise<{ movies: Meta[]; s
 export async function searchAll(
   key: string,
   query: string,
-  opts: { excludeGenres?: number[] } = {},
+  opts: { excludeGenres?: number[]; signal?: AbortSignal } = {},
 ): Promise<SearchResults> {
   const trimmed = query.trim();
   if (!trimmed) {
@@ -151,10 +156,12 @@ export async function searchAll(
     };
   }
 
-  const data = await get<Page<MultiItem>>(key, "search/multi", {
-    query: trimmed,
-    include_adult: "false",
-  });
+  const data = await get<Page<MultiItem>>(
+    key,
+    "search/multi",
+    { query: trimmed, include_adult: "false" },
+    opts.signal,
+  );
   if (!data) {
     return {
       query: trimmed,
@@ -224,7 +231,7 @@ export async function searchAll(
     trimmed.split(/\s+/).length >= 2 &&
     (people.length >= 1 || (movies.length === 0 && series.length === 0))
   ) {
-    await fuzzyPeopleFallback(key, trimmed, people);
+    await fuzzyPeopleFallback(key, trimmed, people, opts.signal);
   }
 
   people.sort((a, b) => b.popularity - a.popularity);
@@ -288,17 +295,19 @@ async function fuzzyPeopleFallback(
   key: string,
   query: string,
   people: SearchPerson[],
+  signal?: AbortSignal,
 ): Promise<void> {
   const token = query
     .split(/\s+/)
     .filter((t) => t.length >= 3)
     .sort((a, b) => b.length - a.length)[0];
   if (!token) return;
-  const extra = await get<Page<RawPerson>>(key, "search/person", {
-    query: token,
-    include_adult: "false",
-    language: "en-US",
-  }).catch(() => null);
+  const extra = await get<Page<RawPerson>>(
+    key,
+    "search/person",
+    { query: token, include_adult: "false", language: "en-US" },
+    signal,
+  ).catch(() => null);
   if (!extra?.results) return;
   const seen = new Set(people.map((p) => p.id));
   for (const r of extra.results) {

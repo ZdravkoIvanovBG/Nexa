@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { setItemWithRecovery, freeStorageSpace } from "@/lib/storage-recovery";
 import { applyRemote, mirrorTracking } from "@/lib/cloud/mirror";
 import { ALL_TIERS, normalizeTier, type Tier } from "@/lib/tracking-tiers";
+import { sortWatchingEntries } from "@/lib/watching-order";
 
 const KEY = "harbor.librarytracking.v1";
 const subs = new Set<() => void>();
@@ -180,7 +181,7 @@ export function subscribeTracking(fn: () => void): () => void {
 }
 
 export function readWatching(): WatchingEntry[] {
-  return read().watching.sort((a, b) => b.updatedAt - a.updatedAt);
+  return sortWatchingEntries(read().watching);
 }
 
 export function readWatched(): WatchedEntry[] {
@@ -216,7 +217,10 @@ export function addToWatching(input: TrackedInput, seed?: WatchingSeed): void {
     addedAt: now,
     updatedAt: now,
   });
-  store.watched = store.watched.filter((e) => e.id !== input.id);
+  // Intentionally does NOT clear a matching `watched` entry: a series can be
+  // both "watched" (previous seasons, keeping its Tier List spot) and
+  // "currently watching" (a new season) at the same time. See markWatched()
+  // for the inverse case.
   write(store);
 }
 
@@ -246,15 +250,16 @@ export function markWatched(input: TrackedInput): void {
   const store = read();
   const existing = store.watched.find((e) => e.id === input.id);
   const fromWatching = store.watching.find((e) => e.id === input.id);
-  store.watching = store.watching.filter((e) => e.id !== input.id);
   if (existing) {
     if (!existing.name) existing.name = input.name ?? fromWatching?.name ?? "";
     if (!existing.poster) existing.poster = input.poster ?? fromWatching?.poster;
+    store.watching = store.watching.filter((e) => e.id !== input.id);
     write(store);
     return;
   }
   if (store.watched.length >= MAX_WATCHED) {
-    write(store);
+    // At the cap, nothing is added to the Tier List -- leave it in Currently
+    // Watching too, rather than silently dropping it from both lists.
     return;
   }
   store.watched.push({
@@ -266,6 +271,11 @@ export function markWatched(input: TrackedInput): void {
     order: nextOrder(store.watched, "unranked"),
     finishedAt: Date.now(),
   });
+  // Finishing a show moves it out of the active queue but preserves its
+  // (now freshly-created) Tier List entry -- see addToWatching() for how a
+  // later new season can re-add it to Currently Watching without touching
+  // this entry.
+  store.watching = store.watching.filter((e) => e.id !== input.id);
   write(store);
 }
 

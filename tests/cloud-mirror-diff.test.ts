@@ -101,3 +101,22 @@ test("removeFromWatched deletes only that tier row", () => {
   assert.deepEqual(d.upserts, []);
   assert.deepEqual(d.deletes, ["b"]);
 });
+
+test("an item becoming both watching and watched syncs to both tables, with no cross deletes", () => {
+  // A returning series: previously finished (already in `watched`, tiered),
+  // now a new season starts and it's added back to `watching`. currently_watching
+  // and tier_list are independent Supabase tables, so this must produce an
+  // upsert into `watching` and NOT a delete from `watched` -- see
+  // addToWatching() in library-tracking.ts.
+  const prevWatching: WatchingEntry[] = [];
+  const nextWatching = [watching("tt1")];
+  const watchingDelta = diffWatching(prevWatching, nextWatching);
+  assert.deepEqual(ids(watchingDelta.upserts), ["tt1"]);
+  assert.deepEqual(watchingDelta.deletes, []);
+
+  const prevWatched = [watched("tt1", { tier: "S", order: 0 })];
+  const nextWatched = [watched("tt1", { tier: "S", order: 0 })];
+  const watchedDelta = diffWatched(prevWatched, nextWatched);
+  assert.deepEqual(watchedDelta.upserts, []);
+  assert.deepEqual(watchedDelta.deletes, []);
+});

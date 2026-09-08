@@ -14,9 +14,32 @@ function addonOrigin(addon: Addon) {
   };
 }
 
+/**
+ * Fetch dedupe shared between searchAddonCatalogs and searchAddonGroups for
+ * one query: both hit largely the same `/catalog/{type}/{id}/search=…` URLs,
+ * so without this every search fired the request twice (up to ~48 in
+ * flight). Callers create one map per query and pass it to both functions.
+ */
+export type AddonFetchCache = Map<string, Promise<{ metas?: Meta[] }>>;
+
+function fetchCatalogJson(
+  url: string,
+  cache: AddonFetchCache | undefined,
+  signal: AbortSignal | undefined,
+): Promise<{ metas?: Meta[] }> {
+  const cached = cache?.get(url);
+  if (cached) return cached;
+  const promise = safeFetch(url, { headers: { Accept: "application/json" }, signal }).then((res) =>
+    res.ok ? (res.json() as Promise<{ metas?: Meta[] }>) : { metas: [] },
+  );
+  cache?.set(url, promise);
+  return promise;
+}
+
 export async function searchAddonCatalogs(
   addons: Addon[],
   query: string,
+  opts: { signal?: AbortSignal; fetchCache?: AddonFetchCache } = {},
 ): Promise<{ movies: Meta[]; series: Meta[] }> {
   const q = query.trim();
   if (!q) return { movies: [], series: [] };
@@ -38,9 +61,7 @@ export async function searchAddonCatalogs(
     targets.map(async ({ addon, type, id }) => {
       const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
       const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
-      const res = await safeFetch(url, { headers: { Accept: "application/json" } });
-      if (!res.ok) return { type, metas: [] as Meta[], origin: addonOrigin(addon) };
-      const json = (await res.json()) as { metas?: Meta[] };
+      const json = await fetchCatalogJson(url, opts.fetchCache, opts.signal);
       return {
         type,
         metas: (json.metas ?? []).slice(0, CAP_PER_CATALOG),
@@ -89,6 +110,7 @@ const CAP_PER_GROUP = 14;
 export async function searchAddonGroups(
   addons: Addon[],
   query: string,
+  opts: { signal?: AbortSignal; fetchCache?: AddonFetchCache } = {},
 ): Promise<AddonResultGroup[]> {
   const q = query.trim();
   if (!q) return [];
@@ -115,9 +137,7 @@ export async function searchAddonGroups(
       const settled = await Promise.allSettled(
         targets.map(async ({ type, id }) => {
           const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
-          const res = await safeFetch(url, { headers: { Accept: "application/json" } });
-          if (!res.ok) return [] as Meta[];
-          const json = (await res.json()) as { metas?: Meta[] };
+          const json = await fetchCatalogJson(url, opts.fetchCache, opts.signal);
           return (json.metas ?? []).slice(0, CAP_PER_GROUP);
         }),
       );

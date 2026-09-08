@@ -25,6 +25,7 @@ export function CinematicPlayerLoader({
   src,
   snap,
   forceShow,
+  suppressed,
   onCancel,
   engineStats,
   onShowingChange,
@@ -32,6 +33,7 @@ export function CinematicPlayerLoader({
   src: PlayerSrc;
   snap: PlayerSnapshot;
   forceShow?: boolean;
+  suppressed?: boolean;
   onCancel: () => void;
   engineStats?: EngineStats | null;
   onShowingChange?: (showing: boolean) => void;
@@ -63,7 +65,8 @@ export function CinematicPlayerLoader({
     everPlayedRef.current = false;
   }
   const showing =
-    forceShow || (!everPlayedRef.current && snap.errorCode == null && snap.status !== "ended");
+    !suppressed &&
+    (forceShow || (!everPlayedRef.current && snap.errorCode == null && snap.status !== "ended"));
   const done = !showing && snap.errorCode == null;
   const [mounted, setMounted] = useState(showing);
   useEffect(() => {
