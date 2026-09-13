@@ -15,6 +15,7 @@ import { TopDock } from "@/chrome/topdock";
 import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
+import { proactiveStorageCleanup } from "@/lib/storage-recovery";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
 import { exitWindowFullscreenOnPlayerClose, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloud } from "@/lib/cloud/mirror";
@@ -41,7 +42,6 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
-import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -651,6 +651,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
   useEffect(() => startMaintenance(), []);
 
   useEffect(() => {
+    proactiveStorageCleanup();
+  }, []);
+
+  useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
         const localBack = new Event("harbor:local-back", { cancelable: true });
@@ -1168,7 +1172,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
         </Suspense>
       )}
       <CustomCodeMount />
-      <WebhookLoopMount />
       <MemoryHud />
       {!player && <OfflineBanner />}
     </div>

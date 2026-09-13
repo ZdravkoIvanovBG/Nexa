@@ -1,5 +1,4 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
-import { setItemWithRecovery } from "@/lib/storage-recovery";
 import { tmdbImdbId } from "./providers/tmdb";
 
 const TMDB = "https://api.themoviedb.org/3";
@@ -452,82 +451,6 @@ export function monthRangeISO(year: number, month: number): { start: string; end
   return { start, end };
 }
 
-export type WebhookPayload = {
-  text: string;
-  items: CalendarItem[];
-};
-
-export type WebhookKind = "discord" | "telegram";
-
-export async function fireWebhook(
-  kind: WebhookKind,
-  url: string,
-  payload: WebhookPayload,
-): Promise<{ ok: boolean; status: number; error: string | null }> {
-  if (!url) return { ok: false, status: 0, error: "No URL configured" };
-  try {
-    if (kind === "discord") {
-      const embeds = payload.items.slice(0, 10).map((i) => ({
-        title: i.name,
-        description: (i.overview || "").slice(0, 240),
-        url: i.imdbId ? `https://www.imdb.com/title/${i.imdbId}` : undefined,
-        color: i.type === "movie" ? 0xd3a064 : 0x7eb6ff,
-        thumbnail: i.poster ? { url: i.poster } : undefined,
-        fields: [
-          {
-            name: "Release",
-            value: i.releaseDate,
-            inline: true,
-          },
-          {
-            name: "Type",
-            value: i.type === "movie" ? "Movie" : "TV",
-            inline: true,
-          },
-        ],
-      }));
-      const body: Record<string, unknown> = {
-        username: "Harbor",
-        content: payload.text,
-      };
-      if (embeds.length > 0) body.embeds = embeds;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      return { ok: res.ok, status: res.status, error: res.ok ? null : `HTTP ${res.status}` };
-    }
-    if (kind === "telegram") {
-      const lines = [payload.text, ""];
-      for (const i of payload.items.slice(0, 8)) {
-        const tag = i.type === "movie" ? "🎬" : "📺";
-        lines.push(`${tag} *${i.name}* · ${i.releaseDate}`);
-      }
-      const text = lines.join("\n");
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: extractTelegramChatId(url),
-          text,
-          parse_mode: "Markdown",
-          disable_web_page_preview: true,
-        }),
-      });
-      return { ok: res.ok, status: res.status, error: res.ok ? null : `HTTP ${res.status}` };
-    }
-    return { ok: false, status: 0, error: "Unknown webhook kind" };
-  } catch (e) {
-    return { ok: false, status: 0, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-function extractTelegramChatId(url: string): string {
-  const m = url.match(/[?&]chat_id=([^&]+)/);
-  return m ? decodeURIComponent(m[1]) : "";
-}
-
 export async function resolveImdbForItem(
   apiKey: string,
   item: CalendarItem,
@@ -536,42 +459,4 @@ export async function resolveImdbForItem(
   const m = item.id.match(/^tmdb:(movie|tv):(\d+)$/);
   if (!m) return null;
   return tmdbImdbId(apiKey, item.id);
-}
-
-const LAST_FIRED_KEY = "harbor.calendar.webhook.last";
-const LAST_FIRED_MAX_ENTRIES = 5000;
-
-export type LastFiredState = Record<string, string>;
-
-export function loadLastFiredState(): LastFiredState {
-  try {
-    const raw = localStorage.getItem(LAST_FIRED_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    return parsed as LastFiredState;
-  } catch {
-    return {};
-  }
-}
-
-function capState(state: LastFiredState): LastFiredState {
-  const keys = Object.keys(state);
-  if (keys.length <= LAST_FIRED_MAX_ENTRIES) return state;
-  const sorted = keys.sort((a, b) => {
-    const byDate = state[b].localeCompare(state[a]);
-    if (byDate !== 0) return byDate;
-    if (a.startsWith("__baseline__") !== b.startsWith("__baseline__")) {
-      return a.startsWith("__baseline__") ? -1 : 1;
-    }
-    return a.localeCompare(b);
-  });
-  const kept: LastFiredState = {};
-  for (const k of sorted.slice(0, LAST_FIRED_MAX_ENTRIES)) kept[k] = state[k];
-  return kept;
-}
-
-export function saveLastFiredState(state: LastFiredState): boolean {
-  const capped = capState(state);
-  return setItemWithRecovery(LAST_FIRED_KEY, JSON.stringify(capped));
 }

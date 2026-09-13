@@ -727,8 +727,8 @@ export function PlayPicker({
           rawCount={rawCount}
           strictMode={strictMode}
           forceShowAll={forceShowAll}
-          onOpenLibrarySettings={() => openSettings("library")}
-          onOpenStreamingSettings={() => openSettings("streaming")}
+          onOpenLibrarySettings={() => openSettings("apiKeys")}
+          onOpenStreamingSettings={() => openSettings("apiKeys")}
           onShowAll={() => setForceShowAll(true)}
           onSearchWider={() => {
             if (strictMode) setStrictMode(false);

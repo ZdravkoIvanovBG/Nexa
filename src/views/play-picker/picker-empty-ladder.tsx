@@ -70,8 +70,8 @@ export function PickerEmptyLadder({
     <>
       {addonsSettled && (!streamIds || streamIds.length === 0) && (
         <EmptyState
-          message="Harbor couldn't resolve a usable ID for this title. Add a TMDB key in Library settings or sign in to Stremio to broaden coverage."
-          action={{ label: "Open Library settings", onClick: onOpenLibrarySettings }}
+          message="Harbor couldn't resolve a usable ID for this title. Add a TMDB key in API Keys or sign in to Stremio to broaden coverage."
+          action={{ label: "Open API Keys", onClick: onOpenLibrarySettings }}
         />
       )}
       {addonsSettled &&

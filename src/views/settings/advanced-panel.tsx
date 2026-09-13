@@ -1,4 +1,4 @@
-import { Check, Download, FlaskConical, Link2, Loader2, Lock, RotateCw } from "lucide-react";
+import { Check, Download, Link2, Loader2, Lock, RotateCw } from "lucide-react";
 import { Github } from "@/components/icons/github-icon";
 import { useEffect, useState, type ReactNode } from "react";
 import cornerSvg from "@/assets/corner.svg";
@@ -14,18 +14,15 @@ import { useSettings } from "@/lib/settings";
 import { openUrl } from "@/lib/window";
 import {
   checkForUpdate,
-  clearStagedUpdate,
   openUpdatePanel,
   updateAvailable,
   useUpdate,
 } from "@/lib/updater/use-update";
 import { BetaTag } from "@/components/beta-tag";
-import { IS_BETA_BUILD } from "@/lib/build-info";
-import { isLinuxDesktop } from "@/lib/platform";
+import { IS_BETA_BUILD, useInstalledVersion } from "@/lib/build-info";
+import { isWindowsDesktop } from "@/lib/platform";
 import { BackupRow } from "./backup-row";
 import { SettingsRecoverRow } from "./settings-recover-row";
-import { BuildFeedback } from "./build-feedback";
-import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { Section } from "./shared";
@@ -34,12 +31,12 @@ import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { useT } from "@/lib/i18n";
 
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-const DOWNLOAD_URL = "https://harbor.site/download";
-const SOURCE_URL = "https://github.com/harborstremio/harbor";
+const DOWNLOAD_URL = "https://github.com/ZdravkoIvanovBG/CustomHarbor/releases/latest";
+const SOURCE_URL = "https://github.com/ZdravkoIvanovBG/CustomHarbor";
 
 export function AdvancedPanel() {
   const t = useT();
-  const supportsInAppUpdates = isTauri && !isLinuxDesktop();
+  const supportsInAppUpdates = isTauri && isWindowsDesktop();
   return (
     <>
       {!isTauri && <WebBuildBanner />}
@@ -48,14 +45,11 @@ export function AdvancedPanel() {
         <Section
           title={t("Updates")}
           subtitle={t(
-            "Harbor checks harbor.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.",
+            "Harbor checks GitHub Releases for new versions and installs them in place. Every update is signature-verified before it installs. Nothing installs until you choose to, and a dismissed update never nags you again.",
           )}
         >
           <div className="flex flex-col gap-2.5">
             <UpdatesRow />
-            <BetaChannelRow />
-            <RollbackRow />
-            <BuildFeedback />
           </div>
         </Section>
       )}
@@ -240,49 +234,6 @@ function WebBuildBanner() {
   );
 }
 
-function BetaChannelRow() {
-  const t = useT();
-  const { settings, update } = useSettings();
-  const on = settings.betaUpdates;
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
-      <span
-        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-          on ? "bg-accent/15 text-accent" : "bg-raised text-ink-subtle"
-        }`}
-      >
-        <FlaskConical size={15} strokeWidth={2.2} />
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-[14px] font-medium text-ink">{t("Get beta updates")}</span>
-        <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-          {t(
-            "Receive early builds with the newest fixes before they reach the stable release. Betas can be rough around the edges; switch this off to return to stable at the next update.",
-          )}
-        </p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        onClick={() => {
-          if (on) clearStagedUpdate();
-          update({ betaUpdates: !on });
-        }}
-        className={`mt-1 flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition-colors ${
-          on ? "bg-accent" : "bg-raised"
-        }`}
-      >
-        <span
-          className={`h-5 w-5 rounded-full bg-canvas shadow-sm transition-transform ${
-            on ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
 function StremioDeeplinkRow() {
   const t = useT();
   const { settings, update } = useSettings();
@@ -343,11 +294,12 @@ function StremioDeeplinkRow() {
 function UpdatesRow() {
   const t = useT();
   const u = useUpdate();
+  const installedVersion = useInstalledVersion();
   const ready = updateAvailable(u);
   const busy = u.status === "checking";
   const status =
     u.status === "checking"
-      ? t("Checking harbor.site for a newer build.")
+      ? t("Checking GitHub Releases for a newer build.")
       : u.status === "downloading"
         ? t("Downloading {pct}%", { pct: Math.round(u.progress * 100) })
         : u.status === "downloaded"
@@ -374,7 +326,7 @@ function UpdatesRow() {
         <span className="flex items-center gap-2 text-[14px] font-medium text-ink">
           {ready && u.version
             ? t("Harbor {version} available", { version: u.version })
-            : `Harbor ${__APP_VERSION__}`}
+            : `Harbor ${installedVersion}`}
           <BetaTag />
         </span>
         <span className="text-[12.5px] text-ink-subtle">{status}</span>
@@ -542,14 +494,14 @@ function OmdbBudgetRow() {
     return (
       <ActionRow
         label={tr("OMDB daily budget")}
-        sub={tr("Save an OMDB key in Library & metadata to enable rating fetches.")}
+        sub={tr("Save an OMDB key in API Keys to enable rating fetches.")}
         disabled
       />
     );
   }
 
   const sub = budget.keyInvalid
-    ? tr("Key rejected. Check it on Library & metadata.")
+    ? tr("Key rejected. Check it on the API Keys tab.")
     : tr("{used} / {limit} requests today.", { used: budget.used, limit: budget.limit }) +
       (budget.exhausted ? " " + tr("Budget exhausted, resets at midnight UTC.") : "");
 
@@ -612,11 +564,12 @@ function OnboardingRow() {
 
 function AboutRow() {
   const t = useT();
+  const installedVersion = useInstalledVersion();
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5 text-[13px] text-ink-muted">
       <InfoLine
         label={t("Version")}
-        value={`${__APP_VERSION__}${IS_BETA_BUILD ? " (Beta)" : ""}`}
+        value={`${installedVersion}${IS_BETA_BUILD ? " (Beta)" : ""}`}
       />
       <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
       <InfoLine label={t("Bug reports")} value="bugs@harbor.site" />

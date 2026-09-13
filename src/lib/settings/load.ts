@@ -206,14 +206,6 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
         DEFAULT.seekForwardStepSec,
       ),
       theme: sanitizeTheme(parsed.theme),
-      webhooks: {
-        ...DEFAULT.webhooks,
-        ...(parsed.webhooks ?? {}),
-        sources: {
-          ...DEFAULT.webhooks.sources,
-          ...(parsed.webhooks?.sources ?? {}),
-        },
-      },
       customCalendar: {
         ...DEFAULT.customCalendar,
         ...(parsed.customCalendar ?? {}),
@@ -232,7 +224,6 @@ export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
           tv: parsed.customCalendar?.mediaTypes?.tv !== false,
         },
       },
-      webhookRules: Array.isArray(parsed.webhookRules) ? parsed.webhookRules : [],
       customStreamFilters: Array.isArray(parsed.customStreamFilters)
         ? parsed.customStreamFilters
         : DEFAULT.customStreamFilters,

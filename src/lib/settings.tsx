@@ -32,13 +32,7 @@ import {
 } from "./settings/profile-store";
 import type { Settings, StreamingService } from "./settings/types";
 
-export type {
-  ContentCategory,
-  ContentFilters,
-  Settings,
-  StreamingService,
-  WebhookTrigger,
-} from "./settings/types";
+export type { ContentCategory, ContentFilters, Settings, StreamingService } from "./settings/types";
 
 type SettingsValue = {
   settings: Settings;

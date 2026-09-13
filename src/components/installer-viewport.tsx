@@ -24,7 +24,9 @@ export function openInstallerViewport(url: string, title?: string, logo?: string
       invoke("browser_open", { url }).catch(() => {
         window.__harborInstallerOpen = true;
         window.dispatchEvent(
-          new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo } }),
+          new CustomEvent<InstallerDetail>(EVENT, {
+            detail: { url, title, logo },
+          }),
         );
       });
     });
@@ -105,7 +107,10 @@ function InstallerViewport({
 
   useEffect(() => {
     if (isAdultText(url, title))
-      return pushActivityHint({ details: "Setting up an addon", state: "Addon setup" });
+      return pushActivityHint({
+        details: "Setting up an addon",
+        state: "Addon setup",
+      });
     const label =
       phase.kind === "installing"
         ? `Installing ${title}`
@@ -113,7 +118,12 @@ function InstallerViewport({
           ? `Installed ${title}`
           : `Configuring ${title}`;
     const largeImage = logo && logo.startsWith("https://") ? logo : undefined;
-    return pushActivityHint({ details: label, state: "Addon setup", largeImage, largeText: title });
+    return pushActivityHint({
+      details: label,
+      state: "Addon setup",
+      largeImage,
+      largeText: title,
+    });
   }, [url, title, logo, phase.kind]);
 
   useEffect(() => {
@@ -125,13 +135,34 @@ function InstallerViewport({
   }, [onClose, phase.kind]);
 
   useEffect(() => {
+    // Backstop for servers that simply hang and never fire onLoad at all.
     blockedTimerRef.current = window.setTimeout(() => {
       if (!loaded) setBlocked(true);
-    }, 7500);
+    }, 4000);
     return () => {
       if (blockedTimerRef.current !== null) window.clearTimeout(blockedTimerRef.current);
     };
   }, [loaded, reloadKey]);
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleIframeLoad = useCallback(() => {
+    // A frame refused by CSP/X-Frame-Options still fires "load" -- but on the
+    // browser's own about:blank error document, not the target page. Reading
+    // contentWindow.location.href throws SecurityError for a genuinely loaded
+    // cross-origin page (the success case); it only returns cleanly, as
+    // "about:blank", when the navigation was blocked.
+    try {
+      const href = iframeRef.current?.contentWindow?.location.href;
+      if (href === "about:blank") {
+        setBlocked(true);
+        return;
+      }
+    } catch {
+      // SecurityError -- cross-origin page loaded successfully.
+    }
+    setLoaded(true);
+  }, []);
 
   const submit = useCallback(
     async (rawUrl: string) => {
@@ -151,7 +182,9 @@ function InstallerViewport({
         const id = result.addon.manifest.id;
         setPhase({ kind: "success", name, logo });
         window.dispatchEvent(
-          new CustomEvent("harbor:addons-changed", { detail: { id, installed: true } }),
+          new CustomEvent("harbor:addons-changed", {
+            detail: { id, installed: true },
+          }),
         );
         successTimerRef.current = window.setTimeout(() => {
           onClose();
@@ -307,24 +340,45 @@ function InstallerViewport({
               {title} won&apos;t load inside Harbor.
             </p>
             <p className="max-w-[44ch] text-[12.5px] text-ink-muted">
-              Open it in a regular browser, set it up there, then come back and paste the install
-              link below.
+              Some addon sites block being embedded. Set it up in a separate window, then come back
+              and paste the install link below.
             </p>
-            <button
-              type="button"
-              onClick={() => openUrl(url)}
-              className="flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
-            >
-              <ArrowUpRight size={13} strokeWidth={2.4} />
-              Open in browser
-            </button>
+            <div className="flex items-center gap-2">
+              {!isWeb() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void import("@tauri-apps/api/core").then(({ invoke }) => {
+                      invoke("browser_open", { url }).catch(() => openUrl(url));
+                    });
+                  }}
+                  className="flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-semibold text-canvas transition-opacity hover:opacity-90"
+                >
+                  <ArrowUpRight size={13} strokeWidth={2.4} />
+                  Open in Harbor
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => openUrl(url)}
+                className={`flex h-10 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors ${
+                  isWeb()
+                    ? "bg-ink text-canvas hover:opacity-90"
+                    : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink"
+                }`}
+              >
+                <ArrowUpRight size={13} strokeWidth={2.4} />
+                Open in browser
+              </button>
+            </div>
           </div>
         )}
         <iframe
           key={reloadKey}
+          ref={iframeRef}
           src={url}
           title={title}
-          onLoad={() => setLoaded(true)}
+          onLoad={handleIframeLoad}
           className="h-full w-full border-0"
           referrerPolicy="strict-origin-when-cross-origin"
           allow="clipboard-write; clipboard-read; encrypted-media; fullscreen"

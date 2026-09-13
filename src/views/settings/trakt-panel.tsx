@@ -57,17 +57,12 @@ export function TraktPanel() {
   return (
     <>
       {!isConnected ? (
-        <section className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-elevated/40 p-7">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[19px] font-medium tracking-tight text-ink">
-              {t("Connect your Trakt account")}
-            </h2>
-            <p className="text-[13.5px] leading-relaxed text-ink-muted">
-              {t(
-                "Track everything you watch, see your watchlist, and get personalized recommendations on Harbor's home page. Free at trakt.tv.",
-              )}
-            </p>
-          </div>
+        <Section
+          title={t("Trakt")}
+          subtitle={t(
+            "Track everything you watch, see your watchlist, and get personalized recommendations on Harbor's home page. Free at trakt.tv.",
+          )}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setModalOpen(true)}
@@ -84,10 +79,10 @@ export function TraktPanel() {
               <ExternalLink size={13} strokeWidth={2.2} />
             </button>
           </div>
-        </section>
+        </Section>
       ) : (
         <Section
-          title={t("Connected")}
+          title={t("Trakt")}
           subtitle={t("Harbor will scrobble your playback to Trakt and sync your watchlist.")}
         >
           <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">

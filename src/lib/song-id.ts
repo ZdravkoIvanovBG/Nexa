@@ -46,7 +46,7 @@ export async function identifyNowPlaying(apiToken: string): Promise<void> {
     toast({
       kind: "error",
       title: "Missing AudD key",
-      body: "Add it in Settings → Library & metadata",
+      body: "Add it in Settings → API Keys",
     });
     return;
   }

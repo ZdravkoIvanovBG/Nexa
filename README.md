@@ -101,7 +101,7 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
 - **Stream switcher** In player switcher allows you to hop streams if you get served a bad one without leaving the player and going through results again. Play next episodes with ease on the player UI controls or in a full "Next Up" sidebar.
 - **Casts across the room.** DLNA/UPnP, Chromecast, AirPlay, and Roku via a bundled Rust cast server and a web cast receiver.
-- **Integrations.** Feature rich discord rich presence integration, webhooks for Discord and Telegram, Trakt Sync, and native integrations to TMDB, OMDB, Fanart.Tv, RPDB and more! Customize the location and what badges are shown.
+- **Integrations.** Feature rich discord rich presence integration, Trakt Sync, and native integrations to TMDB, OMDB, Fanart.Tv, RPDB and more! Customize the location and what badges are shown.
 - **And much more! (seriously this would be very long)**
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -127,7 +127,7 @@ Native libmpv with HDR passthrough, skip intro/outro, Anime4K shaders, custom su
 
 **Make it yours**
 
-Eleven themes and seven font pairings, a live theme studio for every token, custom backgrounds and fonts, import/export, and a theme library. Multiple profiles, parental PIN gates, 40+ regions, webhooks, and Telegram+Discord notifications.
+Eleven themes and seven font pairings, a live theme studio for every token, custom backgrounds and fonts, import/export, and a theme library. Multiple profiles, parental PIN gates, and 40+ regions.
 
 </td>
 </tr>
@@ -342,7 +342,6 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 - **Bandwidth** controls including a cap and a built in speed test.
 - **Library repair** for your Stremio library.
 - **Region awareness** across 40+ regions, driving theatrical windows and streaming availability.
-- **Notifications** via Discord webhooks and Telegram, with calendar sources, media type filters, and per rule routing.
 - **Discord Rich Presence** with poster art, live progress, and watch party size.
 - **A built in bug reporter** that auto collects safe diagnostics (no secret values).
 - **Backup and restore** of your full setup to a `.harbx` file.

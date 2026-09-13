@@ -1,4 +1,4 @@
-export type Tab = "discover" | "browse" | "installed";
+export type Tab = "discover" | "browse" | "installed" | "bundles";
 
 export type ToastInfo = {
   kind: "ok" | "error";

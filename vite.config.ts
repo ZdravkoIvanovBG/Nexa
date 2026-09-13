@@ -3,8 +3,6 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import pkg from "./package.json" with { type: "json" };
 
-declare const process: { env: Record<string, string | undefined> };
-
 export default defineConfig({
   staged: {
     "*.{cjs,css,html,js,json,jsonc,jsx,md,mdx,mjs,scss,toml,ts,tsx,yaml,yml}": "vp fmt",
@@ -37,7 +35,6 @@ export default defineConfig({
   clearScreen: false,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
-    __IS_BETA_BUILD__: JSON.stringify(process.env.HARBOR_CHANNEL !== "stable"),
   },
   server: {
     port: 1420,

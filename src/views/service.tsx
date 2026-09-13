@@ -517,7 +517,7 @@ function EmptyState({ hasKey }: { hasKey: boolean }) {
     <div className="rounded-2xl border border-dashed border-edge px-6 py-16 text-center text-[14px] text-ink-muted">
       {hasKey
         ? t("Nothing matched this filter. Try another category or change your region in Settings.")
-        : t("Add a TMDB key in Settings → Library to power this view.")}
+        : t("Add a TMDB key in Settings → API Keys to power this view.")}
     </div>
   );
 }

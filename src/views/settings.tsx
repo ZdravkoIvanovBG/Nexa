@@ -1,10 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import type { LibraryKey } from "./settings/library-panel";
+import type { DebridKey, LibraryKey } from "./settings/api-keys-panel";
 import { SettingsNav } from "./settings/nav";
 import { SettingsJumpBar } from "./settings/jump-bar";
 import type { RelayMode } from "./settings/relay-section";
-import { SettingsActiveContext, type SectionId } from "./settings/shared";
-import type { DebridKey } from "./settings/streaming-sources-panel";
+import { resolveSettingsSection, SettingsActiveContext, type SectionId } from "./settings/shared";
 import { BackToTop } from "@/components/back-to-top";
 import { resetOmdbBudget } from "@/lib/providers/omdb";
 import { useSettings } from "@/lib/settings";
@@ -27,6 +26,9 @@ const BugReportPanel = lazy(() =>
 );
 const LibraryPanel = lazy(() =>
   import("./settings/library-panel").then((m) => ({ default: m.LibraryPanel })),
+);
+const ApiKeysPanel = lazy(() =>
+  import("./settings/api-keys-panel").then((m) => ({ default: m.ApiKeysPanel })),
 );
 const LanguagePanel = lazy(() =>
   import("./settings/language-panel").then((m) => ({ default: m.LanguagePanel })),
@@ -66,9 +68,6 @@ const StreamFiltersPanel = lazy(() =>
 const ThemePanel = lazy(() =>
   import("./settings/theme-panel").then((m) => ({ default: m.ThemePanel })),
 );
-const WebhooksPanel = lazy(() =>
-  import("./settings/webhooks-panel").then((m) => ({ default: m.WebhooksPanel })),
-);
 
 function SettingsPanelFallback() {
   return (
@@ -87,37 +86,25 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   library: {
     label: "Library & metadata",
-    sub: "Optional keys that unlock TMDB rails, baked-in poster ratings, fanart, and TVDB episode data.",
+    sub: "Ratings, score badges, and how Home, spoilers, and episode cards look. Add TMDB, OMDb, and other keys in the API Keys tab.",
   },
-  trakt: {
-    label: "Trakt",
-    sub: "Connect your Trakt account to scrobble playback, sync your watchlist, and pull personalized recommendations.",
+  apiKeys: {
+    label: "API Keys",
+    sub: "Debrid tokens and metadata & ratings keys, all in one place. Keys stay local to this device.",
   },
-  simkl: {
-    label: "Simkl",
-    sub: "Connect your Simkl account to mark what you finish as watched and sync your plan-to-watch list across apps.",
-  },
-  letterboxd: {
-    label: "Letterboxd",
-    sub: "Bring your Letterboxd watchlist, diary, liked films and lists into Harbor via the Stremboxd bridge.",
-  },
-  relay: {
-    label: "Harbor Relay",
-    sub: IS_WEB
-      ? "Watch Together rooms are routed through Harbor's hosted relay."
-      : "A Cloudflare Worker on your own account that hosts your Watch Together rooms.",
+  tracking: {
+    label: "Tracking",
+    sub: "Trakt, Simkl, and Letterboxd — scrobbling, watchlists, and ratings from the tracking services you use.",
   },
   streaming: {
     label: "Streaming sources",
-    sub: "How Harbor finds and resolves playable streams. Debrid keys and addon installs live here.",
+    sub: "How Harbor finds and resolves playable streams. Debrid keys live in the API Keys tab.",
   },
-  streamFilters: {
-    label: "Stream filters",
-    sub: "Build a named filter once, then apply it in the source picker to trim a noisy stream list down to exactly what you want.",
-  },
-  p2p: {
-    label: "P2P & servers",
-    sub: "Harbor's built-in peer-to-peer engine, its self-test, and any streaming server you point it at.",
+  network: {
+    label: "Network & Relay",
+    sub: IS_WEB
+      ? "Harbor Relay routes Watch Together through Harbor's hosted relay. Plus the built-in P2P engine, streaming servers, and your saved stream filters."
+      : "A Cloudflare Worker on your own account hosts your Watch Together rooms. Plus the built-in P2P engine, streaming servers, and your saved stream filters.",
   },
   language: {
     label: "Languages",
@@ -147,10 +134,6 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
     label: "Theme & appearance",
     sub: "Color presets, custom backgrounds, and the font pair Harbor renders in.",
   },
-  webhooks: {
-    label: "Webhooks",
-    sub: "Push upcoming releases to Discord or Telegram. Pick which calendars feed the notifications.",
-  },
   bug: {
     label: "Report a bug",
     sub: "Send a bug report straight to the Harbor team. Screenshots and screen recordings welcome.",
@@ -179,7 +162,8 @@ export function Settings() {
   const [savedKey, setSavedKey] = useState<SavedKey | null>(null);
   const { settingsSectionRequest } = useView();
   const [active, setActive] = useState<SectionId>(
-    (settingsSectionRequest.section as SectionId | null) ?? "account",
+    resolveSettingsSection((settingsSectionRequest.section as string | null) ?? "account")
+      ?.section ?? "account",
   );
   const [relayMode, setRelayMode] = useState<RelayMode>("panel");
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
@@ -191,11 +175,15 @@ export function Settings() {
   };
 
   useEffect(() => {
-    if (settingsSectionRequest.section) setActive(settingsSectionRequest.section as SectionId);
+    if (!settingsSectionRequest.section) return;
+    const resolved = resolveSettingsSection(settingsSectionRequest.section as string);
+    if (!resolved) return;
+    setActive(resolved.section);
+    setPendingAnchor(resolved.anchor ?? null);
   }, [settingsSectionRequest]);
 
   useEffect(() => {
-    if (active !== "relay") setRelayMode("panel");
+    if (active !== "network") setRelayMode("panel");
   }, [active]);
 
   const pendingAnchorRef = useRef<string | null>(null);
@@ -278,7 +266,7 @@ export function Settings() {
         <SettingsNav active={active} onChange={handleNav} />
         <main ref={scrollRef} className="flex-1 overflow-y-auto pt-28 pb-16">
           <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12">
-            {!(active === "relay" && relayMode !== "panel") && (
+            {!(active === "network" && relayMode !== "panel") && (
               <header className="flex flex-col gap-2">
                 <h1 className="font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink">
                   {t(SECTION_META[active].label)}
@@ -292,8 +280,10 @@ export function Settings() {
 
               {active === "account" && <AccountStub />}
 
-              {active === "library" && (
-                <LibraryPanel
+              {active === "library" && <LibraryPanel />}
+
+              {active === "apiKeys" && (
+                <ApiKeysPanel
                   tmdbDraft={tmdbDraft}
                   omdbDraft={omdbDraft}
                   rpdbDraft={rpdbDraft}
@@ -304,15 +294,6 @@ export function Settings() {
                   setRpdbDraft={setRpdbDraft}
                   setFanartDraft={setFanartDraft}
                   setTvdbDraft={setTvdbDraft}
-                  savedKey={savedKey}
-                  saveKey={saveKey}
-                />
-              )}
-
-              {active === "relay" && <RelaySection mode={relayMode} onModeChange={setRelayMode} />}
-
-              {active === "streaming" && (
-                <StreamingSourcesPanel
                   rdDraft={rdDraft}
                   tbDraft={tbDraft}
                   adDraft={adDraft}
@@ -328,9 +309,26 @@ export function Settings() {
                 />
               )}
 
-              {active === "streamFilters" && <StreamFiltersPanel />}
+              {active === "tracking" && (
+                <>
+                  <TraktPanel />
+                  <SimklPanel />
+                  <LetterboxdPanel />
+                </>
+              )}
 
-              {active === "p2p" && <P2PPanel />}
+              {active === "streaming" && <StreamingSourcesPanel />}
+
+              {active === "network" &&
+                (relayMode !== "panel" ? (
+                  <RelaySection mode={relayMode} onModeChange={setRelayMode} />
+                ) : (
+                  <>
+                    <RelaySection mode="panel" onModeChange={setRelayMode} />
+                    <P2PPanel />
+                    <StreamFiltersPanel />
+                  </>
+                ))}
 
               {active === "language" && <LanguagePanel />}
 
@@ -344,15 +342,7 @@ export function Settings() {
 
               {active === "hotkeys" && <HotkeysPanel />}
 
-              {active === "trakt" && <TraktPanel />}
-
-              {active === "simkl" && <SimklPanel />}
-
-              {active === "letterboxd" && <LetterboxdPanel />}
-
               {active === "theme" && <ThemePanel />}
-
-              {active === "webhooks" && <WebhooksPanel />}
 
               {active === "bug" && <BugReportPanel />}
 
