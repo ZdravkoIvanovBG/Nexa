@@ -77,8 +77,33 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Compute sidecar cache key
+        id: sidecar-key
+        shell: bash
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore sidecar cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            src-tauri/binaries
+            src-tauri/libmpv/libmpv-2.dll
+            src-tauri/fonts/*.otf
+          key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/fetch-binaries.mjs', 'scripts/fetch-mpv.mjs', 'scripts/fetch-libmpv.mjs', 'scripts/fetch-fonts.mjs', 'scripts/lib/download.mjs') }}-${{ steps.sidecar-key.outputs.week }}
+
       - name: Prepare build assets
         run: pnpm run setup
+
+      - name: Save sidecar cache
+        if: steps.sidecar-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            src-tauri/binaries
+            src-tauri/libmpv/libmpv-2.dll
+            src-tauri/fonts/*.otf
+          key: ${{ steps.sidecar-cache.outputs.cache-primary-key }}
 
       - name: Build app without installers
         run: pnpm tauri build --no-bundle
