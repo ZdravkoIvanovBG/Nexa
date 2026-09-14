@@ -111,7 +111,7 @@ jobs:
         with:
           tauriScript: pnpm tauri
           tagName: ${{ github.ref_name }}
-          releaseName: "Harbor ${{ github.ref_name }}"
+          releaseName: "Nexa ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install this version."
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

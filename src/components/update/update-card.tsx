@@ -51,7 +51,7 @@ export function UpdateCard() {
                       ? "Update failed"
                       : "Update available"}
             </span>
-            {u.version && <span className="text-[12.5px] text-ink-subtle">Harbor {u.version}</span>}
+            {u.version && <span className="text-[12.5px] text-ink-subtle">Nexa {u.version}</span>}
           </div>
           {u.status !== "installing" && u.status !== "downloading" && (
             <button
@@ -117,7 +117,7 @@ export function UpdateCard() {
             </>
           )}
           {u.status === "installing" && (
-            <span className="text-[12px] text-ink-subtle">Harbor will restart automatically.</span>
+            <span className="text-[12px] text-ink-subtle">Nexa will restart automatically.</span>
           )}
           {u.status === "error" && (
             <>
@@ -129,8 +129,8 @@ export function UpdateCard() {
           )}
           {u.status === "downloading" && (
             <span className="flex items-center gap-1.5 text-[12px] text-ink-subtle">
-              <Check size={14} strokeWidth={2.4} className="text-accent" /> Keep using Harbor while
-              it downloads
+              <Check size={14} strokeWidth={2.4} className="text-accent" /> Keep using Nexa while it
+              downloads
             </span>
           )}
         </div>

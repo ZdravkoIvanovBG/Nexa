@@ -82,7 +82,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   account: {
     label: "Account",
-    sub: "Your Harbor account. Library, watch progress, and addons sync from here.",
+    sub: "Your Nexa account. Library, watch progress, and addons sync from here.",
   },
   library: {
     label: "Library & metadata",
@@ -98,12 +98,12 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   streaming: {
     label: "Streaming sources",
-    sub: "How Harbor finds and resolves playable streams. Debrid keys live in the API Keys tab.",
+    sub: "How Nexa finds and resolves playable streams. Debrid keys live in the API Keys tab.",
   },
   network: {
     label: "Network & Relay",
     sub: IS_WEB
-      ? "Harbor Relay routes Watch Together through Harbor's hosted relay. Plus the built-in P2P engine, streaming servers, and your saved stream filters."
+      ? "Nexa Relay routes Watch Together through Nexa's hosted relay. Plus the built-in P2P engine, streaming servers, and your saved stream filters."
       : "A Cloudflare Worker on your own account hosts your Watch Together rooms. Plus the built-in P2P engine, streaming servers, and your saved stream filters.",
   },
   language: {
@@ -120,7 +120,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   smoothing: {
     label: "Smooth motion",
-    sub: "Harbor's built-in frame interpolation and where SVP fits in.",
+    sub: "Nexa's built-in frame interpolation and where SVP fits in.",
   },
   playerLayout: {
     label: "Player layout",
@@ -128,15 +128,15 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   hotkeys: {
     label: "Hotkeys",
-    sub: "Every shortcut Harbor responds to. Click a binding to rebind it.",
+    sub: "Every shortcut Nexa responds to. Click a binding to rebind it.",
   },
   theme: {
     label: "Theme & appearance",
-    sub: "Color presets, custom backgrounds, and the font pair Harbor renders in.",
+    sub: "Color presets, custom backgrounds, and the font pair Nexa renders in.",
   },
   bug: {
     label: "Report a bug",
-    sub: "Send a bug report straight to the Harbor team. Screenshots and screen recordings welcome.",
+    sub: "Send a bug report straight to the Nexa team. Screenshots and screen recordings welcome.",
   },
   advanced: {
     label: "Advanced",

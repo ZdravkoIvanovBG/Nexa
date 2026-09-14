@@ -105,7 +105,7 @@ export function HotkeysPanel() {
         <ToggleRow
           label={t("TV navigation")}
           sub={t(
-            "Use arrow keys and Select/Enter to move focus through Harbor. Turn this off to disable TV-style focus navigation everywhere.",
+            "Use arrow keys and Select/Enter to move focus through Nexa. Turn this off to disable TV-style focus navigation everywhere.",
           )}
           value={settings.tvNavigation}
           onChange={(v) => update({ tvNavigation: v })}
@@ -145,9 +145,7 @@ export function HotkeysPanel() {
           <Section
             key={scope}
             title={t(scope)}
-            subtitle={
-              scope === "Player" ? t("Inside the playback view.") : t("Anywhere in Harbor.")
-            }
+            subtitle={scope === "Player" ? t("Inside the playback view.") : t("Anywhere in Nexa.")}
           >
             <div className="flex flex-col gap-6">
               {Array.from(subgroups.entries()).map(([groupName, items]) => (
@@ -180,7 +178,7 @@ export function HotkeysPanel() {
                     <ReadOnlyHotkeyRow
                       label={t("Adjust interface scale with wheel")}
                       description={t(
-                        "Hold Ctrl or Cmd and scroll to resize Harbor's interface smoothly.",
+                        "Hold Ctrl or Cmd and scroll to resize Nexa's interface smoothly.",
                       )}
                       binding="Ctrl / ⌘ + Scroll"
                     />

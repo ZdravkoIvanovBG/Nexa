@@ -203,7 +203,7 @@ export function ServerAddressSection() {
           </h2>
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {t(
-              "Harbor runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Harbor over there.",
+              "Nexa runs a small streaming server right on this computer. This is where it lives. To stream from this machine on another device, copy the Wi-Fi address and paste it into Remote streaming server in Nexa over there.",
             )}
           </p>
         </div>
@@ -225,7 +225,7 @@ export function ServerAddressSection() {
           {/not bundled/i.test(lastError) && (
             <span className="mt-1.5 block text-ink-muted">
               {t(
-                "This usually means antivirus removed the server file (stremio-server.exe). Add Harbor's install folder to your antivirus exclusions, then reinstall.",
+                "This usually means antivirus removed the server file (stremio-server.exe). Add Nexa's install folder to your antivirus exclusions, then reinstall.",
               )}
             </span>
           )}
@@ -261,9 +261,9 @@ export function ServerAddressSection() {
       <div className="h-px bg-edge-soft" />
 
       <ToggleRow
-        label={t("Harbor in your browser")}
+        label={t("Nexa in your browser")}
         sub={t(
-          "Serves this exact install of Harbor as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer. You can also use the phone remote to control playback and cast to another device on this machine.",
+          "Serves this exact install of Nexa as a web app on your network. Open it on a phone, laptop, or TV browser, sign in there, and it streams through this computer. You can also use the phone remote to control playback and cast to another device on this machine.",
         )}
         value={settings.serveWebUi || settings.remoteControlEnabled}
         onChange={(v) => update({ serveWebUi: v, remoteControlEnabled: v })}
@@ -271,13 +271,13 @@ export function ServerAddressSection() {
       {(settings.serveWebUi || settings.remoteControlEnabled) && (
         <>
           <AddressRow
-            label={t("Harbor in your browser (this computer)")}
+            label={t("Nexa in your browser (this computer)")}
             url={`http://127.0.0.1:${WEB_PORT}`}
             openable
           />
           {lanIp && (
             <AddressRow
-              label={t("Harbor in your browser (Wi-Fi)")}
+              label={t("Nexa in your browser (Wi-Fi)")}
               url={`http://${lanIp}:${WEB_PORT}`}
             />
           )}

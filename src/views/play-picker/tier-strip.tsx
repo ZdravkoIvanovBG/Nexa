@@ -138,8 +138,8 @@ function QualityDisclaimer() {
             <p className="text-[12.5px] leading-snug text-ink-muted">
               Each row's resolution badge is whatever the addon claimed. Some addons mislabel files:
               a 1080p or 4K tag on a brand-new theatrical release is often a CAM or TS rebadged.
-              Harbor pushes obvious mismatches down the ranking, but if a top result looks
-              suspicious, scroll the source list or pick the Theater Capture tier instead.
+              Nexa pushes obvious mismatches down the ranking, but if a top result looks suspicious,
+              scroll the source list or pick the Theater Capture tier instead.
             </p>
           </div>,
           document.body,

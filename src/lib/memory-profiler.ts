@@ -129,7 +129,7 @@ function buildDumpText(): string {
 
   const lines: string[] = [];
   lines.push("==========================================================");
-  lines.push("  HARBOR MEMORY PROFILE DUMP");
+  lines.push("  NEXA MEMORY PROFILE DUMP");
   lines.push(`  Dumped at: ${new Date(now).toLocaleString()}`);
   lines.push(`  Window: last ${elapsedSec.toFixed(1)}s since reset`);
   lines.push("==========================================================");
@@ -153,7 +153,7 @@ function buildDumpText(): string {
   const nm = getNativeMem();
   if (nm.total > 0) {
     lines.push(
-      `  RSS total:     ${nm.total.toFixed(0)} MB (Harbor.exe ${nm.harborRss.toFixed(0)} + webview ${nm.webviewRss.toFixed(0)}) tier ${getRamTier()}`,
+      `  RSS total:     ${nm.total.toFixed(0)} MB (main process ${nm.harborRss.toFixed(0)} + webview ${nm.webviewRss.toFixed(0)}) tier ${getRamTier()}`,
     );
   }
   lines.push("");
@@ -559,7 +559,7 @@ function dumpReport(): { filename: string; bytes: number; events: number } {
   const text = buildDumpText();
   const ts = new Date();
   const stamp = `${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}-${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}${String(ts.getSeconds()).padStart(2, "0")}`;
-  const filename = `harbor-profile-${stamp}.txt`;
+  const filename = `nexa-profile-${stamp}.txt`;
   downloadText(text, filename);
   lastDumpAt = Date.now();
   const sinceReset = resetAt || (fullHistory[0]?.ts ?? Date.now());

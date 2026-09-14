@@ -57,16 +57,14 @@ export function ThemePanel() {
 
       <Section
         title={t("Logo & app icon")}
-        subtitle={t("Make Harbor yours: swap the sidebar logo and the window/taskbar icon.")}
+        subtitle={t("Make Nexa yours: swap the sidebar logo and the window/taskbar icon.")}
       >
         <LogoPicker />
       </Section>
 
       <Section
         title={t("Typography")}
-        subtitle={t(
-          "Pick a display and body pairing, or upload your own font to use across Harbor.",
-        )}
+        subtitle={t("Pick a display and body pairing, or upload your own font to use across Nexa.")}
       >
         <FontGrid
           pairValue={theme.fontPair}
@@ -98,7 +96,7 @@ export function ThemePanel() {
         <Section
           title={t("Window title bar")}
           subtitle={t(
-            "Use your operating system's native title bar and window buttons instead of Harbor's built-in ones. Handy if the in-app buttons ever feel out of reach, like during playback.",
+            "Use your operating system's native title bar and window buttons instead of Nexa's built-in ones. Handy if the in-app buttons ever feel out of reach, like during playback.",
           )}
         >
           <NativeTitleBarRow />
@@ -127,7 +125,7 @@ function NativeTitleBarRow() {
         </span>
         <p className="text-[12.5px] leading-relaxed text-ink-subtle">
           {t(
-            "Show your operating system's own title bar with its minimize, maximize, and close buttons. They stay reachable everywhere, including while a video is playing. Turn this off to use Harbor's built-in window buttons.",
+            "Show your operating system's own title bar with its minimize, maximize, and close buttons. They stay reachable everywhere, including while a video is playing. Turn this off to use Nexa's built-in window buttons.",
           )}
         </p>
       </div>

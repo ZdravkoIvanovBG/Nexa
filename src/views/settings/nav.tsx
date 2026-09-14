@@ -1270,7 +1270,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Watch Together relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["watch together", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"],
   },
 
@@ -1430,15 +1430,15 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Harbor identity (avatar / color)",
+    label: "Nexa identity (avatar / color)",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["avatar", "profile photo", "upload photo", "color", "identity", "picture"],
   },
   {
-    label: "Harbor account (email / sign out)",
+    label: "Nexa account (email / sign out)",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["email", "sign out", "logout", "password", "account"],
   },
   {
@@ -1515,9 +1515,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Harbor account",
+    label: "Nexa account",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["sign in", "login", "sync", "manage account", "email", "log in", "sign out"],
   },
   {
@@ -1560,9 +1560,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["theme", "appearance", "recolor", "fonts", "poster size", "wallpaper", "customize"],
   },
   {
-    label: "Harbor identity",
+    label: "Nexa identity",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "display name",
       "nickname",
@@ -1576,19 +1576,19 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Upload photo",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["avatar", "upload", "profile picture", "custom photo", "image", "change avatar"],
   },
   {
     label: "Reset to default avatar",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["reset avatar", "default avatar", "remove photo", "revert", "reset to default"],
   },
   {
     label: "Your color",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "color",
       "cursor color",
@@ -1602,7 +1602,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Profiles (switch, add, edit)",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "profiles",
       "profile",
@@ -1626,13 +1626,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Sign out",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["logout", "sign out", "log off", "disconnect account"],
   },
   {
     label: "Change password",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["change password", "reset password", "new password", "forgot password"],
   },
   {
@@ -2166,7 +2166,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["open profile", "trakt profile", "view profile", "my trakt", "profile page"],
   },
   {
-    label: "Use my Trakt avatar as my Harbor avatar",
+    label: "Use my Trakt avatar as my Nexa avatar",
     section: "tracking",
     anchorTitle: "Trakt",
     keywords: ["trakt avatar", "profile picture", "avatar sync", "wear avatar"],
@@ -2238,7 +2238,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["open profile", "simkl profile", "view profile", "profile page", "my simkl"],
   },
   {
-    label: "Use my Simkl avatar as my Harbor avatar",
+    label: "Use my Simkl avatar as my Nexa avatar",
     section: "tracking",
     anchorTitle: "Simkl",
     keywords: ["simkl avatar", "profile picture", "avatar", "wear avatar"],
@@ -2336,9 +2336,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["logout", "disconnect", "sign out letterboxd", "unlink", "full mode"],
   },
   {
-    label: "Harbor Relay",
+    label: "Nexa Relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: [
       "relay",
       "watch together",
@@ -2352,67 +2352,67 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Deploy a relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["deploy", "cloudflare", "worker", "self host", "setup relay", "desktop only"],
   },
   {
-    label: "Use Harbor's public relay",
+    label: "Use Nexa's public relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["public relay", "hosted relay", "default relay", "quota", "pub relay"],
   },
   {
     label: "Enter an existing relay URL:",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["relay url", "wss", "workers.dev", "custom relay", "paste url", "save"],
   },
   {
     label: "Test relay connection",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["test connection", "run test", "ping", "health", "reachable", "verify relay"],
   },
   {
     label: "Backup credentials",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["export", "backup", "api token", "credentials", "json file", "cloudflare token"],
   },
   {
     label: "Stop relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["stop", "delete worker", "remove relay", "teardown"],
   },
   {
     label: "Forget URL",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["forget", "clear url", "reset relay", "remove url"],
   },
   {
     label: "Use a different URL",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["change relay", "switch relay", "different url", "replace"],
   },
   {
     label: "Deploy mine instead",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["own relay", "deploy mine", "self host", "migrate"],
   },
   {
     label: "Redeploy",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["redeploy", "update relay", "upgrade", "new version", "redeploy instructions"],
   },
   {
     label: "Documentation: run your own relay",
     section: "network",
-    anchorTitle: "Harbor Relay",
+    anchorTitle: "Nexa Relay",
     keywords: ["docs", "documentation", "guide", "run your own", "instructions"],
   },
   {
@@ -2736,7 +2736,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Harbor in your browser",
+    label: "Nexa in your browser",
     section: "network",
     anchorTitle: "Your streaming server address",
     keywords: ["web ui", "browser app", "serve web", "phone", "tv browser", "11471", "web version"],
@@ -3144,7 +3144,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["mpv", "libmpv", "truehd", "dts", "av1", "hdr player", "plays anything"],
   },
   {
-    label: "Embed mpv inside Harbor window",
+    label: "Embed mpv inside Nexa window",
     section: "player",
     anchorTitle: "Player engine",
     keywords: [
@@ -4476,7 +4476,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: [
       "export log",
       "save log to downloads",
-      "harbor-mpv-log",
+      "nexa-mpv-log",
       "diagnostics file",
       "attach log",
     ],
@@ -4607,7 +4607,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["pause on focus loss", "alt tab pause", "unfocused pause", "another window"],
   },
   {
-    label: "Catch stremio:// install links inside Harbor",
+    label: "Catch stremio:// install links inside Nexa",
     section: "advanced",
     anchorTitle: "Stremio install links",
     keywords: [
@@ -4743,7 +4743,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["version", "build info", "bug email", "app version", "desktop or web"],
   },
   {
-    label: "Get Harbor for desktop",
+    label: "Get Nexa for desktop",
     section: "advanced",
     keywords: ["download desktop app", "desktop version", "web limitations", "install harbor"],
   },

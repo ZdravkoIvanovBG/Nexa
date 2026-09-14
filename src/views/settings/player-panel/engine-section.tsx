@@ -33,7 +33,7 @@ export function PlayerEnginePanel() {
     {
       id: "mpv",
       label: "mpv",
-      sub: t("Bundled with Harbor. Plays anything you throw at it."),
+      sub: t("Bundled with Nexa. Plays anything you throw at it."),
     },
   ];
 
@@ -81,9 +81,9 @@ export function PlayerEnginePanel() {
       <DesktopOnlyBlock>
         <div className="flex flex-col gap-2">
           <ToggleRow
-            label={t("Embed mpv inside Harbor window")}
+            label={t("Embed mpv inside Nexa window")}
             sub={t(
-              "Renders mpv inline so playback lives in Harbor itself. Disable to open it in a separate window instead.",
+              "Renders mpv inline so playback lives in Nexa itself. Disable to open it in a separate window instead.",
             )}
             value={settings.playerMpvEmbed}
             onChange={(v) => update({ playerMpvEmbed: v })}

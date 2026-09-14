@@ -60,7 +60,7 @@ export function TraktPanel() {
         <Section
           title={t("Trakt")}
           subtitle={t(
-            "Track everything you watch, see your watchlist, and get personalized recommendations on Harbor's home page. Free at trakt.tv.",
+            "Track everything you watch, see your watchlist, and get personalized recommendations on Nexa's home page. Free at trakt.tv.",
           )}
         >
           <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export function TraktPanel() {
       ) : (
         <Section
           title={t("Trakt")}
-          subtitle={t("Harbor will scrobble your playback to Trakt and sync your watchlist.")}
+          subtitle={t("Nexa will scrobble your playback to Trakt and sync your watchlist.")}
         >
           <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
             <div className="flex items-center gap-3">
@@ -120,8 +120,8 @@ export function TraktPanel() {
           </div>
           {traktAvatar && (
             <ToggleRow
-              label={t("Use my Trakt avatar as my Harbor avatar")}
-              sub={t("Wear your Trakt profile picture across Harbor instead of the default.")}
+              label={t("Use my Trakt avatar as my Nexa avatar")}
+              sub={t("Wear your Trakt profile picture across Nexa instead of the default.")}
               value={settings.useTraktAvatar}
               onChange={toggleTraktAvatar}
               leading={
@@ -178,7 +178,7 @@ export function TraktPanel() {
         <Section
           title={t("Move your watchlist")}
           subtitle={t(
-            "Copy your Harbor watchlist over to Trakt, or pull your Trakt watchlist into Harbor. Safe to run again, Trakt skips anything it already has.",
+            "Copy your Nexa watchlist over to Trakt, or pull your Trakt watchlist into Nexa. Safe to run again, Trakt skips anything it already has.",
           )}
         >
           <WatchlistSync />

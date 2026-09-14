@@ -114,10 +114,7 @@ export function LibraryBrowser({
           ) : (
             <>
               {featured.length > 0 && (
-                <BrowserSection
-                  title="Featured"
-                  subtitle="Hand-picked reskins from the Harbor crew."
-                >
+                <BrowserSection title="Featured" subtitle="Hand-picked reskins from the Nexa crew.">
                   <BrowserGrid
                     entries={featured}
                     activeId={activeId}
@@ -138,7 +135,7 @@ export function LibraryBrowser({
               )}
 
               {builtIn.length > 0 && (
-                <BrowserSection title="Built-in" subtitle="Ships with Harbor. Always available.">
+                <BrowserSection title="Built-in" subtitle="Ships with Nexa. Always available.">
                   <BrowserGrid
                     entries={builtIn}
                     activeId={activeId}

@@ -4,7 +4,7 @@
 
 ## Why
 
-<!-- Explain the problem being solved and why this approach fits Harbor. -->
+<!-- Explain the problem being solved and why this approach fits Nexa. -->
 
 ## Verification
 

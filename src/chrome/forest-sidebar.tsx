@@ -90,7 +90,7 @@ export function ForestSidebar() {
                   className="hidden text-[27px] font-medium leading-none lg:inline"
                   style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.2px" }}
                 >
-                  Harbor
+                  Nexa
                 </span>
               )}
             </button>

@@ -1,7 +1,7 @@
 import type { PlayerSrc } from "@/lib/view";
 
 export function safeName(s: string): string {
-  return s.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").slice(0, 80) || "Harbor";
+  return s.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").slice(0, 80) || "Nexa";
 }
 
 export function formatStamp(d: Date): string {
@@ -40,7 +40,12 @@ export async function captureDir(): Promise<string | null> {
   try {
     const pathMod = await import("@tauri-apps/api/path");
     const pictures = await pathMod.pictureDir();
-    return await pathMod.join(pictures, "Harbor");
+    // Harbor -> Nexa rename: keep saving into an existing "Harbor" folder from a pre-rename
+    // install so captures stay in one place; only new installs get "Nexa".
+    const legacyDir = await pathMod.join(pictures, "Harbor");
+    const { exists } = await import("@tauri-apps/plugin-fs");
+    if (await exists(legacyDir)) return legacyDir;
+    return await pathMod.join(pictures, "Nexa");
   } catch {
     return null;
   }

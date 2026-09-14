@@ -294,7 +294,7 @@ export function LibraryPanel() {
       <Section
         title={t("Continue Watching screenshots")}
         subtitle={t(
-          "When you back out of a title, Harbor saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.",
+          "When you back out of a title, Nexa saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.",
         )}
       >
         <CwSnapshotShowcase />
@@ -316,7 +316,7 @@ export function LibraryPanel() {
       <Section
         title={t("Region & language")}
         subtitle={t(
-          "Used for streaming availability and the Now Playing release window. Pick a country and Harbor can match metadata and subtitle languages to it.",
+          "Used for streaming availability and the Now Playing release window. Pick a country and Nexa can match metadata and subtitle languages to it.",
         )}
       >
         <RegionField />
@@ -622,7 +622,7 @@ export function LibraryPanel() {
       <Section
         title={t("Local library")}
         subtitle={t(
-          "Options for the Library → Local tab: folders you scan from your own drive. When you export metadata, Harbor writes a Kodi-style .nfo and downloads artwork next to each file at the sizes below.",
+          "Options for the Library → Local tab: folders you scan from your own drive. When you export metadata, Nexa writes a Kodi-style .nfo and downloads artwork next to each file at the sizes below.",
         )}
       >
         <ToggleRow
@@ -967,7 +967,7 @@ function HomeModePicker({
   const options: Array<{ id: "harbor" | "classic"; label: string; sub: string; img: string }> = [
     {
       id: "harbor",
-      label: "Harbor curated",
+      label: "Nexa curated",
       sub: "Hero carousel, Top 10, Trending, In Theaters, per-service rails. Addon catalogs append underneath, deduped.",
       img: harborStyleImg,
     },

@@ -234,7 +234,7 @@ export function SourceFolderCard({
                   .
                 </p>
                 <p className="mb-6 text-[15px] leading-relaxed">
-                  {t("You must install this addon in Harbor first so it can fetch its works.")}
+                  {t("You must install this addon in Nexa first so it can fetch its works.")}
                 </p>
                 <button
                   onClick={() => setErrorAddon(null)}

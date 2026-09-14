@@ -107,7 +107,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
           <span className="text-[17px] font-semibold tracking-tight">Cheat sheet</span>
         </div>
         <span className="ms-2 hidden text-[13px] text-ink-muted md:inline">
-          Every variable, selector, hook, and recipe for building custom Harbor themes.
+          Every variable, selector, hook, and recipe for building custom Nexa themes.
         </span>
         <button
           type="button"
@@ -147,7 +147,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
             <Section
               id="tokens-color"
               title="Color tokens"
-              sub="Every surface in Harbor maps to one of these 12 variables."
+              sub="Every surface in Nexa maps to one of these 12 variables."
             >
               <TokenTable rows={COLOR_TOKENS} swatch />
             </Section>
@@ -269,7 +269,7 @@ export function CheatSheet({ onClose }: { onClose: () => void }) {
             <Section
               id="events"
               title="Window events"
-              sub="Dispatched on window. Listen from your theme JS to react to Harbor's lifecycle."
+              sub="Dispatched on window. Listen from your theme JS to react to Nexa's lifecycle."
             >
               <div className="flex flex-col gap-1.5">
                 {WINDOW_EVENTS.map((e) => (

@@ -6,7 +6,7 @@ const OPTIONS = [
   [
     "shared",
     "Share settings with all profiles",
-    "One set of preferences everyone on this Harbor uses.",
+    "One set of preferences everyone on this Nexa uses.",
   ],
   [
     "independent",

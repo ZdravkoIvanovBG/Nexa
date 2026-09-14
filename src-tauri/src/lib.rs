@@ -435,7 +435,7 @@ pub fn run() {
     let dvr_state = dvr::DvrState::new();
     let modal_overlay_state = modal_overlay::ModalOverlayState::new();
     let app_builder = tauri::Builder::default();
-    // Let a Linux development build run alongside the installed Harbor app.
+    // Let a Linux development build run alongside the installed Nexa app.
     // Packaged builds keep the normal single-instance behavior.
     #[cfg(all(desktop, not(all(target_os = "linux", debug_assertions))))]
     let app_builder = app_builder
@@ -496,7 +496,7 @@ pub fn run() {
         tauri::http::Response::builder()
             .status(200)
             .header("content-type", "text/html; charset=utf-8")
-            .body(b"<!doctype html><meta charset=\"utf-8\"><title>Harbor</title>".to_vec())
+            .body(b"<!doctype html><meta charset=\"utf-8\"><title>Nexa</title>".to_vec())
             .unwrap()
     });
 

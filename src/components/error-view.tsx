@@ -159,14 +159,7 @@ export function ErrorView() {
           className="font-display text-[24px] font-medium leading-none tracking-tight sm:text-[28px]"
           style={{ transform: "translateY(1px)" }}
         >
-          Harb
-          <span
-            className="inline-block"
-            style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-          >
-            o
-          </span>
-          r
+          Nexa
         </span>
       </div>
 
@@ -241,7 +234,7 @@ export function ErrorView() {
           ) : report.kind === "error" ? (
             <span className="text-danger/80">Could not send: {report.message}</span>
           ) : (
-            <>Sends the context above straight to the Harbor team. No keys or library data.</>
+            <>Sends the context above straight to the Nexa team. No keys or library data.</>
           )}
         </p>
       </div>

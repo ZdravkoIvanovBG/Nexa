@@ -76,7 +76,7 @@ fn serve_bundled_asset(app: &AppHandle, raw_path: &str) -> Response<Body> {
             .status(StatusCode::NOT_FOUND)
             .header(header::CONTENT_TYPE, "text/plain")
             .body(Body::from(
-                "Harbor web assets are not available in this build.",
+                "Nexa web assets are not available in this build.",
             ))
             .unwrap(),
     }
@@ -229,12 +229,12 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
     });
     if is_tauri_dev() {
         eprintln!(
-            "[web-serve] Harbor remote WS on 0.0.0.0:{} (UI proxied from {})",
+            "[web-serve] Nexa remote WS on 0.0.0.0:{} (UI proxied from {})",
             WEB_PORT, DEV_FRONTEND
         );
     } else {
         eprintln!(
-            "[web-serve] Harbor web UI + remote WS listening on 0.0.0.0:{}",
+            "[web-serve] Nexa web UI + remote WS listening on 0.0.0.0:{}",
             WEB_PORT
         );
     }

@@ -353,7 +353,14 @@ pub async fn dvr_default_dir(app: AppHandle) -> Result<String, String> {
         .or_else(|_| app.path().download_dir())
         .or_else(|_| app.path().app_data_dir())
         .map_err(|e| format!("no base dir: {}", e))?;
-    let dir = base.join("Harbor DVR");
+    // Harbor -> Nexa rename: keep writing into an existing "Harbor DVR" folder from a pre-rename
+    // install so recordings stay in one place; only new installs get "Nexa DVR".
+    let legacy_dir = base.join("Harbor DVR");
+    let dir = if legacy_dir.exists() {
+        legacy_dir
+    } else {
+        base.join("Nexa DVR")
+    };
     if !dir.exists() {
         let _ = std::fs::create_dir_all(&dir);
     }

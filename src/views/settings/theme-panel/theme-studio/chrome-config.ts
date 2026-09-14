@@ -23,7 +23,7 @@ export const NAV_CATALOG: ChromeNavId[] = [
 
 export const DEFAULT_CHROME: ChromeConfig = {
   position: "sidebar",
-  brand: "Harbor",
+  brand: "Nexa",
   items: ["home", "movies", "shows", "library", "settings"],
 };
 

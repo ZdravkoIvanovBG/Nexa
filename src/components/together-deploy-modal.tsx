@@ -163,7 +163,7 @@ export function TogetherDeployModal({
               <img
                 src={cfTokenTutorial}
                 alt={t(
-                  "Cloudflare token form filled with name 'Harbor Relay' and one permission row set to Account / Workers Scripts / Edit",
+                  "Cloudflare token form filled with name 'Nexa Relay' and one permission row set to Account / Workers Scripts / Edit",
                 )}
                 className="mt-2 w-full rounded-lg border border-edge"
               />
@@ -326,7 +326,7 @@ export function TogetherDeployModal({
           </div>
           <p className="text-[12px] text-ink-subtle">
             {t(
-              "Send this to anyone you want to watch with. They paste it in their Settings → Harbor Relay. After that, share a 6-character room code from the people icon up top.",
+              "Send this to anyone you want to watch with. They paste it in their Settings → Nexa Relay. After that, share a 6-character room code from the people icon up top.",
             )}
           </p>
           <button

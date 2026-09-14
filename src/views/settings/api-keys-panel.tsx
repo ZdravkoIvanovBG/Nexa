@@ -118,7 +118,7 @@ export function ApiKeysPanel({
             <>
               Get yours at{" "}
               <ExtLink href="https://real-debrid.com/apitoken">real-debrid.com/apitoken</ExtLink>.
-              Used to check cache and unrestrict links. Harbor never adds or removes torrents on its
+              Used to check cache and unrestrict links. Nexa never adds or removes torrents on its
               own.
             </>
           }
@@ -220,7 +220,7 @@ export function ApiKeysPanel({
       <Section
         title={t("Metadata & ratings")}
         subtitle={t(
-          "A free TMDB key is highly recommended. It unlocks the full Harbor experience. The rest are optional, and Cinemeta works out of the box without any.",
+          "A free TMDB key is highly recommended. It unlocks the full Nexa experience. The rest are optional, and Cinemeta works out of the box without any.",
         )}
       >
         <KeyField
@@ -237,7 +237,7 @@ export function ApiKeysPanel({
               side="top"
               align="center"
               label={t(
-                "TMDB asks for an app URL when you create the key. Put any URL at all, like https://harbor.app. The only thing you need back is the API key.",
+                "TMDB asks for an app URL when you create the key. Put any URL at all, like https://nexa.app. The only thing you need back is the API key.",
               )}
             >
               <button
@@ -252,7 +252,7 @@ export function ApiKeysPanel({
           }
           help={
             <>
-              Highly recommended. This is what gives you the full Harbor experience: Popular,
+              Highly recommended. This is what gives you the full Nexa experience: Popular,
               Trending, In Theaters, and per-service rails. Free at{" "}
               <ExtLink href="https://www.themoviedb.org/settings/api">
                 themoviedb.org/settings/api

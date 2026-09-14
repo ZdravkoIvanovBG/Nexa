@@ -76,7 +76,7 @@ export function LoginView() {
       <div className="flex flex-col items-center gap-2.5">
         <HarborMark className="h-14 w-14 text-ink" />
         <h1 className="font-display text-[34px] font-medium leading-tight tracking-tight text-ink">
-          {t("Welcome to Harbor")}
+          {t("Welcome to Nexa")}
         </h1>
         <p className="max-w-sm text-center text-[13.5px] leading-relaxed text-ink-muted">
           {t("Sign in to keep your watchlist, progress, and rankings on every device.")}

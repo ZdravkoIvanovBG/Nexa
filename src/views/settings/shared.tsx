@@ -60,7 +60,7 @@ const SECTION_ALIASES: Record<string, { section: SectionId; anchor?: string }> =
   trakt: { section: "tracking", anchor: settingsAnchor("Trakt") },
   simkl: { section: "tracking", anchor: settingsAnchor("Simkl") },
   letterboxd: { section: "tracking", anchor: settingsAnchor("Letterboxd") },
-  relay: { section: "network", anchor: settingsAnchor("Harbor Relay") },
+  relay: { section: "network", anchor: settingsAnchor("Nexa Relay") },
   p2p: { section: "network", anchor: settingsAnchor("Local engine") },
   streamFilters: { section: "network", anchor: settingsAnchor("Saved stream filters") },
 };

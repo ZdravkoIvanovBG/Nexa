@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-/** Shared QueryClient for Harbor — catalog, meta, and stream caches. */
+/** Shared QueryClient for Nexa — catalog, meta, and stream caches. */
 export function createHarborQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {

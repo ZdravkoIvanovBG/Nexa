@@ -329,8 +329,8 @@ fn apply_pre_init(
             eprintln!("[harbor::mpv] pre-init skip {}={}: {}", k, v, e);
         }
     };
-    set("title", "Harbor");
-    set("audio-client-name", "Harbor");
+    set("title", "Nexa");
+    set("audio-client-name", "Nexa");
     set("terminal", "no");
     set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v");
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
@@ -378,7 +378,7 @@ fn apply_pre_init(
     set("input-cursor", "no");
     // `osc` is provided by mpv's optional on-screen-controller script. Some
     // libmpv builds, including the Flatpak build, do not ship that script, so
-    // its option is unavailable. Harbor supplies its own controls either way.
+    // its option is unavailable. Nexa supplies its own controls either way.
     let _ = set("osc", "no");
     set("osd-level", "0");
     set("cursor-autohide", "200");
@@ -1182,7 +1182,7 @@ pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
         return Err("No player log yet. Play something first, then export.".into());
     }
     let dl = app.path().download_dir().map_err(|e| e.to_string())?;
-    let dst = dl.join("harbor-mpv-log.txt");
+    let dst = dl.join("nexa-mpv-log.txt");
     std::fs::copy(&src, &dst).map_err(|e| format!("copy: {}", e))?;
     Ok(dst.to_string_lossy().into_owned())
 }
@@ -2142,7 +2142,7 @@ fn hide_embedded_mpv_children(app: &AppHandle) {
         let title = String::from_utf16_lossy(&title_buf[..title_len as usize]);
         let is_mpv = class_name == "mpv"
             || class_name.starts_with("mpv ")
-            || (class_name.is_empty() && title.starts_with("Harbor"));
+            || (class_name.is_empty() && title.starts_with("Nexa"));
         if is_mpv {
             let s = lparam.0 as *mut EnumState;
             (*s).mpv_hwnds.push(hwnd.0 as isize);
@@ -2319,7 +2319,7 @@ fn position_embedded_mpv_child(app: &AppHandle, css: MpvGeometry) -> Result<(), 
             .push((hwnd.0 as isize, class_name.clone(), title.clone()));
         let is_mpv = class_name == "mpv"
             || class_name.starts_with("mpv ")
-            || (class_name.is_empty() && title.starts_with("Harbor"));
+            || (class_name.is_empty() && title.starts_with("Nexa"));
         if is_mpv {
             (*s).mpv_hwnds.push(hwnd.0 as isize);
         }

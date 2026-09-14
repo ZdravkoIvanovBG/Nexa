@@ -302,7 +302,7 @@ function ManageStep1({
               { name },
             )
           : t(
-              "Click below to open {name}'s setup page in Harbor's built-in browser. Pick your options. When you click Install on their page, Harbor catches the link automatically and updates the addon.",
+              "Click below to open {name}'s setup page in Nexa's built-in browser. Pick your options. When you click Install on their page, Nexa catches the link automatically and updates the addon.",
               { name },
             )}
       </p>

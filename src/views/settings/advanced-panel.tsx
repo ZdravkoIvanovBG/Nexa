@@ -45,7 +45,7 @@ export function AdvancedPanel() {
         <Section
           title={t("Updates")}
           subtitle={t(
-            "Harbor checks GitHub Releases for new versions and installs them in place. Every update is signature-verified before it installs. Nothing installs until you choose to, and a dismissed update never nags you again.",
+            "Nexa checks GitHub Releases for new versions and installs them in place. Every update is signature-verified before it installs. Nothing installs until you choose to, and a dismissed update never nags you again.",
           )}
         >
           <div className="flex flex-col gap-2.5">
@@ -57,7 +57,7 @@ export function AdvancedPanel() {
       <Section
         title={t("Backup & restore")}
         subtitle={t(
-          "Export your entire Harbor setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Harbor account sign-in.",
+          "Export your entire Nexa setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Nexa account sign-in.",
         )}
       >
         <SettingsRecoverRow />
@@ -67,7 +67,7 @@ export function AdvancedPanel() {
       <Section
         title={t("Downloads")}
         subtitle={t(
-          "Where Harbor saves videos when you hit Download in the player. Pick any folder, including one on a different drive.",
+          "Where Nexa saves videos when you hit Download in the player. Pick any folder, including one on a different drive.",
         )}
       >
         <DownloadsSection />
@@ -76,7 +76,7 @@ export function AdvancedPanel() {
       <Section
         title={t("Privacy")}
         subtitle={t(
-          "Harbor sends no telemetry. This also drops outbound ad, analytics, and tracker requests that addons or metadata providers try to make, before they leave your machine.",
+          "Nexa sends no telemetry. This also drops outbound ad, analytics, and tracker requests that addons or metadata providers try to make, before they leave your machine.",
         )}
       >
         <PrivacyRow />
@@ -86,7 +86,7 @@ export function AdvancedPanel() {
         <Section
           title={t("System tray")}
           subtitle={t(
-            "Keep Harbor a click away. Close it to the system tray instead of quitting, and control it from the tray menu. These also mirror into the tray menu live.",
+            "Keep Nexa a click away. Close it to the system tray instead of quitting, and control it from the tray menu. These also mirror into the tray menu live.",
           )}
         >
           <TrayRow />
@@ -97,7 +97,7 @@ export function AdvancedPanel() {
         <Section
           title={t("Stremio install links")}
           subtitle={t(
-            "Harbor catches stremio:// install links so the configure-and-install flow stays inside the app.",
+            "Nexa catches stremio:// install links so the configure-and-install flow stays inside the app.",
           )}
         >
           <StremioDeeplinkRow />
@@ -108,7 +108,7 @@ export function AdvancedPanel() {
         <Section
           title={t("Discord Rich Presence")}
           subtitle={t(
-            "Let your Discord friends see what you are watching, with the show poster and a live progress bar. Desktop only, and only your own Discord client is involved (nothing touches a Harbor server).",
+            "Let your Discord friends see what you are watching, with the show poster and a live progress bar. Desktop only, and only your own Discord client is involved (nothing touches a Nexa server).",
           )}
         >
           <DiscordPresenceRow />
@@ -154,7 +154,7 @@ function LegalDisclaimer() {
         Legal
       </span>
       <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-        Harbor is an independent, open-source desktop and web client. It is{" "}
+        Nexa is an independent, open-source desktop and web client. It is{" "}
         <span className="font-semibold text-ink">
           not affiliated with, endorsed by, sponsored by, or in any way associated with Stremio Ltd.
         </span>
@@ -167,10 +167,9 @@ function LegalDisclaimer() {
         respective owners and are used here only for compatibility and identification.
       </p>
       <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-        Harbor itself does not host, distribute, or index any media. All streams come from
-        third-party addons, debrid services, or a streaming server you configure yourself. You are
-        responsible for what you choose to play and for complying with the laws of your
-        jurisdiction.
+        Nexa itself does not host, distribute, or index any media. All streams come from third-party
+        addons, debrid services, or a streaming server you configure yourself. You are responsible
+        for what you choose to play and for complying with the laws of your jurisdiction.
       </p>
     </section>
   );
@@ -203,7 +202,7 @@ function WebBuildBanner() {
         </h2>
         <p className="text-[13.5px] leading-relaxed text-ink-muted">
           {t(
-            "Everything you save here stays in this browser. Your Stremio login, API keys, watch progress, picker cache, dismissed tips. Harbor servers never see any of it. Clearing your browser data wipes it.",
+            "Everything you save here stays in this browser. Your Stremio login, API keys, watch progress, picker cache, dismissed tips. Nexa servers never see any of it. Clearing your browser data wipes it.",
           )}
         </p>
         <p className="text-[13.5px] leading-relaxed text-ink-muted">
@@ -218,7 +217,7 @@ function WebBuildBanner() {
             className="flex h-10 w-fit items-center gap-2 rounded-xl bg-ink px-4 text-[13.5px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
           >
             <Download size={14} strokeWidth={2.4} />
-            {t("Get Harbor for desktop")}
+            {t("Get Nexa for desktop")}
           </button>
           <button
             type="button"
@@ -250,11 +249,11 @@ function StremioDeeplinkRow() {
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-[14px] font-medium text-ink">
-            {t("Catch stremio:// install links inside Harbor")}
+            {t("Catch stremio:// install links inside Nexa")}
           </span>
           <p className="text-[12.5px] leading-relaxed text-ink-subtle">
             {t(
-              "Harbor's in-app installer animates the manifest install and keeps you in context. Turn this off and Stremio becomes the only handler for stremio:// links; Harbor still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).",
+              "Nexa's in-app installer animates the manifest install and keeps you in context. Turn this off and Stremio becomes the only handler for stremio:// links; Nexa still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).",
             )}
           </p>
         </div>
@@ -277,13 +276,13 @@ function StremioDeeplinkRow() {
       {on ? (
         <p className="px-1 text-[11.5px] leading-relaxed text-ink-subtle">
           {t(
-            "Heads up: if Stremio is also installed, Windows may ask which app to use the first time a stremio:// link fires. Pick Harbor to make it stick.",
+            "Heads up: if Stremio is also installed, Windows may ask which app to use the first time a stremio:// link fires. Pick Nexa to make it stick.",
           )}
         </p>
       ) : (
         <p className="px-1 text-[11.5px] leading-relaxed text-ink-subtle">
           {t(
-            "stremio:// links now open in the Stremio app. Harbor will only install when you trigger it from inside Harbor.",
+            "stremio:// links now open in the Stremio app. Nexa will only install when you trigger it from inside Nexa.",
           )}
         </p>
       )}
@@ -305,14 +304,14 @@ function UpdatesRow() {
         : u.status === "downloaded"
           ? t("Downloaded. Ready to install and restart.")
           : u.status === "installing"
-            ? t("Installing. Harbor will restart.")
+            ? t("Installing. Nexa will restart.")
             : u.status === "available"
               ? t("A new version is ready to download.")
               : u.status === "uptodate"
                 ? t("You're on the latest version.")
                 : u.status === "error" && u.manualCheck
                   ? t("Couldn't reach the update server. Try again in a moment.")
-                  : t("Harbor checks automatically every few hours.");
+                  : t("Nexa checks automatically every few hours.");
   return (
     <div className="flex items-center gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3.5">
       <div
@@ -325,8 +324,8 @@ function UpdatesRow() {
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="flex items-center gap-2 text-[14px] font-medium text-ink">
           {ready && u.version
-            ? t("Harbor {version} available", { version: u.version })
-            : `Harbor ${installedVersion}`}
+            ? t("Nexa {version} available", { version: u.version })
+            : `Nexa ${installedVersion}`}
           <BetaTag />
         </span>
         <span className="text-[12.5px] text-ink-subtle">{status}</span>
@@ -409,7 +408,7 @@ function DiscordPresenceRow() {
           />
           <DiscordSubToggle
             label={t("Show while browsing")}
-            hint={t("Display 'Browsing Harbor' when nothing is playing.")}
+            hint={t("Display 'Browsing Nexa' when nothing is playing.")}
             on={settings.discordShowWhenBrowsing}
             onToggle={() => update({ discordShowWhenBrowsing: !settings.discordShowWhenBrowsing })}
           />

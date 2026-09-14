@@ -173,7 +173,7 @@ function CloseConfirmKids({
           className="pointer-events-none absolute -bottom-2 -right-2 h-20 w-auto opacity-85"
           style={{ transform: "scaleX(-1)" }}
         />
-        <h2 className="relative font-display text-[32px] font-bold">{t("Close Harbor?")}</h2>
+        <h2 className="relative font-display text-[32px] font-bold">{t("Close Nexa?")}</h2>
         <p className="relative mt-2 text-[16px] font-medium text-white/85">
           {t("Ask a grown-up before you close.")}
         </p>

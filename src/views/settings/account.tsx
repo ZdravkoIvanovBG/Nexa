@@ -61,7 +61,7 @@ export function AccountStub() {
   return (
     <div className="flex flex-col gap-5">
       <Section
-        title={t("Harbor identity")}
+        title={t("Nexa identity")}
         subtitle={t("How you appear in Watch Together, sessions, and chat.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
@@ -163,8 +163,8 @@ export function AccountStub() {
       </Section>
 
       <Section
-        title={t("Harbor account")}
-        subtitle={t("Your Harbor account. Library, watch progress, and addons sync from here.")}
+        title={t("Nexa account")}
+        subtitle={t("Your Nexa account. Library, watch progress, and addons sync from here.")}
       >
         <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
           <div className="flex items-center justify-between gap-3">
@@ -191,7 +191,7 @@ export function AccountStub() {
       <Section
         title={t("Profiles")}
         subtitle={t(
-          "Everyone who uses this Harbor gets their own watch history, avatar, color, and optional PIN. Switch anytime.",
+          "Everyone who uses this Nexa gets their own watch history, avatar, color, and optional PIN. Switch anytime.",
         )}
       >
         <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">

@@ -103,9 +103,7 @@ export function CinematicOverlay() {
               <HarborMark className="h-7 w-7" />
             )}
             {themePreset?.id === "crunch" && (
-              <span className="font-display text-[22px] font-bold leading-none text-ink">
-                Harbor
-              </span>
+              <span className="font-display text-[22px] font-bold leading-none text-ink">Nexa</span>
             )}
           </button>
 

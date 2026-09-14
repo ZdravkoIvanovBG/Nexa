@@ -259,7 +259,7 @@ export function EmptyWatchlist({ connected }: { connected: boolean }) {
       <h2 className="text-[16px] font-semibold text-ink">{t("Your watchlist is empty")}</h2>
       <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
         {t(
-          'Right-click any title in Harbor or hit "Add to Watchlist" on its detail page to save it here.',
+          'Right-click any title in Nexa or hit "Add to Watchlist" on its detail page to save it here.',
         )}
         {connected
           ? t(" Anything you save also syncs to your Trakt account.")

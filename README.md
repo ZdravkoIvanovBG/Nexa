@@ -23,7 +23,7 @@ Offering things like a native player, a stream ranking engine, Wikidata, watch p
 
 <br/>
 
-[Why Harbor](#why-harbor) &middot; [Features](#feature-tour) &middot; [Install](#install) &middot; [Configuration](#configuration) &middot; [Architecture](#architecture) &middot; [FAQ](#faq) &middot; [Contributing](#contributing)
+[Why Nexa](#why-nexa) &middot; [Features](#feature-tour) &middot; [Install](#install) &middot; [Configuration](#configuration) &middot; [Architecture](#architecture) &middot; [FAQ](#faq) &middot; [Contributing](#contributing)
 
 </div>
 
@@ -32,13 +32,13 @@ Offering things like a native player, a stream ranking engine, Wikidata, watch p
 <p align="center">
   <img src="https://harbor.site/readme-media/hero.png" width="900">
   <br/>
-  <sub>Harbor on launch: a rotating hero, Continue Watching, and full width rails. Works on Cinemeta out of the box; richer with a free TMDB key.</sub>
+  <sub>Nexa on launch: a rotating hero, Continue Watching, and full width rails. Works on Cinemeta out of the box; richer with a free TMDB key.</sub>
 </p>
 
 > [!IMPORTANT]
-> Harbor is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
-> Harbor is not for-profit and is a passion project, you are free to sell, re-use or profit off of it. All of your bugs, issues and feedbacks will be addressed promptly as long as scope permits. Please leave a Issue if you have feedback or a bug, so we can better address you. It is HIGHLY reccomended that you build your OWN Harbor from the latest source when available, as our bundled releases will not include windows/os certification/sig (it is a free project) so to avoid any popups we suggest building it yourself. We will try to push updates frequently but we are sometimes segmented by our timezones so it may take some time for your bugs to be rolled into the update endpoint and for us to test it! Thank you for trying it out and helping us make it a better project!
-> Stremio has released their **[Supporter tier](https://blog.stremio.com/stremio-supporters-a-way-to-sustain-our-development/)** PLEASE CONSIDER SUPPORTING THEM AND BUYING THIS. We heavily encourage you to use Stremio's Official Apps on Mobile, and Tvs. Harbor is NOT a stremio competitor, it is a different flavor of player for the ecosystem. To get the most out of Harbor, please sign up with a [stremio account](https://stremio.com) (it's free) To Support Stremio visit : https://www.stremio.com/donate (P.S.A Harbor is not endorsed by or created by Stremio ltd or it's contributors it is a independent open sourced project)
+> Nexa is a media player and a client for the open Stremio addon protocol. It hosts, indexes, and ships no media, and it bundles no content addons. You bring your own addons and sources. See the [Disclaimer](#disclaimer).
+> Nexa is not for-profit and is a passion project, you are free to sell, re-use or profit off of it. All of your bugs, issues and feedbacks will be addressed promptly as long as scope permits. Please leave a Issue if you have feedback or a bug, so we can better address you. It is HIGHLY reccomended that you build your OWN Nexa from the latest source when available, as our bundled releases will not include windows/os certification/sig (it is a free project) so to avoid any popups we suggest building it yourself. We will try to push updates frequently but we are sometimes segmented by our timezones so it may take some time for your bugs to be rolled into the update endpoint and for us to test it! Thank you for trying it out and helping us make it a better project!
+> Stremio has released their **[Supporter tier](https://blog.stremio.com/stremio-supporters-a-way-to-sustain-our-development/)** PLEASE CONSIDER SUPPORTING THEM AND BUYING THIS. We heavily encourage you to use Stremio's Official Apps on Mobile, and Tvs. Nexa is NOT a stremio competitor, it is a different flavor of player for the ecosystem. To get the most out of Nexa, please sign up with a [stremio account](https://stremio.com) (it's free) To Support Stremio visit : https://www.stremio.com/donate (P.S.A Nexa is not endorsed by or created by Stremio ltd or it's contributors it is a independent open sourced project)
 > <br/>
 
 > [!NOTE]
@@ -56,7 +56,7 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 
 <br/>
 
-- [Why Harbor](#why-harbor)
+- [Why Nexa](#why-nexa)
 - [Feature Tour](#feature-tour)
   - [Rooms and views](#rooms-and-views)
   - [The stream engine](#the-stream-engine)
@@ -85,17 +85,17 @@ HARBOR IS A OPEN CONCEPT AND NOT A ENTITY. WE DO NOT PROFIT OR ACCEPT MONEY FOR 
 
 <br/>
 
-## Why Harbor
+## Why Nexa
 
-**Harbor** is a self contained desktop client for the Stremio ecosystem. Out of the box it runs on Cinemeta. Add a free TMDB key and it blossoms into your ultimate companion for discovering and watching content. Harbor was built around the Stremio addon ecosystem with deep native integration of popular services and features into the UI.
+**Nexa** is a self contained desktop client for the Stremio ecosystem. Out of the box it runs on Cinemeta. Add a free TMDB key and it blossoms into your ultimate companion for discovering and watching content. Nexa was built around the Stremio addon ecosystem with deep native integration of popular services and features into the UI.
 
 - **A native player.** libmpv decodes virtually any codec and container, with HDR passthrough, skip intro/outro, Anime4K upscaling shaders, and more. Delivering the same quality you are used to, but on a native custom player.
-- **Customize it your way.** Harbor is built in rust and tauri, allowing full on demand customization of the entire application. Harbor does not inject into stremio web, it is its own from scratch shell, layered over the stremio ecosystem, allowing you to go beyond the traditional themeing. Customize the player's UI, your fonts, seek bar, colors or the entire thing!
+- **Customize it your way.** Nexa is built in rust and tauri, allowing full on demand customization of the entire application. Nexa does not inject into stremio web, it is its own from scratch shell, layered over the stremio ecosystem, allowing you to go beyond the traditional themeing. Customize the player's UI, your fonts, seek bar, colors or the entire thing!
 - **Theme Studio & Editor** Noob friendly theme studio lets anyone create their own custom theme with no code. Those that want control over every file can use a built in code editor for your themes.
 - **Intelligent stream ranking.** A pure Rust engine (compiled to WASM, with a TypeScript fallback) that parses every stream, filters out scams and fakes, and ranks high quality sources first.
-- **Corpus Engine.** During the initial release of In-cinema movies, Harbor gates the results based on heuristic factors like file size, average quality consensus, year and metadata ranking and other factors to deliver you a cleaner experience during the period of a fresh release. Harbor will surface the most likely CAMS, TeleSyncs/Telecines and other reasonable options without you needing to do anything.
+- **Corpus Engine.** During the initial release of In-cinema movies, Nexa gates the results based on heuristic factors like file size, average quality consensus, year and metadata ranking and other factors to deliver you a cleaner experience during the period of a fresh release. Nexa will surface the most likely CAMS, TeleSyncs/Telecines and other reasonable options without you needing to do anything.
 - **Go Deep.** Dive deep into your favorite shows, actors, genres and more. View lists of award recipients for the Oscars, BAFTA, Cannes, SAG, and more. Anime cast and award metadata, along with Episode/Season Deduplication and Merge. Your rows learn from your watch history and likes, to always suggest you your next best watch.
-- **Robust Appstore.** Harbor allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
+- **Robust Appstore.** Nexa allows you to configure and install addons without leaving the desktop client by allowing you to natively install third party addons via a built in viewport. Easily manage your installed Addons and Browse for new ones in a bespoke experience that merges the Stremio Community addons API with the [Stremio-addons.net](https://stremio-addons.net) API, giving you wide coverage and custom reccomendations.
 - **Stremio-addons.net Integration.** The first platform with direct community ratings, top trending, and manifest feed to the [Stremio-addons.net](https://stremio-addons.net) API
 - **Watch together, on your own relay.** A synced watch party with live on screen cursors and drawing, on a relay that deploys to your own Cloudflare account in one click. No central server.
 - **Live TV and Multiview.** Bring M3U or Xtream playlists and get a real EPG grid guide, favorites, catchup, and up to four channels at once in a grid. Missed the show? play a rerun or record the next episode using built in DVR. Switch channels while in the live player at any time with the TV Guide
@@ -176,7 +176,7 @@ Eleven themes and seven font pairings, a live theme studio for every token, cust
 
 ### Rooms and views
 
-Harbor is organized into ten primary rooms, each with its own cinematic hero and curated rails, plus per title flows layered on top.
+Nexa is organized into ten primary rooms, each with its own cinematic hero and curated rails, plus per title flows layered on top.
 
 | Room           | What you get                                                                                                                                                                                                                                                                                                                                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -203,7 +203,7 @@ Per title flows add **Detail**, **Person**, **Award**, **Service**, and **Filter
 
 ### The stream engine
 
-When you press play, Harbor collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. Inside the desktop app this runs in **harbor-core**, a pure Rust crate compiled to WASM and invoked from the UI, with a TypeScript fallback if it is ever unavailable.
+When you press play, Nexa collects stream offers from every installed addon in parallel and runs them through a four stage pipeline. Inside the desktop app this runs in **harbor-core**, a pure Rust crate compiled to WASM and invoked from the UI, with a TypeScript fallback if it is ever unavailable.
 
 ```
 parse  ->  trust  ->  score  ->  rank
@@ -216,7 +216,7 @@ parse  ->  trust  ->  score  ->  rank
 | **Score** | Rewards debrid cached sources, resolution, HDR and lossless audio, seeders, trusted release groups, REMUX, and preferred language matches; penalizes cams, mismatches, and implausible sizes. Every signal is recorded so the reason is inspectable                                                                |
 | **Rank**  | Sorts into quality tiers (4K DV, 4K HDR, 4K, 1080p HDR, 1080p, 720p, SD) and surfaces the best cached pick first, with partial results streamed to the UI as addons respond                                                                                                                                        |
 
-Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. No debrid is required: Harbor can stream torrents directly through the bundled Stremio Server engine. All keys stay on your device.
+Debrid services are checked live and uniformly: **Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox**. Cache hints embedded by popular addons are read directly, and every torrent hash is cross checked against your debrid library to catch what the cache API misses. No debrid is required: Nexa can stream torrents directly through the bundled Stremio Server engine. All keys stay on your device.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -242,7 +242,7 @@ A native libmpv player, with HLS and MPEG-TS engines for live and broadcast sour
 
 Send any playback across the room through a bundled Rust cast server and a web cast receiver.
 
-- **Chromecast** via Harbor's own CAF receiver (HLS, MP4, and unknown formats). (Visit harborstremio/cast-receiver-chrome)
+- **Chromecast** via Nexa's own CAF receiver (HLS, MP4, and unknown formats). (Visit harborstremio/cast-receiver-chrome)
 - **DLNA / UPnP** with vendor aware handling for Samsung, Sony, LG, Panasonic, and Hisense.
 - **AirPlay** discovery and playback.
 - **Roku** via the ECP protocol, with guidance for network access and Media Assistant. (Pre and post roku update) Does require Roku tv addons
@@ -259,7 +259,7 @@ Send any playback across the room through a bundled Rust cast server and a web c
 - Synced play, pause, and seek with RTT adjusted clock alignment so everyone stays together.
 - Live chat, **on screen cursors** with named colors, and **collaborative drawing** over the video.
 - A host can summon everyone to a view or a title and send play invites that late joiners receive on connect.
-- The relay deploys to **your own Cloudflare account in one click** (deploy, check, and delete from inside Harbor). There is no central Harbor server in the loop.
+- The relay deploys to **your own Cloudflare account in one click** (deploy, check, and delete from inside Nexa). There is no central Nexa server in the loop.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
@@ -290,19 +290,19 @@ The Addons room is a full browser and installer for the Stremio ecosystem.
 - **Discover** trending and top community addons via the [stremio-addons.net](https://stremio-addons.net) index.
 - **Browse** by category and open an addon's detail page with related and recommended addons.
 - **Install** from the catalog, add by URL, or follow a `harbor://` / `stremio://` deep link.
-- **Configure** addons that require setup: Harbor opens the addon's own configuration view rather than installing without it.
-- **Manage** installed addons, which sync across your devices through your Harbor account.
+- **Configure** addons that require setup: Nexa opens the addon's own configuration view rather than installing without it.
+- **Manage** installed addons, which sync across your devices through your Nexa account.
 - An age gate keeps adult addons behind an explicit opt in.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ### Themes and customization
 
-Harbor's theme engine changes more than colors. A theme can reshape the entire navigation layout.
+Nexa's theme engine changes more than colors. A theme can reshape the entire navigation layout.
 
 |                  |                                                                                                                                                                |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **11 presets**   | Harbor (default), Nord, Stremio, Crunchy, Royal, Dracula, Forest, Noir, Aurora, MinUI, Velvet                                                                  |
+| **11 presets**   | Nexa (default), Nord, Stremio, Crunchy, Royal, Dracula, Forest, Noir, Aurora, MinUI, Velvet                                                                    |
 | **Layouts**      | Left sidebar, top dock, icon rail, Stremio rail, floating dock, or fully custom HTML/CSS chrome                                                                |
 | **Fonts**        | Seven pairings plus custom TTF/OTF/WOFF/WOFF2 upload                                                                                                           |
 | **Surfaces**     | Five card styles, four button styles, an optional animated bokeh layer, and a full bleed background image with a dim slider                                    |
@@ -322,7 +322,7 @@ Harbor's theme engine changes more than colors. A theme can reshape the entire n
 | **Fanart.tv**       | HD logos, backdrops, posters, banners, and thumbs for movies and series                                                                                                                                                           |
 | **Kitsu / AniZip**  | Anime metadata, cross database ID mapping, and per episode detail                                                                                                                                                                 |
 | **Trakt**           | OAuth device sign in, automatic scrobbling, watchlist and history, personalized movie and series recommendations, an Up Next calendar rail, and your avatar in the sidebar                                                        |
-| **Stremio addons**  | Catalog, meta, stream, and subtitle resources from every installed addon, plus `stremio://` install links. Harbor speaks the addon protocol; it does not use a Stremio account                                                    |
+| **Stremio addons**  | Catalog, meta, stream, and subtitle resources from every installed addon, plus `stremio://` install links. Nexa speaks the addon protocol; it does not use a Stremio account                                                      |
 | **Debrid**          | Real-Debrid, AllDebrid, Premiumize, Debrid-Link, and TorBox for cached, instant playback                                                                                                                                          |
 
 Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden Globe, SAG, Cannes, Berlin, Critics Choice, and Annie/Kobe honors.
@@ -366,19 +366,19 @@ Awards laurels surface across detail pages, covering Oscar, Emmy, BAFTA, Golden 
 
 ## Privacy
 
-Harbor is built to keep your data on your machine.
+Nexa is built to keep your data on your machine.
 
-- **No telemetry.** Harbor collects no analytics and sends nothing home.
+- **No telemetry.** Nexa collects no analytics and sends nothing home.
 - **Your keys stay local.** TMDB, RPDB, OMDB, Trakt, and debrid credentials live on your device.
-- **No central server.** Watch party relays deploy to your own Cloudflare account, and casting runs on your own network. Nothing is routed through a Harbor operated backend.
+- **No central server.** Watch party relays deploy to your own Cloudflare account, and casting runs on your own network. Nothing is routed through a Nexa operated backend.
 - **A built in privacy blocker** at the WebView level, with a live counter.
-- **You choose your sources.** What metadata and streams Harbor sees is entirely determined by the addons and services you configure.
+- **You choose your sources.** What metadata and streams Nexa sees is entirely determined by the addons and services you configure.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Install
 
-Download the latest build for macOS or Windows from the [Releases page][releases], use the [official Linux builds](https://github.com/harborstremio-linux/harbor-linux-builds), or open Harbor in your browser.
+Download the latest build for macOS or Windows from the [Releases page][releases], use the [official Linux builds](https://github.com/harborstremio-linux/harbor-linux-builds), or open Nexa in your browser.
 
 | Platform    | Format                                                                                                              |
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -387,13 +387,13 @@ Download the latest build for macOS or Windows from the [Releases page][releases
 | **Web**     | Open in any modern browser, nothing to install                                                                      |
 | **Linux**   | [Official `.deb`, `.rpm`, Flatpak, and AppImage builds](https://github.com/harborstremio-linux/harbor-linux-builds) |
 
-**Out of the box, Harbor works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Addons you install are deduplicated against the built in rails.
+**Out of the box, Nexa works on Cinemeta.** You can browse, play, and cast immediately. Adding a free **TMDB key** in Settings is optional and unlocks the richer trending, theaters, per service, and Watch on experiences described above. Addons you install are deduplicated against the built in rails.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Configuration
 
-All keys and preferences live in **Settings** and persist locally. Nothing is sent to a Harbor server.
+All keys and preferences live in **Settings** and persist locally. Nothing is sent to a Nexa server.
 
 | Setting                | Default      | What it does                                                                                |
 | ---------------------- | ------------ | ------------------------------------------------------------------------------------------- |
@@ -411,7 +411,7 @@ All keys and preferences live in **Settings** and persist locally. Nothing is se
 
 ## Build from source
 
-Harbor is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `harbor-core` Rust crate.
+Nexa is a Tauri 2 app: a React + TypeScript frontend and a Rust shell, with the stream engine living in the `harbor-core` Rust crate.
 
 **Prerequisites**
 
@@ -475,7 +475,7 @@ wasm-pack build harbor-core --target web
 
 ```mermaid
 flowchart TD
-  subgraph Window["Harbor window (WebView2)"]
+  subgraph Window["Nexa window (WebView2)"]
     UI["React 19 + TypeScript + Tailwind v4"]
     Core["harbor-core (Rust to WASM)<br/>parse to trust to score to rank"]
     UI --> Core
@@ -554,14 +554,14 @@ Directional, not a set of promises. Priorities shift with feedback.
 
 ## FAQ
 
-**Does Harbor provide content?**
-No. Harbor hosts and indexes nothing. It is a client for the Stremio addon protocol, and what you can browse or play depends entirely on the addons and services you configure.
+**Does Nexa provide content?**
+No. Nexa hosts and indexes nothing. It is a client for the Stremio addon protocol, and what you can browse or play depends entirely on the addons and services you configure.
 
 **Do I need a TMDB key?**
-No. Harbor works out of the box on Cinemeta. A free TMDB key is recommended because it unlocks trending rails, in theaters, top rated, per service rows, and Watch on chips.
+No. Nexa works out of the box on Cinemeta. A free TMDB key is recommended because it unlocks trending rails, in theaters, top rated, per service rows, and Watch on chips.
 
-**Is Harbor affiliated with Stremio?**
-No. Harbor is an independent open source client built on the open Stremio addon protocol, by someone who loves the ecosystem.
+**Is Nexa affiliated with Stremio?**
+No. Nexa is an independent open source client built on the open Stremio addon protocol, by someone who loves the ecosystem.
 
 **Why Tauri instead of Electron?**
 Tauri uses the system WebView and a Rust backend, which keeps the app small and lets the stream ranking core run as compiled WebAssembly.
@@ -584,7 +584,7 @@ Contributions are very welcome, whether that is code, a bug report, a theme, or 
 
 **Filing issues**
 
-- Found a bug? Open an [issue][issues] with steps to reproduce. Harbor also has a built in **Report a Bug** form in Settings that attaches safe diagnostics for you.
+- Found a bug? Open an [issue][issues] with steps to reproduce. Nexa also has a built in **Report a Bug** form in Settings that attaches safe diagnostics for you.
 - Have an idea? Start a [discussion][discussions] or open a feature request issue.
 
 We aim to respond to issues and pull requests promptly. Be kind, be specific, and assume good faith. We are glad you are here.
@@ -594,13 +594,13 @@ We aim to respond to issues and pull requests promptly. Be kind, be specific, an
 ## Disclaimer
 
 > [!IMPORTANT]
-> Harbor is an independent, open source media player and a client for the open Stremio addon protocol. It is not affiliated with, endorsed by, or associated with Stremio Ltd. Harbor hosts no media, indexes no media, and ships no content addons. It provides no streams of its own. You choose which addons and sources to configure, and you are responsible for ensuring that your use complies with the laws of your jurisdiction and with the terms of any service you connect.
+> Nexa is an independent, open source media player and a client for the open Stremio addon protocol. It is not affiliated with, endorsed by, or associated with Stremio Ltd. Nexa hosts no media, indexes no media, and ships no content addons. It provides no streams of its own. You choose which addons and sources to configure, and you are responsible for ensuring that your use complies with the laws of your jurisdiction and with the terms of any service you connect.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## Acknowledgements
 
-Harbor stands on the shoulders of a generous open ecosystem and the people who build it.
+Nexa stands on the shoulders of a generous open ecosystem and the people who build it.
 
 - The **Stremio addon protocol** and the **Stremio** team, for an open, well designed standard worth building on.
 - The **[Stremio-addons.net](https://stremio-addons.net) Team** for providing an excellent service (please consider supporting them).
@@ -611,13 +611,13 @@ Harbor stands on the shoulders of a generous open ecosystem and the people who b
 - **Tauri**, **React**, **Vite**, **Tailwind CSS**, **Rust**, and **Lucide** for the foundation.
 - **OpenSubtitles**, **Wyzie**, **AniSkip**, and **TheIntroDB** for subtitles and skip data.
 
-Thank you to everyone, named and unnamed, whose open work Harbor builds upon.
+Thank you to everyone, named and unnamed, whose open work Nexa builds upon.
 
 <p align="right"><a href="#readme-top">&#9650; back to top</a></p>
 
 ## License
 
-[MIT](./LICENSE) &copy; 2026 Harbor contributors. Free Speech!
+[MIT](./LICENSE) &copy; 2026 Nexa contributors. Free Speech!
 
 <br/>
 

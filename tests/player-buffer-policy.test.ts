@@ -33,7 +33,7 @@ test("only the P2P engine reports whole-file download progress", () => {
   );
 });
 
-test("bigger buffer mode increases Harbor defaults and waits for a useful reserve", () => {
+test("bigger buffer mode increases Nexa defaults and waits for a useful reserve", () => {
   const settings = {
     mpvQuality: "balanced",
     mpvHwdec: "auto",

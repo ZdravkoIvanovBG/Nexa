@@ -20,7 +20,7 @@ export function PlayModePanel() {
     {
       id: "instant",
       label: t("Instant"),
-      sub: t("Hitting Play jumps straight into playback with the best stream Harbor finds."),
+      sub: t("Hitting Play jumps straight into playback with the best stream Nexa finds."),
       recommended: true,
     },
     {
@@ -34,7 +34,7 @@ export function PlayModePanel() {
       id: "season",
       label: t("Lock to season server"),
       sub: t(
-        "Pick a source once and Harbor keeps playing the rest of that season from the same release, no re-picking. Works best with a debrid season pack. Skipped for anime.",
+        "Pick a source once and Nexa keeps playing the rest of that season from the same release, no re-picking. Works best with a debrid season pack. Skipped for anime.",
       ),
     },
   ];
@@ -161,7 +161,7 @@ export function PlayModePanel() {
           </span>
           <span className="text-[12.5px] leading-snug text-ink-muted">
             {t(
-              "When auto-playing the next episode, keep the same release/source you were just watching instead of Harbor's top-ranked stream. Falls back to the best stream if that source isn't available.",
+              "When auto-playing the next episode, keep the same release/source you were just watching instead of Nexa's top-ranked stream. Falls back to the best stream if that source isn't available.",
             )}
           </span>
         </div>

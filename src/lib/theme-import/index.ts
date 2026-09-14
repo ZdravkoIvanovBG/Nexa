@@ -81,6 +81,6 @@ export function importForeignTheme(text: string, filename?: string): ForeignImpo
   return {
     ok: false,
     error:
-      "Unrecognized theme format. Harbor imports its own themes plus Base16, Spicetify, and Kodi color files.",
+      "Unrecognized theme format. Nexa imports its own themes plus Base16, Spicetify, and Kodi color files.",
   };
 }
