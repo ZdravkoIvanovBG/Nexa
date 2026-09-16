@@ -32,6 +32,10 @@ export function isMovieWatchedLocal(metaId: string): boolean {
   return load().has(metaId);
 }
 
+export function listMovieWatchedLocal(): string[] {
+  return [...load()];
+}
+
 export function setMovieWatchedLocal(metaId: string, watched: boolean): void {
   const cur = load();
   if (cur.has(metaId) === watched) return;

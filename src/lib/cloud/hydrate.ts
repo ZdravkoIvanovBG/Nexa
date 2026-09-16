@@ -131,6 +131,11 @@ function merge<E extends { id: string }, R>(
  * user edit diffs against the merged truth.
  */
 export async function hydrateFromCloud(o: Owner): Promise<void> {
+  // Drain pending writes first, as the profile and settings hydrators do.
+  // merge() weighs a local entry by finishedAt/addedAt, which re-ranking and
+  // reordering never bump, so an un-flushed local edit would always lose to
+  // the row's updated_at and be discarded.
+  await flush().catch(() => {});
   const [wlRows, cwRows, tierRows, addonRows] = await Promise.all([
     pull<WatchlistRow>(TABLE.watchlist, o),
     pull<WatchingRow>(TABLE.watching, o),

@@ -98,15 +98,19 @@ export function FilterPill({
   active,
   onClick,
   children,
+  pressed,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  /** Opt-in aria-pressed, for pill groups that act as a segmented control. */
+  pressed?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={pressed}
       className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
         active ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
       }`}

@@ -3,6 +3,7 @@ import { profileFromMeta } from "@/lib/discover/profile";
 import { trackEvent } from "@/lib/discover/store";
 import { isExternalPlaylistId } from "@/lib/iptv/vod";
 import { saveLocalCw } from "@/lib/local-cw";
+import { recordMovieWatchedLocally } from "@/lib/mark-watched";
 import { isManuallyWatched, recordManualWatchedMeta, setManualWatched } from "@/lib/manual-watched";
 import { savePlayback } from "@/lib/playback-history";
 import { saveResumeMs } from "@/lib/resume";
@@ -73,6 +74,7 @@ export function useResumeAutosave(params: {
       });
       setManualWatched(id, se, ep, true);
     }
+    if (s.meta.type === "movie" && finished) recordMovieWatchedLocally(s.meta);
     if (s.meta.type === "series" || s.meta.type === "movie") {
       saveLocalCw({
         id,

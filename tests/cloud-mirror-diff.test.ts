@@ -102,6 +102,33 @@ test("removeFromWatched deletes only that tier row", () => {
   assert.deepEqual(d.deletes, ["b"]);
 });
 
+test("a tier drag uploads only the dragged item's own media kind", () => {
+  // Ranking is dense per (tier, kind), so dropping a movie at the front of S
+  // renumbers the three movies there and must leave the four series alone.
+  // A regression to whole-tier renumbering would make this seven upserts.
+  const series = [
+    watched("s1", { type: "series", tier: "S", order: 0 }),
+    watched("s2", { type: "series", tier: "S", order: 1 }),
+    watched("s3", { type: "series", tier: "S", order: 2 }),
+    watched("s4", { type: "series", tier: "S", order: 3 }),
+  ];
+  const prev = [
+    watched("m1", { tier: "S", order: 0 }),
+    watched("m2", { tier: "S", order: 1 }),
+    watched("m3", { tier: "unranked", order: 0 }),
+    ...series,
+  ];
+  const next = [
+    watched("m1", { tier: "S", order: 1 }),
+    watched("m2", { tier: "S", order: 2 }),
+    watched("m3", { tier: "S", order: 0 }),
+    ...series,
+  ];
+  const d = diffWatched(prev, next);
+  assert.deepEqual(ids(d.upserts).sort(), ["m1", "m2", "m3"]);
+  assert.deepEqual(d.deletes, []);
+});
+
 test("an item becoming both watching and watched syncs to both tables, with no cross deletes", () => {
   // A returning series: previously finished (already in `watched`, tiered),
   // now a new season starts and it's added back to `watching`. currently_watching
