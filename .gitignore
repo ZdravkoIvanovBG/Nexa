@@ -41,3 +41,14 @@ pnpm-debug.log*
 /src-tauri/fonts/*.ttf
 local_docs/
 
+# Local AI instructions
+AGENTS.md
+CLAUDE.md
+
+# Local Tauri data
+~/.tauri/
+.tauri/
+
+# Generated i18n audit files — only keep these if confirmed unnecessary
+# anime_i18n_keys.json
+# unused_i18n_keys.json
