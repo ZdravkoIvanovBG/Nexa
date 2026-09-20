@@ -50,5 +50,5 @@ CLAUDE.md
 .tauri/
 
 # Generated i18n audit files — only keep these if confirmed unnecessary
-# anime_i18n_keys.json
-# unused_i18n_keys.json
+anime_i18n_keys.json
+unused_i18n_keys.json
