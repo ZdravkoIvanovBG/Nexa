@@ -37,6 +37,7 @@ export type MockOptions = {
   mid: boolean;
   compact: boolean;
   tight: boolean;
+  short: boolean;
   mode: PlayerMode;
   customIcons?: CustomIconMap;
   controlVariants?: Partial<Record<PlayerControlId, ControlVariant>>;
@@ -64,6 +65,7 @@ export function buildDefaultCtx(opts: MockOptions): ControlContext {
     mid: opts.mid,
     compact: opts.compact,
     tight: opts.tight,
+    short: opts.short,
     active: true,
     isLiveChannel: isLive,
     showEpisodeNav: !isLive,

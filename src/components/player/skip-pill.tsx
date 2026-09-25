@@ -7,6 +7,10 @@ import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
+import {
+  HUD_ABOVE_CONTROLS_STACKED,
+  HUD_ABOVE_CONTROLS_STACKED_HIDDEN,
+} from "@/views/player/player-size";
 
 export function SkipPill({
   engine,
@@ -87,8 +91,8 @@ export function SkipPill({
     <div
       className={`pointer-events-none absolute end-7 z-30 flex items-center gap-2 transition-all duration-200 ease-out ${
         visible && show
-          ? "bottom-44 translate-y-0 opacity-100"
-          : "bottom-40 translate-y-2 opacity-0"
+          ? `${HUD_ABOVE_CONTROLS_STACKED} translate-y-0 opacity-100`
+          : `${HUD_ABOVE_CONTROLS_STACKED_HIDDEN} translate-y-2 opacity-0`
       }`}
     >
       <ThreeLiquidGlassSurface
@@ -217,11 +221,13 @@ function UpNextCard({
   return (
     <div
       className={`pointer-events-none absolute end-7 z-30 transition-all duration-200 ease-out ${
-        visible ? "bottom-44 opacity-100 translate-y-0" : "bottom-40 opacity-0 translate-y-2"
+        visible
+          ? `${HUD_ABOVE_CONTROLS_STACKED} opacity-100 translate-y-0`
+          : `${HUD_ABOVE_CONTROLS_STACKED_HIDDEN} opacity-0 translate-y-2`
       }`}
     >
       <div
-        className={`pointer-events-auto relative flex w-[360px] overflow-hidden rounded-2xl border border-white/15 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)] backdrop-blur-md ${
+        className={`pointer-events-auto relative flex w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-white/15 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)] backdrop-blur-md ${
           settings.experimentalLiquidGlassEnabled ? "bg-[#080c12]/35" : "bg-black/80"
         }`}
       >

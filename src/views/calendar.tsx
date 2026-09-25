@@ -55,7 +55,9 @@ export function CalendarView() {
 
   const openItem = useCallback(
     (item: CalendarItem) => {
-      openMeta(calendarToMeta(item), { episodeHint: calendarEpisodeHint(item) ?? undefined });
+      openMeta(calendarToMeta(item), {
+        episodeHint: calendarEpisodeHint(item) ?? undefined,
+      });
     },
     [openMeta],
   );
@@ -106,7 +108,7 @@ export function CalendarView() {
 
   return (
     <main className="flex h-full flex-col overflow-hidden">
-      <header className="shrink-0 border-b border-edge-soft px-12 pb-5 pt-24">
+      <header className="shrink-0 border-b border-edge-soft px-5 pb-5 pt-24 sm:px-8 lg:px-12">
         <div className="flex items-end justify-between gap-6">
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
@@ -184,7 +186,7 @@ export function CalendarView() {
         </nav>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 py-8">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-8 sm:px-8 lg:px-12">
         {body}
       </div>
 

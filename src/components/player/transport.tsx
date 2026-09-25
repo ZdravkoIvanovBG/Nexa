@@ -28,6 +28,8 @@ import {
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
+import { usePlayerSize, useTransportHeightVar } from "@/views/player/player-size";
+import { ControlOverflow } from "./transport/control-overflow";
 
 export function Transport({
   snap,
@@ -170,9 +172,8 @@ export function Transport({
   const { openMeta, exitPlayer } = useView();
   const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
-  const [mid, setMid] = useState(false);
-  const [compact, setCompact] = useState(false);
-  const [tight, setTight] = useState(false);
+  const { mid, compact, tight, short } = usePlayerSize();
+  useTransportHeightVar(controlsRef, !pipMode);
   useEffect(() => {
     onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen);
   }, [audioMenuOpen, subtitleMenuOpen, speedMenuOpen, aspectMenuOpen, onMenuOpenChange]);
@@ -188,21 +189,6 @@ export function Transport({
       window.removeEventListener("storage", onStorage);
     };
   }, []);
-  useEffect(() => {
-    if (pipMode) return;
-    const el = controlsRef.current;
-    if (!el) return;
-    const measure = () => {
-      const w = el.getBoundingClientRect().width;
-      setMid(w < 1300);
-      setCompact(w < 1000);
-      setTight(w < 600);
-    };
-    measure();
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [pipMode]);
   if (isStremioLayout && !pipMode) {
     return (
       <TransportStremio
@@ -327,6 +313,7 @@ export function Transport({
     mid,
     compact,
     tight,
+    short,
     active: visible,
     isLiveChannel,
     showEpisodeNav,
@@ -406,18 +393,20 @@ export function Transport({
       <SongIdToast />
       <div
         data-tauri-drag-region={fullscreen ? undefined : ""}
-        className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between px-7 pt-4 pb-8"
+        className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 ${
+          tight ? "px-3 pt-3 pb-6" : "px-7 pt-4 pb-8"
+        }`}
       >
         <div
           aria-hidden
           className={`absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-transparent ${fadeClassName}`}
         />
-        <div className="pointer-events-auto relative flex items-start gap-2">
+        <div className="pointer-events-auto relative flex min-w-0 flex-1 items-start gap-2">
           {controlsInSlot(chromeConfig, "top-left").map((c) => (
             <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
           ))}
         </div>
-        <div className="relative flex items-start gap-2">
+        <div className="relative flex shrink-0 items-start gap-2">
           <div className="pointer-events-auto flex items-start gap-2">
             {controlsInSlot(chromeConfig, "top-right").map((c) => (
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
@@ -429,9 +418,9 @@ export function Transport({
       <div
         ref={controlsRef}
         dir="ltr"
-        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2.5 ${
-          tight ? "px-3 pt-6 pb-3" : "px-7 pt-10 pb-5"
-        }`}
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col ${
+          short ? "gap-1.5" : "gap-2.5"
+        } ${tight ? "px-3 pt-6 pb-3" : short ? "px-7 pt-6 pb-3" : "px-7 pt-10 pb-5"}`}
       >
         <div
           aria-hidden
@@ -465,25 +454,29 @@ export function Transport({
           )}
         </div>
         <div
-          className={`pointer-events-auto relative grid items-center ${
-            compact ? "grid-cols-[auto_1fr_auto] gap-2" : "grid-cols-[1fr_auto_1fr] gap-4"
+          className={`pointer-events-auto relative grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center ${
+            tight ? "gap-1" : compact ? "gap-2" : "gap-4"
           }`}
         >
-          <div className="flex min-w-0 items-center gap-2 justify-self-start">
+          <div
+            className={`flex min-w-0 items-center justify-self-start ${tight ? "gap-1" : "gap-2"}`}
+          >
             {controlsInSlot(chromeConfig, "bottom-left").map((c) => (
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className={`flex min-w-0 items-center ${tight ? "gap-1" : "gap-1.5"}`}>
             {controlsInSlot(chromeConfig, "bottom-center").map((c) => (
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-1.5 justify-self-end">
-            {controlsInSlot(chromeConfig, "bottom-right").map((c) => (
-              <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
-            ))}
-          </div>
+          <ControlOverflow
+            gapPx={tight ? 4 : 6}
+            items={controlsInSlot(chromeConfig, "bottom-right").map((c) => ({
+              key: c.id,
+              node: renderFadedControl(c.id),
+            }))}
+          />
         </div>
       </div>
 

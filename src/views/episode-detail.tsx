@@ -241,7 +241,7 @@ export function EpisodeDetailView({
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
 
-          <div className="absolute inset-x-0 bottom-0 px-12 pb-14">
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-14 sm:px-8 lg:px-12">
             <div className="max-w-3xl">
               <button
                 onClick={handleSeriesClick}
@@ -293,12 +293,17 @@ export function EpisodeDetailView({
         </div>
       </section>
 
-      <div className="flex flex-col gap-16 px-12 pb-24 pt-14">
+      <div className="flex flex-col gap-16 px-5 pb-24 pt-14 sm:px-8 lg:px-12">
         {episodeData.overview && <Synopsis text={episodeData.overview} />}
 
         {episodeData.guestStars && episodeData.guestStars.length > 0 && (
           <section>
-            <Row title={t("Guest Stars · {n}", { n: episodeData.guestStars.length })} min={128}>
+            <Row
+              title={t("Guest Stars · {n}", {
+                n: episodeData.guestStars.length,
+              })}
+              min={128}
+            >
               {episodeData.guestStars.map((star, i) => (
                 <CastCard
                   key={`${star.id}-${i}`}

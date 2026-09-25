@@ -165,7 +165,9 @@ export function SeekBar({
           ) : (
             <div
               className="pointer-events-none absolute -top-9 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
-              style={{ left: `${(hover / dur) * 100}%` }}
+              style={{
+                left: `clamp(2rem, ${(hover / dur) * 100}%, calc(100% - 2rem))`,
+              }}
             >
               {fmtTime(hover)}
             </div>

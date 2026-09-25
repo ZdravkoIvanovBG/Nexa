@@ -4901,7 +4901,7 @@ export function SettingsNav({
     <nav
       data-harbor-sidebar
       data-tv-scroll-focus
-      className="relative flex w-72 shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]"
+      className="relative flex w-56 shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)] lg:w-72"
     >
       <div data-tauri-drag-region className="h-3 shrink-0" />
       {showBack && (

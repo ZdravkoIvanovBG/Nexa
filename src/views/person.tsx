@@ -48,7 +48,10 @@ export function PersonView({ personId }: { personId: number }) {
     [liveAwards, person?.name],
   );
   const awardChips = useMemo(() => awardSummary(awardEntries), [awardEntries]);
-  const [openAward, setOpenAward] = useState<{ type: AwardType; anchor: DOMRect } | null>(null);
+  const [openAward, setOpenAward] = useState<{
+    type: AwardType;
+    anchor: DOMRect;
+  } | null>(null);
   const openAwardEntries = useMemo(
     () => (openAward && awardEntries ? awardEntries.filter((e) => e.type === openAward.type) : []),
     [openAward, awardEntries],
@@ -139,7 +142,7 @@ export function PersonView({ personId }: { personId: number }) {
           </div>
         )}
 
-        <div className="relative flex flex-col gap-12 px-12 pb-12 pt-28 lg:flex-row lg:items-center lg:gap-14">
+        <div className="relative flex flex-col gap-12 px-5 pb-12 pt-28 lg:flex-row lg:items-center lg:gap-14 sm:px-8 lg:px-12">
           <div className="w-64 shrink-0 lg:w-72">
             <div className="overflow-hidden rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
               <Poster src={photo} seed={String(personId)} ratio="portrait" />
@@ -198,7 +201,7 @@ export function PersonView({ personId }: { personId: number }) {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col gap-14 px-12 pb-24 pt-6">
+      <div className="relative z-10 flex flex-col gap-14 px-5 pb-24 pt-6 sm:px-8 lg:px-12">
         {loading && (
           <div className="h-[260px] animate-pulse rounded-2xl border border-edge-soft bg-elevated/30" />
         )}

@@ -4,6 +4,7 @@ import type { SourceDescriptor } from "@/lib/together/protocol";
 import { formatRuntime } from "@/lib/together/source-descriptor";
 import { useT } from "@/lib/i18n";
 import { DURATION_MISMATCH_S } from "./player-utils";
+import { HUD_ABOVE_CONTROLS } from "@/views/player/player-size";
 
 export function DurationMismatchChip(props: {
   hostSource: SourceDescriptor | null;
@@ -29,7 +30,9 @@ export function DurationMismatchChip(props: {
   if (dismissedKey === pairKey) return null;
 
   return (
-    <div className="pointer-events-auto absolute bottom-24 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-edge-soft bg-elevated/95 py-2 ps-4 pe-2 text-[12.5px] text-ink shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur-md">
+    <div
+      className={`pointer-events-auto absolute ${HUD_ABOVE_CONTROLS} left-1/2 z-40 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-full border border-edge-soft bg-elevated/95 py-2 ps-4 pe-2 text-[12.5px] text-ink shadow-[0_18px_44px_-14px_rgba(0,0,0,0.7)] backdrop-blur-md`}
+    >
       <span className="whitespace-nowrap">
         {t("Your copy runs {guest}, host's runs {host}. Sync may drift.", {
           guest: formatRuntime(guestDurationSec),

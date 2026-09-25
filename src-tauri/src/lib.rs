@@ -4,6 +4,7 @@ mod cast;
 mod cast_hls;
 mod cast_server;
 mod cast_subs;
+mod child_jobs;
 mod crash_report;
 mod cf_relay;
 mod discord_rp;
@@ -51,17 +52,28 @@ mod tray;
 mod web_server;
 mod webview_helpers;
 
+/// Tears down every backend-owned external process/resource. Idempotent and
+/// safe to call more than once — it can be reached from `WindowEvent::Destroyed`,
+/// `RunEvent::ExitRequested`/`RunEvent::Exit`, and the tray Quit item, and
+/// nothing here should run twice or race against a second caller.
 pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
+    if SHUTDOWN_DONE.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    eprintln!("[app] shutdown services start");
     thumbs::shutdown(app);
+    dvr::shutdown(app);
     stream_proxy::shutdown(app);
     cast_server::stop();
     torrent_engine::stop();
     discord_rp::shutdown(app);
     crash_report::mark_clean_exit();
+    eprintln!("[app] shutdown services complete");
 }
 
 pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static CLOSE_IN_PROGRESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static SHUTDOWN_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 /// Tracks WebView2 TrySuspend / SetIsVisible(false) so we can recover on focus.
 #[cfg(windows)]
 static WEBVIEW_SUSPENDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -337,6 +349,17 @@ fn harbor_resume_webview(app: tauri::AppHandle) {
     }
 }
 
+/// Leaves fullscreen before the window-state plugin snapshots the main window.
+/// Fullscreen itself is not persisted, but the plugin also records size and
+/// position, so quitting from fullscreen would otherwise save the monitor-sized
+/// rect and the next launch would open windowed at exactly screen size.
+#[cfg(desktop)]
+pub(crate) fn leave_fullscreen_before_exit(window: &tauri::WebviewWindow) {
+    if window.is_fullscreen().unwrap_or(false) {
+        let _ = window.set_fullscreen(false);
+    }
+}
+
 fn ensure_window_on_screen(app: &tauri::AppHandle) {
     use tauri::Manager;
     let Some(window) = app.get_webview_window("main") else {
@@ -469,12 +492,21 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_window_state::Builder::default()
+                // FULLSCREEN is deliberately not restored: the main window is
+                // undecorated, so a launch that comes up fullscreen has no OS
+                // sizing border and cannot be drag-resized.
                 .with_state_flags(
                     tauri_plugin_window_state::StateFlags::SIZE
                         | tauri_plugin_window_state::StateFlags::POSITION
-                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
-                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
                 )
+                // Auxiliary windows manage their own geometry.
+                .with_denylist(&[
+                    "harbor-pip",
+                    "harbor-browser",
+                    "harbor-hdr-overlay",
+                    "harbor-modal-overlay",
+                ])
                 .build(),
         );
     let app_builder = app_builder
@@ -546,6 +578,20 @@ pub fn run() {
             #[cfg(windows)]
             install_maximize_guard(&app.handle());
             ensure_window_on_screen(&app.handle());
+            // Always launch fullscreen. Deliberately explicit rather than restored:
+            // window-state no longer persists FULLSCREEN, and doing it here (after the
+            // plugin's restore_state, before the window is shown) makes the launch
+            // state independent of how the previous session ended. Not done via
+            // tauri.conf.json, whose flag would be applied before restore_state's
+            // set_position/set_size/maximize and fight with them.
+            #[cfg(desktop)]
+            {
+                use tauri::Manager;
+                let state = app.state::<fullscreen::FullscreenState>();
+                if let Err(e) = fullscreen::enter_fullscreen_now(app.handle(), &state) {
+                    eprintln!("[harbor::window] launch fullscreen failed: {e}");
+                }
+            }
             // Fail-open: if PageLoadEvent::Finished never arrives (WebView hang),
             // still show the main window so the user is not stuck on a blank frame.
             {
@@ -608,6 +654,10 @@ pub fn run() {
                     if !CLOSE_IN_PROGRESS.swap(true, std::sync::atomic::Ordering::SeqCst) {
                         use tauri::Emitter;
                         api.prevent_close();
+                        #[cfg(desktop)]
+                        if let Some(main) = window.app_handle().get_webview_window("main") {
+                            leave_fullscreen_before_exit(&main);
+                        }
                         CLOSE_FLUSH_DONE.store(false, std::sync::atomic::Ordering::SeqCst);
                         let _ = window.emit("harbor://app-closing", ());
                         let w = window.clone();
@@ -641,6 +691,7 @@ pub fn run() {
                     );
                 }
                 tauri::WindowEvent::Destroyed => {
+                    eprintln!("[app] exit requested (window-destroyed)");
                     shutdown_services(window.app_handle());
                 }
                 _ => {}
@@ -776,6 +827,25 @@ pub fn run() {
             deeplink_is_stremio_registered,
             harbor_take_pending_file,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|handle, event| {
+            // Backstop for shutdown_services: WindowEvent::Destroyed only fires
+            // for the main window closing normally. RunEvent::ExitRequested and
+            // RunEvent::Exit fire on every exit path (tray quit, app.exit(),
+            // updater relaunch, OS session end), so cleanup is guaranteed
+            // regardless of how the app is asked to close. shutdown_services is
+            // idempotent, so this never double-runs cleanup with the window path.
+            match event {
+                tauri::RunEvent::ExitRequested { .. } => {
+                    eprintln!("[app] exit requested (run-event: ExitRequested)");
+                    shutdown_services(handle);
+                }
+                tauri::RunEvent::Exit => {
+                    eprintln!("[app] exit requested (run-event: Exit)");
+                    shutdown_services(handle);
+                }
+                _ => {}
+            }
+        });
 }

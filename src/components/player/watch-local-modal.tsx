@@ -61,7 +61,7 @@ export function WatchLocalModal() {
         if (e.target === e.currentTarget) closeWatchLocalConfirm();
       }}
     >
-      <div className="mx-4 flex w-full max-w-[440px] flex-col gap-5 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div className="mx-4 max-h-[88vh] overflow-y-auto overflow-x-hidden flex w-full max-w-[440px] flex-col gap-5 rounded-[24px] border border-edge-soft bg-elevated/95 px-8 py-8 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
         <button
           type="button"
           data-tv-modal-close

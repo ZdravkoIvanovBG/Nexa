@@ -107,7 +107,7 @@ export function Kids({ active = true }: { active?: boolean }) {
     <main ref={scrollCb} data-kids="on" className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
         <KidsHero featured={hero} />
-        <div className="relative z-10 mt-[-14vh] flex w-full flex-col gap-6 px-12 pb-32 pt-3">
+        <div className="relative z-10 mt-[-14vh] flex w-full flex-col gap-6 px-5 pb-32 pt-3 sm:px-8 lg:px-12">
           <div aria-hidden className="kids-page-glow pointer-events-none absolute inset-0 -z-10" />
           <KidsDoodles />
           <div className="relative">

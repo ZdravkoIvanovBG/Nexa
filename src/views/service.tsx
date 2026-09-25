@@ -22,7 +22,14 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  { id: "all", label: "All", fetchMovies: true, fetchTv: true, movieGenres: [], tvGenres: [] },
+  {
+    id: "all",
+    label: "All",
+    fetchMovies: true,
+    fetchTv: true,
+    movieGenres: [],
+    tvGenres: [],
+  },
   {
     id: "movies",
     label: "Movies",
@@ -31,7 +38,14 @@ const CATEGORIES: Category[] = [
     movieGenres: [],
     tvGenres: [],
   },
-  { id: "tv", label: "TV Shows", fetchMovies: false, fetchTv: true, movieGenres: [], tvGenres: [] },
+  {
+    id: "tv",
+    label: "TV Shows",
+    fetchMovies: false,
+    fetchTv: true,
+    movieGenres: [],
+    tvGenres: [],
+  },
   {
     id: "docs",
     label: "Documentaries",
@@ -202,7 +216,7 @@ export function ServiceView({ service }: { service: StreamingService }) {
 
   return (
     <main ref={scrollRef} className="absolute inset-0 overflow-y-auto pb-14">
-      <div className="relative px-12 pt-28 pb-12">
+      <div className="relative px-5 pt-28 pb-12 sm:px-8 lg:px-12">
         <div
           aria-hidden
           className="harbor-bleed-stremio pointer-events-none absolute inset-0"
@@ -231,7 +245,7 @@ export function ServiceView({ service }: { service: StreamingService }) {
       <CategoryPills active={category} onChange={setCategory} />
       <CategoryFab active={category} onChange={setCategory} />
 
-      <div className="px-12 pt-10">
+      <div className="px-5 pt-10 sm:px-8 lg:px-12">
         {loading && (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-x-5 gap-y-9">
             {Array.from({ length: 18 }).map((_, i) => (
@@ -334,7 +348,10 @@ function CategoryPills({
 }) {
   const t = useT();
   const trackRef = useRef<HTMLDivElement>(null);
-  const [scrollState, setScrollState] = useState({ canLeft: false, canRight: false });
+  const [scrollState, setScrollState] = useState({
+    canLeft: false,
+    canRight: false,
+  });
 
   const recompute = useCallback(() => {
     const el = trackRef.current;
@@ -370,18 +387,25 @@ function CategoryPills({
     if (!el) return;
     const target = el.querySelector<HTMLButtonElement>(`button[data-cat="${active.id}"]`);
     if (target) {
-      target.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      target.scrollIntoView({
+        inline: "nearest",
+        block: "nearest",
+        behavior: "smooth",
+      });
     }
   }, [active.id]);
 
   const page = (dir: -1 | 1) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.max(220, el.clientWidth * 0.6), behavior: "smooth" });
+    el.scrollBy({
+      left: dir * Math.max(220, el.clientWidth * 0.6),
+      behavior: "smooth",
+    });
   };
 
   return (
-    <div className="px-12 pt-8">
+    <div className="px-5 pt-8 sm:px-8 lg:px-12">
       <div className="group/pills relative">
         <div
           ref={trackRef}
@@ -551,7 +575,13 @@ async function fetchPage(
     const json = await res.json();
     return json.results ?? [];
   } catch (e) {
-    console.warn("[service] fetchPage failed", { kind, providerIds, region, page, error: e });
+    console.warn("[service] fetchPage failed", {
+      kind,
+      providerIds,
+      region,
+      page,
+      error: e,
+    });
     return [];
   }
 }

@@ -13,6 +13,7 @@ import { nextEpisodeLead } from "@/views/player/skip-pill-container";
 import { shouldShowAdReport } from "@/views/player/should-show-adreport";
 import { AdReportModal } from "./ad-report-modal";
 import { AdReportFirstTip } from "./ad-report-first-tip";
+import { HUD_ABOVE_CONTROLS } from "@/views/player/player-size";
 
 export function AdReportButton({
   meta,
@@ -70,7 +71,7 @@ export function AdReportButton({
   return (
     <>
       <div
-        className={`absolute end-7 bottom-40 z-30 transition-opacity duration-200 ${
+        className={`absolute end-7 ${HUD_ABOVE_CONTROLS} z-30 transition-opacity duration-200 ${
           buttonVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >

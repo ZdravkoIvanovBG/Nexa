@@ -15,6 +15,7 @@ import { useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
 import { fmtTime } from "./transport/transport-utils";
+import { useTransportHeightVar } from "@/views/player/player-size";
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -54,6 +55,8 @@ export function TransportKids({
 }) {
   const t = useT();
   const playing = snap.status === "playing";
+  const barRef = useRef<HTMLDivElement>(null);
+  useTransportHeightVar(barRef);
   const subActive = snap.subtitleTracks.some((s) => s.selected);
   const firstSub = snap.subtitleTracks[0];
   const toggleSub = () => {
@@ -87,6 +90,7 @@ export function TransportKids({
       </div>
 
       <div
+        ref={barRef}
         className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-5 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-8 pb-8 pt-14 transition-opacity duration-300 ${
           visible ? "opacity-100" : "opacity-0"
         }`}

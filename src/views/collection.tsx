@@ -70,7 +70,7 @@ export function CollectionView({ collectionId }: { collectionId: number }) {
             <div className="absolute inset-0 bg-gradient-to-r from-canvas/90 via-canvas/25 to-transparent" />
           </div>
         )}
-        <div className="relative px-12 pt-28">
+        <div className="relative px-5 pt-28 sm:px-8 lg:px-12">
           <div className="mt-10 flex items-end gap-7 pb-2">
             {data?.poster && (
               <img
@@ -112,7 +112,7 @@ export function CollectionView({ collectionId }: { collectionId: number }) {
         </div>
       </div>
 
-      <div className="px-12 pb-16 pt-10">
+      <div className="px-5 pb-16 pt-10 sm:px-8 lg:px-12">
         {parts.length > 0 && (
           <h2 className="mb-4 text-[13px] font-bold uppercase tracking-[0.2em] text-ink-subtle">
             {t("Films")}

@@ -96,6 +96,7 @@ import {
 } from "@/lib/deep-link";
 import { HarborQueryProvider, useIdlePagePrefetch } from "@/lib/query";
 import { HarborRouterProvider, ViewRouterSync } from "@/router";
+import { sidebarWidthClass } from "@/lib/chrome-metrics";
 
 const importCalendar = () => import("@/views/calendar");
 const importDetail = () => import("@/views/detail");
@@ -739,7 +740,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
       stepUiScale(e.deltaY < 0 ? 1 : -1);
     };
     window.addEventListener("keydown", onKey, true);
-    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    window.addEventListener("wheel", onWheel, {
+      capture: true,
+      passive: false,
+    });
     return () => {
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
@@ -856,8 +860,18 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
+  const hadPlayer = useRef(false);
   useEffect(() => {
-    if (!playerActive) void exitWindowFullscreenOnPlayerClose();
+    if (playerActive) {
+      hadPlayer.current = true;
+      return;
+    }
+    // Only when a player actually closed. Effects run once on mount with
+    // playerActive already false, and the app launches fullscreen, so
+    // exiting here would undo the launch state.
+    if (!hadPlayer.current) return;
+    hadPlayer.current = false;
+    void exitWindowFullscreenOnPlayerClose();
   }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
@@ -933,7 +947,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const downloadsAlive = useIdleEvict(downloadsTop);
 
   return (
-    <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
+    <div
+      data-kids={kidsTop || kid ? "on" : undefined}
+      className={`relative flex h-full ${
+        settingsTop || playerActive || pickerTop
+          ? sidebarWidthClass("none", false)
+          : sidebarWidthClass(layout, settings.sidebarCollapsed)
+      }`}
+    >
       {!settingsTop && !playerActive && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "nord" && <NordSidebar />}
@@ -950,7 +971,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
       {!playerActive && !pickerTop && layout === "cinematic" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "rail" && (
-        <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />
+        <FloatingBack offsetLeft="calc(var(--harbor-sidebar-w, 0px) + 20px)" offsetTop={28} />
       )}
       {!playerActive && !pickerTop && layout === "custom" && (
         <FloatingBack offsetLeft={20} offsetTop={20} />
@@ -963,7 +984,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
       {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
         <CustomLayoutSafetyNet />
       )}
-      {!playerActive && <WindowResizeEdges />}
+      <WindowResizeEdges />
       <div
         className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}
       >

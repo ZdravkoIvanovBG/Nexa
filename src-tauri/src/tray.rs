@@ -256,6 +256,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                 let _ = app.emit("harbor://set-theme", theme);
             }
             "tray_quit" => {
+                eprintln!("[app] exit requested (tray)");
                 if let Some(w) = app.get_webview_window("main") {
                     crate::CLOSE_FLUSH_DONE.store(false, Ordering::SeqCst);
                     let _ = w.emit("harbor://app-closing", ());
@@ -265,6 +266,8 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                         }
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
+                    #[cfg(desktop)]
+                    crate::leave_fullscreen_before_exit(&w);
                 }
                 crate::shutdown_services(app);
                 app.exit(0);
