@@ -50,15 +50,6 @@ pub struct Achievement {
     pub fetched_at: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LauncherSource {
-    pub id: String,
-    pub enabled: bool,
-    pub last_scan_at: Option<i64>,
-    pub root_paths: Vec<String>,
-}
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManualGameInput {

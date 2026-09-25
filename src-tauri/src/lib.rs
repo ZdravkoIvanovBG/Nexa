@@ -13,6 +13,7 @@ mod download;
 mod dvr;
 mod fonts;
 mod fullscreen;
+#[cfg(desktop)]
 mod games;
 mod hdr_overlay;
 mod http_fetch;
@@ -519,8 +520,10 @@ pub fn run() {
         .manage(dvr_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
-        .manage(download::DownloadState::new())
-        .manage(games::process::GamesProcessState::new());
+        .manage(download::DownloadState::new());
+
+    #[cfg(desktop)]
+    let app_builder = app_builder.manage(games::process::GamesProcessState::new());
 
     #[cfg(target_os = "macos")]
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
@@ -549,6 +552,7 @@ pub fn run() {
             if let Err(error) = crash_report::initialize(app.handle()) {
                 eprintln!("[harbor::crash-report] initialization failed: {error}");
             }
+            #[cfg(desktop)]
             {
                 use tauri::Manager;
                 match games::store::GamesDbState::new(app.handle()) {
@@ -829,22 +833,39 @@ pub fn run() {
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::harbor_scan_folder,
+            #[cfg(desktop)]
             games::store::games_add_manual,
+            #[cfg(desktop)]
             games::store::games_library_list,
+            #[cfg(desktop)]
             games::store::games_get,
+            #[cfg(desktop)]
             games::store::games_update,
+            #[cfg(desktop)]
             games::store::games_delete,
+            #[cfg(desktop)]
             games::store::games_sessions_list,
+            #[cfg(desktop)]
             games::store::games_achievements_list,
+            #[cfg(desktop)]
             games::process::games_launch,
+            #[cfg(desktop)]
             games::process::games_active_sessions,
+            #[cfg(desktop)]
             games::process::games_force_stop,
+            #[cfg(desktop)]
             games::steam::games_steam_scan_start,
+            #[cfg(desktop)]
             games::epic::games_epic_scan_start,
+            #[cfg(desktop)]
             games::artwork::games_artwork_search,
+            #[cfg(desktop)]
             games::artwork::games_artwork_fetch,
+            #[cfg(desktop)]
             games::artwork::games_artwork_upload,
+            #[cfg(desktop)]
             games::achievements::games_steam_verify_key,
+            #[cfg(desktop)]
             games::achievements::games_achievements_fetch,
             #[cfg(desktop)]
             tray::tray_set_prefs,
