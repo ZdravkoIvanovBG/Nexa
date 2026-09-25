@@ -671,7 +671,10 @@ export function DetailView({
   const smartPlay = useCallback(
     async (forcePicker = false) => {
       if (inSession) claimHost(true);
-      const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker };
+      const opts = {
+        autoPlay: !forcePicker && settings.instantPlay,
+        resume: !forcePicker,
+      };
       const launch = (episode: PlayEpisode | undefined) => {
         const stream = () => openPicker(playMeta, episode, opts);
         if (forcePicker) {
@@ -748,7 +751,11 @@ export function DetailView({
           onClick={() => {
             const n = Number(String(year).slice(0, 4));
             if (Number.isFinite(n)) {
-              openFilter({ kind: "year", mediaType: isSeries ? "tv" : "movie", value: n });
+              openFilter({
+                kind: "year",
+                mediaType: isSeries ? "tv" : "movie",
+                value: n,
+              });
             }
           }}
         >
@@ -797,7 +804,11 @@ export function DetailView({
             }
             const minutes = parseInt(String(runtime), 10);
             if (Number.isFinite(minutes)) {
-              openFilter({ kind: "runtime", mediaType: "movie", value: minutes });
+              openFilter({
+                kind: "runtime",
+                mediaType: "movie",
+                value: minutes,
+              });
             }
           }}
         >
@@ -879,7 +890,7 @@ export function DetailView({
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
 
-          <div className="absolute inset-x-0 bottom-0 px-12 pb-14">
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-14 sm:px-8 lg:px-12">
             <div className={awardsInDescription ? "max-w-3xl" : undefined}>
               {tagline && !loading && (
                 <p
@@ -1134,7 +1145,10 @@ export function DetailView({
         </div>
       </section>
 
-      <div data-tauri-drag-region className="flex flex-col gap-16 px-12 pb-24 pt-14">
+      <div
+        data-tauri-drag-region
+        className="flex flex-col gap-16 px-5 pb-24 pt-14 sm:px-8 lg:px-12"
+      >
         {(overview || heroAwardsInline || parentalGuide) && (
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
             {overview && <Synopsis text={overview} />}

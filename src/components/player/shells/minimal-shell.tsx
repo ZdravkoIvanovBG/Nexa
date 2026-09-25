@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { PlayerShellProps } from "@/lib/player-shells/types";
 import { usePlaybackPositionGated } from "@/lib/player/playback-clock";
 import { useT } from "@/lib/i18n";
+import { useTransportHeightVar } from "@/views/player/player-size";
 
 export function MinimalShell({
   snap,
@@ -16,12 +17,15 @@ export function MinimalShell({
   title,
 }: PlayerShellProps) {
   const t = useT();
+  const barRef = useRef<HTMLDivElement>(null);
+  useTransportHeightVar(barRef, !pipMode);
   if (pipMode) return null;
 
   const playing = snap.status === "playing";
 
   return (
     <div
+      ref={barRef}
       className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 bg-gradient-to-t from-black/70 to-transparent px-8 pb-5 pt-12 transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0"
       }`}

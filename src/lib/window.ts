@@ -49,9 +49,11 @@ export function useMaximized(): boolean {
     let cancelled = false;
     let timer: number | null = null;
     const check = () => {
-      (IS_MAC ? win.isFullscreen() : win.isMaximized()).then((v) => {
-        if (!cancelled) setMaxed(v);
-      });
+      (IS_MAC ? win.isFullscreen() : win.isMaximized())
+        .then((v) => {
+          if (!cancelled) setMaxed(v);
+        })
+        .catch(() => {});
     };
     check();
     const schedule = () => {
@@ -61,11 +63,17 @@ export function useMaximized(): boolean {
         check();
       }, 150);
     };
-    const unlisten = win.onResized(schedule);
+    // The resize handles hide while this is true, and a resize event is the only
+    // thing that re-checks it. If the listener never registers, or the value was
+    // wrong at mount, nothing else could ever correct it, so also re-check on
+    // focus.
+    const unlisten = win.onResized(schedule).catch(() => null);
+    window.addEventListener("focus", schedule);
     return () => {
       cancelled = true;
       if (timer != null) window.clearTimeout(timer);
-      unlisten.then((fn) => fn());
+      window.removeEventListener("focus", schedule);
+      unlisten.then((fn) => fn?.());
     };
   }, []);
   return maxed;

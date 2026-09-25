@@ -658,7 +658,7 @@ export function PlayPicker({
         className="absolute inset-x-0 top-0 z-10 h-20"
       />
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-12 pb-32 pt-32">
+      <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col gap-12 px-5 pb-32 pt-32 sm:px-8 lg:px-12">
         <PickerHeader
           meta={metaForDisplay}
           episode={episode}

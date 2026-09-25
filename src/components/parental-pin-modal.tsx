@@ -5,7 +5,11 @@ import { useT } from "@/lib/i18n";
 
 type Mode =
   | { kind: "unlock"; onUnlock: () => void; onCancel: () => void }
-  | { kind: "set"; onSet: (pin: string) => Promise<void>; onCancel: () => void };
+  | {
+      kind: "set";
+      onSet: (pin: string) => Promise<void>;
+      onCancel: () => void;
+    };
 
 export function ParentalPinModal({
   mode,
@@ -130,7 +134,7 @@ export function ParentalPinModal({
       }}
     >
       <div
-        className={`relative flex w-full max-w-[420px] flex-col gap-7 overflow-hidden rounded-[24px] px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 ${
+        className={`relative mx-4 flex max-h-[88vh] w-full max-w-[420px] flex-col gap-7 overflow-y-auto overflow-x-hidden rounded-[24px] px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200 ${
           kids ? "text-white" : "modal-panel border border-edge-soft bg-elevated/95"
         } ${shake ? "animate-[pin-shake_0.34s_ease]" : ""}`}
       >

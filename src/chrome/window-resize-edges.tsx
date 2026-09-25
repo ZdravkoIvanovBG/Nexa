@@ -4,13 +4,16 @@ import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
+// Corners come last so they stack above the edges and win the overlapping pixels.
 const EDGES: Array<{ dir: ResizeDir; cls: string }> = [
-  { dir: "North", cls: "inset-x-0 top-0 h-2 cursor-ns-resize" },
-  { dir: "South", cls: "inset-x-0 bottom-0 h-2 cursor-ns-resize" },
-  { dir: "NorthWest", cls: "left-0 top-0 h-5 w-5 cursor-nwse-resize" },
-  { dir: "NorthEast", cls: "right-0 top-0 h-5 w-5 cursor-nesw-resize" },
-  { dir: "SouthWest", cls: "bottom-0 left-0 h-5 w-5 cursor-nesw-resize" },
-  { dir: "SouthEast", cls: "bottom-0 right-0 h-5 w-5 cursor-nwse-resize" },
+  { dir: "North", cls: "inset-x-0 top-0 h-1.5 cursor-ns-resize" },
+  { dir: "South", cls: "inset-x-0 bottom-0 h-1.5 cursor-ns-resize" },
+  { dir: "West", cls: "inset-y-0 left-0 w-1.5 cursor-ew-resize" },
+  { dir: "East", cls: "inset-y-0 right-0 w-1.5 cursor-ew-resize" },
+  { dir: "NorthWest", cls: "left-0 top-0 h-6 w-6 cursor-nwse-resize" },
+  { dir: "NorthEast", cls: "right-0 top-0 h-6 w-6 cursor-nesw-resize" },
+  { dir: "SouthWest", cls: "bottom-0 left-0 h-6 w-6 cursor-nesw-resize" },
+  { dir: "SouthEast", cls: "bottom-0 right-0 h-6 w-6 cursor-nwse-resize" },
 ];
 
 export function WindowResizeEdges() {

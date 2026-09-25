@@ -1690,17 +1690,25 @@ pub async fn mpv_clip_save(
     } else {
         cmd.arg("--sid=no").arg("--no-sub");
     }
-    cmd.arg(&src);
+    // This is a one-shot headless encoder, not user-facing playback — it
+    // must never surface in the Windows volume/media overlay or steal media
+    // keys from the real player.
+    cmd.arg("--media-controls=no").arg("--input-media-keys=no");
+    // End-of-options terminator: `src` comes from mpv's own `path` property,
+    // but guard it the same way the other external-mpv spawns do.
+    cmd.arg("--").arg(&src);
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000);
 
-    let status = cmd
-        .status()
+    let mut child = cmd.spawn().map_err(|e| format!("spawn mpv encode: {}", e))?;
+    crate::child_jobs::adopt(&child);
+    let status = child
+        .wait()
         .await
-        .map_err(|e| format!("spawn mpv encode: {}", e))?;
+        .map_err(|e| format!("wait mpv encode: {}", e))?;
     if !status.success() {
         let _ = std::fs::remove_file(&out_path);
         return Err(format!("clip encode failed (mpv exit {:?})", status.code()));

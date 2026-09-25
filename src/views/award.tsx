@@ -126,7 +126,7 @@ export function AwardView({ awardType }: { awardType: AwardType }) {
     <main ref={scrollRef} className="relative h-full overflow-y-auto bg-canvas">
       <AwardHero type={awardType} tint={tint} films={films} />
 
-      <div className="relative mx-auto flex max-w-[1180px] flex-col gap-12 px-12 pb-32 pt-14">
+      <div className="relative mx-auto flex max-w-[1180px] flex-col gap-12 px-5 pb-32 pt-14 sm:px-8 lg:px-12">
         <section className="flex max-w-3xl flex-col gap-3">
           <p className="text-[16.5px] leading-[1.65] text-ink-muted">{meta.description}</p>
           {meta.tagline && (

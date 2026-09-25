@@ -36,7 +36,7 @@ export function FilterView({ filter }: { filter: MetaFilter }) {
       <SpotlightGateContext.Provider value={gate}>
         <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
           <Header filter={filter} />
-          <div className="flex flex-col gap-12 px-12 pb-24">
+          <div className="flex flex-col gap-12 px-5 pb-24 sm:px-8 lg:px-12">
             <Rails filter={filter} />
           </div>
           <BackToTop scrollRef={scrollRef} />

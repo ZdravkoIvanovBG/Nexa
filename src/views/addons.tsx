@@ -287,7 +287,7 @@ export function AddonsView() {
         onClose={() => setAgeGateOpen(false)}
         onPass={() => update({ showAdultAddons: true })}
       />
-      <header className="shrink-0 px-12 pt-20 pb-3">
+      <header className="shrink-0 px-5 pt-20 pb-3 sm:px-8 lg:px-12">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <nav className="flex flex-wrap items-center gap-1">
             {(["discover", "browse", "installed", "bundles"] as Tab[]).map((tabId) => {
@@ -478,7 +478,7 @@ export function AddonsView() {
         )}
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 pb-20 pt-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-20 pt-6 sm:px-8 lg:px-12">
         {loading && allAddons.length === 0 ? (
           <div className="flex h-full items-center justify-center py-24">
             <HarborLoader size="lg" caption={t("Loading the catalog")} keyed />

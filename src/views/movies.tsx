@@ -184,7 +184,7 @@ export function Movies({ active = true }: { active?: boolean }) {
         ) : (
           <div className="h-[42vh] min-h-[280px] w-full animate-pulse bg-elevated/40" />
         )}
-        <div className="relative flex w-full flex-col gap-12 px-12 pb-32 pt-12">
+        <div className="relative flex w-full flex-col gap-12 px-5 pb-32 pt-12 sm:px-8 lg:px-12">
           <CatalogCustomizeBar
             editMode={pageRows.editMode}
             hasChanges={hasPageRowChanges(pageRows.custom)}
@@ -239,7 +239,11 @@ export function Movies({ active = true }: { active?: boolean }) {
                 onViewAll={
                   row.fetcher
                     ? () =>
-                        openGrid({ title: t(row.name), fetcher: row.fetcher!, initial: row.metas })
+                        openGrid({
+                          title: t(row.name),
+                          fetcher: row.fetcher!,
+                          initial: row.metas,
+                        })
                     : undefined
                 }
               >

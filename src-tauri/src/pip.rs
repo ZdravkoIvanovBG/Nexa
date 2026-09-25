@@ -7,6 +7,11 @@ use tokio::sync::Mutex;
 
 const PIP_LABEL: &str = "harbor-pip";
 
+/// Minimum size of the main window, kept in sync with
+/// `app.windows[0].minWidth`/`minHeight` in `tauri.conf.json`.
+const MAIN_MIN_W: f64 = 800.0;
+const MAIN_MIN_H: f64 = 560.0;
+
 #[derive(Debug, Clone)]
 struct WindowSnapshot {
     width: f64,
@@ -294,19 +299,19 @@ pub async fn window_pip_exit(
         #[cfg(desktop)]
         let _ = main.set_always_on_top(s.always_on_top);
         if s.maximized {
-            let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+            let _ = main.set_min_size(Some(LogicalSize::new(MAIN_MIN_W, MAIN_MIN_H)));
             #[cfg(desktop)]
             let _ = main.maximize();
         } else {
-            let _ = main.set_size(LogicalSize::new(s.width.max(960.0), s.height.max(600.0)));
+            let _ = main.set_size(LogicalSize::new(s.width.max(MAIN_MIN_W), s.height.max(MAIN_MIN_H)));
             let _ = main.set_position(LogicalPosition::new(s.x, s.y));
-            let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+            let _ = main.set_min_size(Some(LogicalSize::new(MAIN_MIN_W, MAIN_MIN_H)));
         }
     } else {
         #[cfg(desktop)]
         let _ = main.set_always_on_top(false);
         let _ = main.set_size(LogicalSize::new(1280.0, 800.0));
-        let _ = main.set_min_size(Some(LogicalSize::new(960.0, 600.0)));
+        let _ = main.set_min_size(Some(LogicalSize::new(MAIN_MIN_W, MAIN_MIN_H)));
         #[cfg(desktop)]
         let _ = main.center();
     }

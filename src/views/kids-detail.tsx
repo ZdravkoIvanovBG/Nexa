@@ -81,7 +81,7 @@ export function KidsDetailView({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas via-canvas/35 to-transparent" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
 
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-5 px-12 pb-9">
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-5 px-5 pb-9 sm:px-8 lg:px-12">
           {logo ? (
             <img
               src={logo}
@@ -116,7 +116,7 @@ export function KidsDetailView({
         </div>
       </section>
 
-      <div className="flex flex-col gap-10 px-12 pb-32 pt-3">
+      <div className="flex flex-col gap-10 px-5 pb-32 pt-3 sm:px-8 lg:px-12">
         {overview && (
           <p className="max-w-3xl text-[17px] font-medium leading-relaxed text-ink">{overview}</p>
         )}

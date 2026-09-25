@@ -16,28 +16,38 @@ const AccountStub = lazy(() =>
   import("./settings/account").then((m) => ({ default: m.AccountStub })),
 );
 const AdvancedPanel = lazy(() =>
-  import("./settings/advanced-panel").then((m) => ({ default: m.AdvancedPanel })),
+  import("./settings/advanced-panel").then((m) => ({
+    default: m.AdvancedPanel,
+  })),
 );
 const BasicsPanel = lazy(() =>
   import("./settings/basics-panel").then((m) => ({ default: m.BasicsPanel })),
 );
 const BugReportPanel = lazy(() =>
-  import("./settings/bug-report-panel").then((m) => ({ default: m.BugReportPanel })),
+  import("./settings/bug-report-panel").then((m) => ({
+    default: m.BugReportPanel,
+  })),
 );
 const LibraryPanel = lazy(() =>
   import("./settings/library-panel").then((m) => ({ default: m.LibraryPanel })),
 );
 const ApiKeysPanel = lazy(() =>
-  import("./settings/api-keys-panel").then((m) => ({ default: m.ApiKeysPanel })),
+  import("./settings/api-keys-panel").then((m) => ({
+    default: m.ApiKeysPanel,
+  })),
 );
 const LanguagePanel = lazy(() =>
-  import("./settings/language-panel").then((m) => ({ default: m.LanguagePanel })),
+  import("./settings/language-panel").then((m) => ({
+    default: m.LanguagePanel,
+  })),
 );
 const HotkeysPanel = lazy(() =>
   import("./settings/hotkeys-panel").then((m) => ({ default: m.HotkeysPanel })),
 );
 const PlayerLayoutPanel = lazy(() =>
-  import("./settings/player-layout-panel").then((m) => ({ default: m.PlayerLayoutPanel })),
+  import("./settings/player-layout-panel").then((m) => ({
+    default: m.PlayerLayoutPanel,
+  })),
 );
 const QualityPanel = lazy(() =>
   import("./settings/quality-panel").then((m) => ({ default: m.QualityPanel })),
@@ -45,7 +55,9 @@ const QualityPanel = lazy(() =>
 const MpvPanel = lazy(() => import("./settings/mpv-panel").then((m) => ({ default: m.MpvPanel })));
 const P2PPanel = lazy(() => import("./settings/p2p-panel").then((m) => ({ default: m.P2PPanel })));
 const SmoothingPanel = lazy(() =>
-  import("./settings/smoothing-panel").then((m) => ({ default: m.SmoothingPanel })),
+  import("./settings/smoothing-panel").then((m) => ({
+    default: m.SmoothingPanel,
+  })),
 );
 const TraktPanel = lazy(() =>
   import("./settings/trakt-panel").then((m) => ({ default: m.TraktPanel })),
@@ -54,16 +66,22 @@ const SimklPanel = lazy(() =>
   import("./settings/simkl-panel").then((m) => ({ default: m.SimklPanel })),
 );
 const LetterboxdPanel = lazy(() =>
-  import("./settings/letterboxd-panel").then((m) => ({ default: m.LetterboxdPanel })),
+  import("./settings/letterboxd-panel").then((m) => ({
+    default: m.LetterboxdPanel,
+  })),
 );
 const RelaySection = lazy(() =>
   import("./settings/relay-section").then((m) => ({ default: m.RelaySection })),
 );
 const StreamingSourcesPanel = lazy(() =>
-  import("./settings/streaming-sources-panel").then((m) => ({ default: m.StreamingSourcesPanel })),
+  import("./settings/streaming-sources-panel").then((m) => ({
+    default: m.StreamingSourcesPanel,
+  })),
 );
 const StreamFiltersPanel = lazy(() =>
-  import("./settings/stream-filters-panel").then((m) => ({ default: m.StreamFiltersPanel })),
+  import("./settings/stream-filters-panel").then((m) => ({
+    default: m.StreamFiltersPanel,
+  })),
 );
 const ThemePanel = lazy(() =>
   import("./settings/theme-panel").then((m) => ({ default: m.ThemePanel })),
@@ -265,7 +283,10 @@ export function Settings() {
       <div className="flex h-full bg-canvas">
         <SettingsNav active={active} onChange={handleNav} />
         <main ref={scrollRef} className="flex-1 overflow-y-auto pt-28 pb-16">
-          <div data-tauri-drag-region className="mx-auto flex max-w-3xl flex-col gap-10 px-12">
+          <div
+            data-tauri-drag-region
+            className="mx-auto flex max-w-3xl flex-col gap-10 px-5 sm:px-8 lg:px-12"
+          >
             {!(active === "network" && relayMode !== "panel") && (
               <header className="flex flex-col gap-2">
                 <h1 className="font-display text-[44px] font-medium leading-[1.05] tracking-tight text-ink">

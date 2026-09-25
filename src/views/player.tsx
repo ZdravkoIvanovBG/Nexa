@@ -83,6 +83,7 @@ import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import { SFX } from "@/lib/sfx";
+import { PlayerSizeProvider } from "./player/player-size";
 
 let hdrFallbackNoticeShown = false;
 
@@ -162,13 +163,17 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const shellSnapRef = useRef(snap);
   const snapRef = useRef(snap);
   snapRef.current = snap;
-  const [foreignNotice, setForeignNotice] = useState<{ title: string | null; from: string } | null>(
-    null,
-  );
+  const [foreignNotice, setForeignNotice] = useState<{
+    title: string | null;
+    from: string;
+  } | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const cast = usePlayerCast({ src, debrids, snapRef, bridgeRef, settings });
   const [now, setNow] = useState(() => Date.now());
-  const { pipMode, togglePipMode, exitPip } = usePipMode({ bridgeRef, setChromeHidden });
+  const { pipMode, togglePipMode, exitPip } = usePipMode({
+    bridgeRef,
+    setChromeHidden,
+  });
 
   // Hoisted above useAutoRetry (moved up from its original position further
   // down) so the switcher's pickAnother/liveUrl are available to wire the
@@ -417,7 +422,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     replacePlayerSrc,
   });
 
-  usePlaybackPresence({ src, snap, season, episode, liveGuideOpen: liveOverlay.open });
+  usePlaybackPresence({
+    src,
+    snap,
+    season,
+    episode,
+    liveGuideOpen: liveOverlay.open,
+  });
   useCastReturnPublish({
     casting: !!cast.castDevice,
     inRoom,
@@ -849,7 +860,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const [loaderShowing, setLoaderShowing] = useState(false);
   const showChrome = !loaderActive && !loaderShowing && (chromeVisible || drawMode);
   const liveShellSnap = cast.castDevice
-    ? { ...snap, status: (cast.castPlaying ? "playing" : "paused") as typeof snap.status }
+    ? {
+        ...snap,
+        status: (cast.castPlaying ? "playing" : "paused") as typeof snap.status,
+      }
     : snap;
   if (showChrome) shellSnapRef.current = liveShellSnap;
   const shellSnap = showChrome ? liveShellSnap : shellSnapRef.current;
@@ -1067,7 +1081,11 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           if (resuming) hideForResume();
         }}
       />
-      {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      {!hdrStageActive && (
+        <PlayerSizeProvider stageRef={stageRef}>
+          <PlayerOverlayLayers {...overlayProps} />
+        </PlayerSizeProvider>
+      )}
       {sourceError && (
         <SourceErrorCard
           error={sourceError}
@@ -1112,7 +1130,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
             if (queue.length > 0) {
               const item = queueShift();
               if (item) {
-                openPicker(item.meta, item.episode, { autoPlay: true, resume: true });
+                openPicker(item.meta, item.episode, {
+                  autoPlay: true,
+                  resume: true,
+                });
                 return;
               }
             }
