@@ -129,7 +129,7 @@ export function CollectionsView() {
 
   return (
     <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col px-12 pb-24">
+      <div className="mx-auto flex w-full max-w-[1700px] flex-col px-5 pb-24 sm:px-8 lg:px-12">
         <div className="flex items-center gap-5 pt-24">
           {!layoutHasGlobalBack() && (
             <button
@@ -228,7 +228,10 @@ export function CollectionsView() {
                 {curated.map((c) => (
                   <div
                     key={`${c.id}-${c.name}`}
-                    style={{ contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}
+                    style={{
+                      contentVisibility: "auto",
+                      containIntrinsicSize: "auto 220px",
+                    }}
                   >
                     <CollectionCard id={c.id} name={c.name} />
                   </div>
@@ -247,7 +250,10 @@ export function CollectionsView() {
                   {catFeed.hits.map((h) => (
                     <div
                       key={h.id}
-                      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}
+                      style={{
+                        contentVisibility: "auto",
+                        containIntrinsicSize: "auto 220px",
+                      }}
                     >
                       <CollectionCard
                         id={h.id}
@@ -290,7 +296,10 @@ export function CollectionsView() {
                 {hits.map((h) => (
                   <div
                     key={h.id}
-                    style={{ contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}
+                    style={{
+                      contentVisibility: "auto",
+                      containIntrinsicSize: "auto 220px",
+                    }}
                   >
                     <CollectionCard
                       id={h.id}

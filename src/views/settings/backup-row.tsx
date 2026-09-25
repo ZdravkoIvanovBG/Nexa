@@ -72,7 +72,7 @@ export function BackupRow() {
           <span className="text-[14px] font-medium text-ink">{t("Export everything")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
             {t(
-              "Saves your whole Harbor setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Harbor account sign-in is left out on purpose.",
+              "Saves your whole Nexa setup to one file: theme, home layout, settings, addons, profiles, watchlist, player layouts, watch progress, and more. Your Nexa account sign-in is left out on purpose.",
             )}
           </span>
         </div>
@@ -99,7 +99,7 @@ export function BackupRow() {
           <span className="text-[14px] font-medium text-ink">{t("Restore from a backup")}</span>
           <span className="text-[12.5px] leading-relaxed text-ink-subtle">
             {t(
-              "Loads a backup file and replaces your current setup with it. Perfect for a new computer. Your Harbor account sign-in on this device stays as is.",
+              "Loads a backup file and replaces your current setup with it. Perfect for a new computer. Your Nexa account sign-in on this device stays as is.",
             )}
           </span>
         </div>
@@ -159,12 +159,12 @@ function RestoreConfirm({
         </h2>
         <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-muted">
           {t(
-            "This replaces your current Harbor setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Harbor account sign-in stays as is. Harbor reloads when it finishes.",
+            "This replaces your current Nexa setup (theme, home layout, settings, addons, profiles, and more) with the {n} saved entries in this file. Your Nexa account sign-in stays as is. Nexa reloads when it finishes.",
             { n: String(backupKeyCount(backup)) },
           )}
         </p>
         <p className="mt-2 text-[12px] text-ink-subtle">
-          {t("Saved {when} from Harbor {app}.", { when, app: backup.app })}
+          {t("Saved {when} from Nexa {app}.", { when, app: backup.app })}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button

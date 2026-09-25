@@ -42,7 +42,7 @@ export function LanguagePanel() {
       <Section
         title={t("Subtitle languages")}
         subtitle={t(
-          "When playback starts, Harbor automatically finds and loads a subtitle in one of these languages, so you never have to search by hand. The first available match wins, so put your main language first.",
+          "When playback starts, Nexa automatically finds and loads a subtitle in one of these languages, so you never have to search by hand. The first available match wins, so put your main language first.",
         )}
       >
         <LanguagesPicker
@@ -52,7 +52,7 @@ export function LanguagePanel() {
         <ToggleRow
           label={t("Start with subtitles off")}
           sub={t(
-            "Harbor still finds and loads subtitles so they're one click away in the player, it just won't turn them on automatically.",
+            "Nexa still finds and loads subtitles so they're one click away in the player, it just won't turn them on automatically.",
           )}
           value={settings.subtitlesOffByDefault}
           onChange={(v) => update({ subtitlesOffByDefault: v })}
@@ -84,7 +84,7 @@ export function LanguagePanel() {
         <ToggleRow
           label={t("Choose subtitles before playback")}
           sub={t(
-            "After you pick a source, show a subtitle picker so you can set the exact track and language before the video starts. Off by default, Harbor keeps picking one for you automatically.",
+            "After you pick a source, show a subtitle picker so you can set the exact track and language before the video starts. Off by default, Nexa keeps picking one for you automatically.",
           )}
           value={settings.subtitlePreselect}
           onChange={(v) => update({ subtitlePreselect: v })}
@@ -172,7 +172,7 @@ export function LanguagePanel() {
       <Section
         title={t("Audio languages")}
         subtitle={t(
-          "When a release ships multiple audio tracks, Harbor selects the first match from this list.",
+          "When a release ships multiple audio tracks, Nexa selects the first match from this list.",
         )}
       >
         <LanguagesPicker
@@ -200,7 +200,7 @@ export function LanguagePanel() {
         <div className="mt-2 flex flex-col gap-3 rounded-xl border border-edge-soft bg-canvas/30 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] leading-relaxed text-ink-muted sm:max-w-[480px]">
             {t(
-              "Heads up: Harbor was built in English. Multi-language support is partial, so your addons usually catch what Harbor's own filters miss. If you speak another language and want to help fill the gaps, the source is open.",
+              "Heads up: Nexa was built in English. Multi-language support is partial, so your addons usually catch what Nexa's own filters miss. If you speak another language and want to help fill the gaps, the source is open.",
             )}
           </p>
           <button

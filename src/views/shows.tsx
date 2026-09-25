@@ -173,7 +173,7 @@ export function Shows({ active = true }: { active?: boolean }) {
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
-        <div className="relative flex w-full flex-col gap-12 px-12 pb-32 pt-32">
+        <div className="relative flex w-full flex-col gap-12 px-5 pb-32 pt-32 sm:px-8 lg:px-12">
           <PageMast />
           <div className="relative">
             {hero.length > 0 ? (

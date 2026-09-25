@@ -73,7 +73,7 @@ pub async fn modal_overlay_open(
         let url = WebviewUrl::App("index.html?harbor-modal=1".into());
         #[allow(unused_mut)]
         let mut builder = WebviewWindowBuilder::new(&app_clone, OVERLAY_LABEL, url)
-            .title("Harbor Modal")
+            .title("Nexa Modal")
             .inner_size(popup_size.0, popup_size.1)
             .position(pos.x, pos.y)
             .resizable(false)

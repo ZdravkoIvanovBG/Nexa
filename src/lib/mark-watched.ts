@@ -5,13 +5,29 @@ import { addToHistory as simklAddToHistory } from "@/lib/simkl/history";
 import { setMovieWatchedLocal } from "@/lib/movie-watched";
 import { recordManualWatchedMeta, setManualWatchedMany } from "@/lib/manual-watched";
 import { setWatchedFlag } from "@/lib/watched-flag";
+import { markWatched, removeFromWatched, trackingStateOf } from "@/lib/library-tracking";
+
+/**
+ * Records a movie as watched in both local stores: the device-local set the
+ * watched badges read, and the synced tier store behind the Movies tier list.
+ * No tracker pushes, so playback completion can call it next to its scrobble.
+ */
+export function recordMovieWatchedLocally(meta: {
+  id: string;
+  name?: string;
+  poster?: string;
+}): void {
+  setMovieWatchedLocal(meta.id, true);
+  if (trackingStateOf(meta.id).watched) return;
+  markWatched({ id: meta.id, type: "movie", name: meta.name, poster: meta.poster });
+}
 
 export async function markMovieWatched(
   meta: Meta,
   imdbId?: string | null,
   tmdbId?: string | number | null,
 ): Promise<void> {
-  setMovieWatchedLocal(meta.id, true);
+  recordMovieWatchedLocally(meta);
   savePlayback(meta.id, { title: meta.name, parsedTitle: meta.name });
   const imdb = imdbId ?? (meta.id.startsWith("tt") ? meta.id : undefined);
   const tmdb = typeof tmdbId === "string" ? Number(tmdbId) || undefined : (tmdbId ?? undefined);
@@ -78,6 +94,7 @@ export async function unmarkMetaWatched(meta: Meta): Promise<void> {
   setWatchedFlag(meta.id, false);
   if (narrowMediaType(meta.type) === "movie") {
     setMovieWatchedLocal(meta.id, false);
+    removeFromWatched(meta.id);
     return;
   }
   const eps = await releasedEpisodes(meta);

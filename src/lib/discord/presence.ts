@@ -103,12 +103,12 @@ function computeBase(): Base {
   if (browse && config.showWhenBrowsing) {
     if (config.hideTitle)
       return {
-        payload: { details: "Browsing Harbor", posterUrl: HARBOR_LOGO },
+        payload: { details: "Browsing Nexa", posterUrl: HARBOR_LOGO },
         key: "browse:hide",
       };
     return {
       payload: {
-        details: browse.details ?? "Browsing Harbor",
+        details: browse.details ?? "Browsing Nexa",
         state: browse.state,
         posterUrl: (config.showPoster && browse.largeImage) || HARBOR_LOGO,
         largeText: browse.largeText ?? browse.details,
@@ -128,7 +128,7 @@ function compute(): Computed {
     const headcount = Math.max(1, party.size);
     const payload: Record<string, unknown> = base ? { ...base.payload } : {};
     let context = base && !config.hideTitle ? (payload.details as string | undefined) : undefined;
-    if (context && context.startsWith("Browsing Harbor")) context = undefined;
+    if (context && context.startsWith("Browsing Nexa")) context = undefined;
     if (context && playback && !config.hideTitle) {
       const sub = payload.state as string | undefined;
       if (sub) context = `${context} · ${sub}`;

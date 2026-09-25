@@ -184,19 +184,33 @@ export type ScrollSnapshot = {
   fallback: number;
 };
 
+// Mirrors SectionId in views/settings/shared.tsx, plus the old pre-merge ids
+// ("trakt" | "simkl" | "letterboxd" | "relay" | "p2p" | "streamFilters") which
+// resolveSettingsSection() there still accepts and aliases to their merged tab.
 export type SettingsSection =
+  | "basics"
   | "account"
   | "library"
-  | "trakt"
-  | "anilist"
-  | "simkl"
-  | "parental"
-  | "relay"
+  | "apiKeys"
+  | "tracking"
+  | "network"
   | "streaming"
   | "language"
   | "player"
+  | "mpv"
+  | "smoothing"
+  | "playerLayout"
+  | "hotkeys"
+  | "theme"
+  | "bug"
   | "advanced"
-  | "games";
+  | "games"
+  | "trakt"
+  | "simkl"
+  | "letterboxd"
+  | "relay"
+  | "p2p"
+  | "streamFilters";
 
 type ViewValue = {
   view: View;

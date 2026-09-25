@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import fanartLogo from "@/assets/addon-logos/fanarttv.svg";
 import mdblistLogo from "@/assets/addon-logos/mdblist.png";
 import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import traktLogo from "@/assets/trakt.svg";
 import simklLogo from "@/assets/simkl.png";
 import harborStyleImg from "@/assets/onboarding/harborstyle.png";
 import traditionalStyleImg from "@/assets/onboarding/traditional.png";
-import omdbLogo from "@/assets/addon-logos/omdb.png";
 import previewPoster1 from "@/assets/preview/poster1.webp";
 import previewPoster2 from "@/assets/preview/poster2.webp";
 import { SpoilerPreview } from "./spoiler-preview";
@@ -17,55 +15,21 @@ import { SongCardStylePicker } from "./song-card-style-picker";
 import { HoverStyleGallery } from "./hover-style-preview";
 import { CwSnapshotShowcase } from "./cw-snapshot-showcase";
 import { AiSearchSection } from "./ai-search-section";
-import rpdbLogo from "@/assets/addon-logos/rpdb.png";
-import auddLogo from "@/assets/addon-logos/auddio.webp";
 import tmdbLogo from "@/assets/addon-logos/tmdb.png";
-import tvdbLogo from "@/assets/addon-logos/tvdb.svg";
 import { ImdbIcon } from "@/components/icons/imdb-icon";
 import { RtFresh } from "@/components/icons/rt-fresh";
 import { RtRotten } from "@/components/icons/rt-rotten";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { clearAllSnapshots, snapshotCount } from "@/lib/snapshots";
-import { Bookmark, HelpCircle, Popcorn } from "lucide-react";
-import { HoverTooltip } from "@/components/hover-tooltip";
+import { Bookmark, Popcorn } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { RegionField } from "./region-cascade";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
-import { ExtLink, KeyField, Section, Segmented, ToggleRow } from "./shared";
-import { TmdbGuideModal } from "./tmdb-tutorial-modal";
-import { TvdbGuideModal } from "./tvdb-tutorial-modal";
+import { Section, Segmented, ToggleRow } from "./shared";
 import { EpisodeOrderSetting } from "./episode-order-setting";
 
-export type LibraryKey = "tmdb" | "omdb" | "rpdb" | "fanart" | "tvdb";
-
-export function LibraryPanel({
-  tmdbDraft,
-  omdbDraft,
-  rpdbDraft,
-  fanartDraft,
-  tvdbDraft,
-  setTmdbDraft,
-  setOmdbDraft,
-  setRpdbDraft,
-  setFanartDraft,
-  setTvdbDraft,
-  savedKey,
-  saveKey,
-}: {
-  tmdbDraft: string;
-  omdbDraft: string;
-  rpdbDraft: string;
-  fanartDraft: string;
-  tvdbDraft: string;
-  setTmdbDraft: (v: string) => void;
-  setOmdbDraft: (v: string) => void;
-  setRpdbDraft: (v: string) => void;
-  setFanartDraft: (v: string) => void;
-  setTvdbDraft: (v: string) => void;
-  savedKey: string | null;
-  saveKey: (which: LibraryKey, value: string) => void;
-}) {
+export function LibraryPanel() {
   const { settings, update } = useSettings();
   const { activeProfile, updateProfile } = useProfiles();
   const t = useT();
@@ -100,20 +64,6 @@ export function LibraryPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledBadgeCount]);
-  const [mdblistDraft, setMdblistDraft] = useState(settings.mdblistKey);
-  const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
-  const [auddDraft, setAuddDraft] = useState(settings.auddKey);
-  const [extraSaved, setExtraSaved] = useState<"mdblist" | "postersrv" | "ai" | "audd" | null>(
-    null,
-  );
-  const [tmdbGuide, setTmdbGuide] = useState(false);
-  const [tvdbGuide, setTvdbGuide] = useState(false);
-  const extraTimerRef = useRef<number | null>(null);
-  const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd") => {
-    setExtraSaved(k);
-    if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
-    extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
-  };
   const pushHideContent = (key: "adult", value: boolean) => {
     const next = { ...settings.hideContent, [key]: value };
     update({ hideContent: next });
@@ -121,8 +71,6 @@ export function LibraryPanel({
   };
   return (
     <>
-      <TmdbGuideModal open={tmdbGuide} onClose={() => setTmdbGuide(false)} />
-      <TvdbGuideModal open={tvdbGuide} onClose={() => setTvdbGuide(false)} />
       <Section title={t("Home layout")} subtitle={t("How the Home page assembles its rails.")}>
         <HomeModePicker value={settings.homeMode} onChange={(v) => update({ homeMode: v })} />
         <ToggleRow
@@ -346,7 +294,7 @@ export function LibraryPanel({
       <Section
         title={t("Continue Watching screenshots")}
         subtitle={t(
-          "When you back out of a title, Harbor saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.",
+          "When you back out of a title, Nexa saves a frame so the Continue Watching card looks like the spot you left. Tune how long they stick around, or wipe them all.",
         )}
       >
         <CwSnapshotShowcase />
@@ -368,7 +316,7 @@ export function LibraryPanel({
       <Section
         title={t("Region & language")}
         subtitle={t(
-          "Used for streaming availability and the Now Playing release window. Pick a country and Harbor can match metadata and subtitle languages to it.",
+          "Used for streaming availability and the Now Playing release window. Pick a country and Nexa can match metadata and subtitle languages to it.",
         )}
       >
         <RegionField />
@@ -377,152 +325,11 @@ export function LibraryPanel({
       <AiSearchSection />
 
       <Section
-        title={t("Metadata providers")}
+        title={t("Ratings & badges")}
         subtitle={t(
-          "A free TMDB key is highly recommended. It unlocks the full Harbor experience. The rest are optional, and Cinemeta works out of the box without any.",
+          "Choose which ratings, tags, and score badges show on cards and detail pages. Add TMDB, OMDb, RPDB, and MDBList keys in the API Keys tab to unlock more sources.",
         )}
       >
-        <KeyField
-          label={t("TMDB · catalogs and rails")}
-          badge={t("Recommended")}
-          placeholder={t("v3 API key")}
-          value={tmdbDraft}
-          onChange={setTmdbDraft}
-          onSave={() => saveKey("tmdb", tmdbDraft)}
-          saved={savedKey === "tmdb"}
-          iconSrc={tmdbLogo}
-          headerExtra={
-            <HoverTooltip
-              side="top"
-              align="center"
-              label={t(
-                "TMDB asks for an app URL when you create the key. Put any URL at all, like https://harbor.app. The only thing you need back is the API key.",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setTmdbGuide(true)}
-                className="flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-semibold text-accent transition-colors hover:bg-accent/10"
-              >
-                <HelpCircle size={13} strokeWidth={2.4} />
-                {t("How to get this")}
-              </button>
-            </HoverTooltip>
-          }
-          help={
-            <>
-              Highly recommended. This is what gives you the full Harbor experience: Popular,
-              Trending, In Theaters, and per-service rails. Free at{" "}
-              <ExtLink href="https://www.themoviedb.org/settings/api">
-                themoviedb.org/settings/api
-              </ExtLink>
-              . Use the v3 key, not the read access token.
-            </>
-          }
-        />
-        <ToggleRow
-          label={t("Use free IMDb data without a TMDB key")}
-          sub={t(
-            "With no TMDB key, the About panel pulls cast, crew, and title info from a free IMDb source. TMDB is still used whenever a key is set.",
-          )}
-          value={settings.imdbApiFallback}
-          onChange={(v) => update({ imdbApiFallback: v })}
-        />
-        <KeyField
-          label={t("OMDb · Rotten Tomatoes scores")}
-          placeholder={t("8-character key")}
-          value={omdbDraft}
-          onChange={setOmdbDraft}
-          onSave={() => saveKey("omdb", omdbDraft)}
-          saved={savedKey === "omdb"}
-          iconSrc={omdbLogo}
-          help={
-            <>
-              Free at{" "}
-              <ExtLink href="https://www.omdbapi.com/apikey.aspx">omdbapi.com/apikey.aspx</ExtLink>.
-              They email an activation link the first time. Click it, then come back and save.
-            </>
-          }
-        />
-        <KeyField
-          label={t("RPDB · scores baked into posters")}
-          placeholder={t("rpdb key")}
-          value={rpdbDraft}
-          onChange={setRpdbDraft}
-          onSave={() => saveKey("rpdb", rpdbDraft)}
-          saved={savedKey === "rpdb"}
-          iconSrc={rpdbLogo}
-          help={
-            <>
-              Paid plan at <ExtLink href="https://ratingposterdb.com">ratingposterdb.com</ExtLink>.
-              Once saved, every poster gets re-rendered with IMDb, Rotten Tomatoes, and Metacritic
-              stamped on it.
-            </>
-          }
-        />
-        <KeyField
-          label={t("MDBList · Letterboxd and Trakt scores")}
-          placeholder={t("mdblist api key")}
-          value={mdblistDraft}
-          onChange={setMdblistDraft}
-          onSave={() => {
-            update({ mdblistKey: mdblistDraft.trim() });
-            flashExtra("mdblist");
-          }}
-          saved={extraSaved === "mdblist"}
-          iconSrc={mdblistLogo}
-          help={
-            <>
-              Free key at <ExtLink href="https://mdblist.com/preferences/">mdblist.com</ExtLink>.
-              Adds Letterboxd and Trakt community ratings to detail pages, covering what OMDb
-              misses.
-            </>
-          }
-        />
-        <KeyField
-          label={t("AudD · in-player song ID")}
-          placeholder={t("AudD API token")}
-          value={auddDraft}
-          onChange={setAuddDraft}
-          onSave={() => {
-            update({ auddKey: auddDraft.trim() });
-            flashExtra("audd");
-          }}
-          saved={extraSaved === "audd"}
-          iconSrc={auddLogo}
-          iconBg="#EE1066"
-          help={
-            <>
-              Powers the Identify-song button in the player. Get a token at{" "}
-              <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
-            </>
-          }
-        />
-        <KeyField
-          label={t("Custom poster service")}
-          placeholder={t("RPDB key above, https://btttr.cc, or a {imdbId} template")}
-          value={posterSrvDraft}
-          onChange={setPosterSrvDraft}
-          onSave={() => {
-            update({ posterBaseUrl: posterSrvDraft.trim() });
-            flashExtra("postersrv");
-          }}
-          saved={extraSaved === "postersrv"}
-          iconSrc={rpdbLogo}
-          help={
-            <>
-              Leave empty to use your RPDB key above. Or paste <strong>Better Posters</strong> (
-              <code>https://btttr.cc</code>), a bare RPDB-compatible server (your RPDB key is still
-              sent), or a full URL template using <code>{"{imdbId}"}</code>,{" "}
-              <code>{"{tmdbId}"}</code>, <code>{"{type}"}</code>, or <code>{"{id}"}</code>.
-              PostersPlus needs the template form, e.g.{" "}
-              <code>
-                {"postersplus.elfhosted.com/poster?tmdb_id={tmdbId}&imdb_id={imdbId}&type={type}"}
-              </code>
-              .
-            </>
-          }
-        />
         <ToggleRow
           label={t("Hide titles under posters")}
           sub={t("Cleaner grid when your poster service already prints the title on the artwork.")}
@@ -536,59 +343,6 @@ export function LibraryPanel({
           )}
           value={settings.preferCustomMetaAddon}
           onChange={(v) => update({ preferCustomMetaAddon: v })}
-        />
-        <KeyField
-          label={t("Fanart.tv · logos and backdrops")}
-          placeholder={t("personal key")}
-          value={fanartDraft}
-          onChange={setFanartDraft}
-          onSave={() => saveKey("fanart", fanartDraft)}
-          saved={savedKey === "fanart"}
-          iconSrc={fanartLogo}
-          help={
-            <>
-              Fills in where TMDB comes up empty (anime, older catalog). Free at{" "}
-              <ExtLink href="https://fanart.tv/get-an-api-key/">fanart.tv/get-an-api-key</ExtLink>.
-              Use the "personal" key, not the project one.
-            </>
-          }
-        />
-        <KeyField
-          label={t("TheTVDB · episode data")}
-          placeholder={t("subscriber API key")}
-          value={tvdbDraft}
-          onChange={setTvdbDraft}
-          onSave={() => saveKey("tvdb", tvdbDraft)}
-          saved={savedKey === "tvdb"}
-          iconSrc={tvdbLogo}
-          headerExtra={
-            <HoverTooltip
-              side="top"
-              align="center"
-              label={t(
-                "The free tier is $0 for personal use. Just pick the first option, no payment needed.",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => setTvdbGuide(true)}
-                className="flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-semibold text-accent transition-colors hover:bg-accent/10"
-              >
-                <HelpCircle size={13} strokeWidth={2.4} />
-                {t("How to get this")}
-              </button>
-            </HoverTooltip>
-          }
-          help={
-            <>
-              Episode titles, alternate names, network info, and the arc/DVD/absolute orderings.
-              Layered on TMDB so the better source wins per field. Free for personal use at{" "}
-              <ExtLink href="https://thetvdb.com/api-information">
-                thetvdb.com/api-information
-              </ExtLink>
-              {'. Choose the "Less than $50k per year" tier.'}
-            </>
-          }
         />
         <EpisodeOrderSetting />
         <div className="mt-2 border-t border-edge-soft/60 pt-4">
@@ -671,7 +425,9 @@ export function LibraryPanel({
               leading={<ImdbBadge />}
               value={settings.showImdbBadge}
               onChange={(v) => update({ showImdbBadge: v })}
-              lockReason={!settings.tmdbKey ? t("Add a TMDB key above to unlock this.") : undefined}
+              lockReason={
+                !settings.tmdbKey ? t("Add a TMDB key in API Keys to unlock this.") : undefined
+              }
               note={
                 settings.rpdbKey
                   ? t("RPDB already paints scores onto the poster. Toggle to override.")
@@ -686,7 +442,9 @@ export function LibraryPanel({
               leading={<TmdbBadge />}
               value={settings.showTmdbBadge}
               onChange={(v) => update({ showTmdbBadge: v })}
-              lockReason={!settings.tmdbKey ? t("Add a TMDB key above to unlock this.") : undefined}
+              lockReason={
+                !settings.tmdbKey ? t("Add a TMDB key in API Keys to unlock this.") : undefined
+              }
             />
             <ToggleRow
               label={t("Show Rotten Tomatoes score on cards")}
@@ -695,7 +453,7 @@ export function LibraryPanel({
               value={settings.showRtBadge}
               onChange={(v) => update({ showRtBadge: v })}
               lockReason={
-                !settings.omdbKey ? t("Add an OMDb key above to unlock this.") : undefined
+                !settings.omdbKey ? t("Add an OMDb key in API Keys to unlock this.") : undefined
               }
               note={
                 settings.rpdbKey
@@ -864,7 +622,7 @@ export function LibraryPanel({
       <Section
         title={t("Local library")}
         subtitle={t(
-          "Options for the Library → Local tab: folders you scan from your own drive. When you export metadata, Harbor writes a Kodi-style .nfo and downloads artwork next to each file at the sizes below.",
+          "Options for the Library → Local tab: folders you scan from your own drive. When you export metadata, Nexa writes a Kodi-style .nfo and downloads artwork next to each file at the sizes below.",
         )}
       >
         <ToggleRow
@@ -1209,7 +967,7 @@ function HomeModePicker({
   const options: Array<{ id: "harbor" | "classic"; label: string; sub: string; img: string }> = [
     {
       id: "harbor",
-      label: "Harbor curated",
+      label: "Nexa curated",
       sub: "Hero carousel, Top 10, Trending, In Theaters, per-service rails. Addon catalogs append underneath, deduped.",
       img: harborStyleImg,
     },

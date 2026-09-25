@@ -329,8 +329,8 @@ fn apply_pre_init(
             eprintln!("[harbor::mpv] pre-init skip {}={}: {}", k, v, e);
         }
     };
-    set("title", "Harbor");
-    set("audio-client-name", "Harbor");
+    set("title", "Nexa");
+    set("audio-client-name", "Nexa");
     set("terminal", "no");
     set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v");
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
@@ -378,7 +378,7 @@ fn apply_pre_init(
     set("input-cursor", "no");
     // `osc` is provided by mpv's optional on-screen-controller script. Some
     // libmpv builds, including the Flatpak build, do not ship that script, so
-    // its option is unavailable. Harbor supplies its own controls either way.
+    // its option is unavailable. Nexa supplies its own controls either way.
     let _ = set("osc", "no");
     set("osd-level", "0");
     set("cursor-autohide", "200");
@@ -1182,7 +1182,7 @@ pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
         return Err("No player log yet. Play something first, then export.".into());
     }
     let dl = app.path().download_dir().map_err(|e| e.to_string())?;
-    let dst = dl.join("harbor-mpv-log.txt");
+    let dst = dl.join("nexa-mpv-log.txt");
     std::fs::copy(&src, &dst).map_err(|e| format!("copy: {}", e))?;
     Ok(dst.to_string_lossy().into_owned())
 }
@@ -1690,17 +1690,25 @@ pub async fn mpv_clip_save(
     } else {
         cmd.arg("--sid=no").arg("--no-sub");
     }
-    cmd.arg(&src);
+    // This is a one-shot headless encoder, not user-facing playback — it
+    // must never surface in the Windows volume/media overlay or steal media
+    // keys from the real player.
+    cmd.arg("--media-controls=no").arg("--input-media-keys=no");
+    // End-of-options terminator: `src` comes from mpv's own `path` property,
+    // but guard it the same way the other external-mpv spawns do.
+    cmd.arg("--").arg(&src);
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000);
 
-    let status = cmd
-        .status()
+    let mut child = cmd.spawn().map_err(|e| format!("spawn mpv encode: {}", e))?;
+    crate::child_jobs::adopt(&child);
+    let status = child
+        .wait()
         .await
-        .map_err(|e| format!("spawn mpv encode: {}", e))?;
+        .map_err(|e| format!("wait mpv encode: {}", e))?;
     if !status.success() {
         let _ = std::fs::remove_file(&out_path);
         return Err(format!("clip encode failed (mpv exit {:?})", status.code()));
@@ -2142,7 +2150,7 @@ fn hide_embedded_mpv_children(app: &AppHandle) {
         let title = String::from_utf16_lossy(&title_buf[..title_len as usize]);
         let is_mpv = class_name == "mpv"
             || class_name.starts_with("mpv ")
-            || (class_name.is_empty() && title.starts_with("Harbor"));
+            || (class_name.is_empty() && title.starts_with("Nexa"));
         if is_mpv {
             let s = lparam.0 as *mut EnumState;
             (*s).mpv_hwnds.push(hwnd.0 as isize);
@@ -2319,7 +2327,7 @@ fn position_embedded_mpv_child(app: &AppHandle, css: MpvGeometry) -> Result<(), 
             .push((hwnd.0 as isize, class_name.clone(), title.clone()));
         let is_mpv = class_name == "mpv"
             || class_name.starts_with("mpv ")
-            || (class_name.is_empty() && title.starts_with("Harbor"));
+            || (class_name.is_empty() && title.starts_with("Nexa"));
         if is_mpv {
             (*s).mpv_hwnds.push(hwnd.0 as isize);
         }

@@ -58,18 +58,20 @@ async function readJsonBody(res: Response, path: string): Promise<string> {
   return new TextDecoder("utf-8").decode(bytes);
 }
 
-async function tmdbHttpFetch(url: string): Promise<Response> {
+async function tmdbHttpFetch(url: string, signal?: AbortSignal): Promise<Response> {
   return safeFetch(url, {
     method: "GET",
     headers: { Accept: "application/json" },
+    signal,
   });
 }
 
 async function fetchTmdbOnce<T>(
   url: string,
   path: string,
+  signal?: AbortSignal,
 ): Promise<{ status: number; data: T | null }> {
-  const res = await tmdbHttpFetch(url);
+  const res = await tmdbHttpFetch(url, signal);
   if (!res.ok) {
     const body = await readJsonBody(res, path).catch(() => "");
     logTmdbFailure(path, res.status, body);
@@ -85,10 +87,15 @@ async function fetchTmdbOnce<T>(
   }
 }
 
+function isAbortError(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "AbortError";
+}
+
 export async function get<T>(
   key: string,
   path: string,
   params: Record<string, string> = {},
+  signal?: AbortSignal,
 ): Promise<T | null> {
   if (!key) return null;
   const url = new URL(`${TMDB}/${path}`);
@@ -98,10 +105,11 @@ export async function get<T>(
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const target = url.toString();
   for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (signal?.aborted) return null;
     try {
       const backoffMs = Math.min(2000, 250 * 2 ** attempt);
       const { status, data } = await tmdbRequests.schedule(target, async () => {
-        const result = await fetchTmdbOnce<T>(target, path);
+        const result = await fetchTmdbOnce<T>(target, path, signal);
         if (result.status === 429 || (result.status >= 500 && result.status < 600)) {
           tmdbRequests.pauseFor(backoffMs);
         }
@@ -113,6 +121,7 @@ export async function get<T>(
       }
       return data;
     } catch (e) {
+      if (isAbortError(e)) return null;
       const msg = e instanceof Error ? e.message : String(e);
       if (msg === "tmdb-parse-failure") {
         await new Promise((r) => setTimeout(r, 400));

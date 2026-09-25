@@ -55,7 +55,7 @@ export function CustomCodeCard() {
           <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("Custom code")}</h2>
           <span className="text-[13.5px] leading-relaxed text-ink-muted">
             {t(
-              "Power-user knob. Inject your own CSS, JS, and HTML into Harbor. Lives in your local settings; nothing leaves your machine.",
+              "Power-user knob. Inject your own CSS, JS, and HTML into Nexa. Lives in your local settings; nothing leaves your machine.",
             )}
           </span>
         </div>
@@ -82,7 +82,7 @@ export function CustomCodePanel() {
         <AlertTriangle size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-danger" />
         <span>
           {t(
-            "You're modding your own client. Custom JS has full access to your Harbor session. Only paste code you wrote or fully trust.",
+            "You're modding your own client. Custom JS has full access to your Nexa session. Only paste code you wrote or fully trust.",
           )}
         </span>
       </div>

@@ -8,13 +8,10 @@ export type SectionId =
   | "basics"
   | "account"
   | "library"
-  | "trakt"
-  | "simkl"
-  | "letterboxd"
-  | "relay"
+  | "apiKeys"
+  | "tracking"
+  | "network"
   | "streaming"
-  | "streamFilters"
-  | "p2p"
   | "language"
   | "player"
   | "mpv"
@@ -22,7 +19,6 @@ export type SectionId =
   | "playerLayout"
   | "hotkeys"
   | "theme"
-  | "webhooks"
   | "bug"
   | "advanced"
   | "games";
@@ -56,6 +52,26 @@ export function settingsAnchor(title: string): string {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-+|-+$)/g, "")
   );
+}
+
+// Old top-level section ids that were folded into a merged tab. Kept so existing deep links
+// (openSettings("trakt"), search-index entries, etc.) still land on the right tab and scroll to
+// the right card instead of breaking or landing at the top of a long merged page.
+const SECTION_ALIASES: Record<string, { section: SectionId; anchor?: string }> = {
+  trakt: { section: "tracking", anchor: settingsAnchor("Trakt") },
+  simkl: { section: "tracking", anchor: settingsAnchor("Simkl") },
+  letterboxd: { section: "tracking", anchor: settingsAnchor("Letterboxd") },
+  relay: { section: "network", anchor: settingsAnchor("Nexa Relay") },
+  p2p: { section: "network", anchor: settingsAnchor("Local engine") },
+  streamFilters: { section: "network", anchor: settingsAnchor("Saved stream filters") },
+};
+
+export function resolveSettingsSection(
+  raw: string,
+): { section: SectionId; anchor?: string } | null {
+  const alias = SECTION_ALIASES[raw];
+  if (alias) return alias;
+  return { section: raw as SectionId };
 }
 
 export function Section({

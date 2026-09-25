@@ -45,14 +45,14 @@ export function TraktDeviceModal({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
+      <div className="mx-4 max-h-[88vh] overflow-y-auto overflow-x-hidden flex w-full max-w-[460px] flex-col gap-7 rounded-[24px] border border-edge-soft bg-elevated/95 px-9 py-9 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.85)] animate-in zoom-in-95 fade-in duration-200">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
               {t("Connect Trakt")}
             </span>
             <h2 className="text-[20px] font-medium tracking-tight text-ink">
-              {connectState.kind === "success" ? t("Connected") : t("Authorize Harbor on Trakt")}
+              {connectState.kind === "success" ? t("Connected") : t("Authorize Nexa on Trakt")}
             </h2>
           </div>
           <button
@@ -122,7 +122,9 @@ export function TraktDeviceModal({ onClose }: { onClose: () => void }) {
             <Check size={16} strokeWidth={2.4} className="text-emerald-300" />
             <span className="text-[14px] text-ink">
               {connectState.session.username
-                ? t("Connected as @{username}", { username: connectState.session.username })
+                ? t("Connected as @{username}", {
+                    username: connectState.session.username,
+                  })
                 : t("Connected to Trakt")}
             </span>
           </div>

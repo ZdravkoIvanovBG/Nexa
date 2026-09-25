@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Serve Harbor's Vite/React web UI (no Rust/Tauri toolchain needed for the browser build).
+# Serve Nexa's Vite/React web UI (no Rust/Tauri toolchain needed for the browser build).
 FROM node:22-bookworm-slim
 
 # The corepack bundled with node can fail to verify the pnpm 11 signature

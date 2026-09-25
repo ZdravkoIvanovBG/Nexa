@@ -17,13 +17,12 @@ import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { useTogether } from "@/lib/together/provider";
 import { useSelfIdentity } from "@/lib/together/use-self-identity";
-import { activeLayout } from "@/lib/theme";
-import { useThemePreview } from "@/lib/theme-preview";
 import { useView } from "@/lib/view";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { close, minimize } from "@/lib/window";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
+import { SIDEBAR_OFFSET_CLASS } from "@/lib/chrome-metrics";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -33,18 +32,13 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const kid = useActiveKid();
   const t = useT();
   const [closeConfirm, setCloseConfirm] = useState(false);
-  const preview = useThemePreview();
   const fullscreen = useWindowFullscreen();
   if (chromeHidden && !connecting) return null;
-  const layout = kid ? "sidebar" : preview ? preview.layout : activeLayout(settings.theme);
   const sidebarHidden = connecting || view === "settings" || topKind === "picker";
   const hideSearch = view === "addons" || connecting || topKind === "picker";
-  const sidebarOffset =
-    layout === "stremio"
-      ? "ps-[80px]"
-      : settings.sidebarCollapsed
-        ? "ps-[84px]"
-        : "ps-[84px] lg:ps-[260px]";
+  // Offset comes from `--harbor-sidebar-w`, published by the shell root, so it
+  // stays correct for every sidebar variant instead of assuming the default one.
+  const sidebarOffset = SIDEBAR_OFFSET_CLASS;
   const searchWidth = canGoBack
     ? "w-[14rem] sm:w-[18rem] lg:w-[22rem] xl:w-[24rem]"
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
@@ -173,7 +167,7 @@ function CloseConfirmKids({
           className="pointer-events-none absolute -bottom-2 -right-2 h-20 w-auto opacity-85"
           style={{ transform: "scaleX(-1)" }}
         />
-        <h2 className="relative font-display text-[32px] font-bold">{t("Close Harbor?")}</h2>
+        <h2 className="relative font-display text-[32px] font-bold">{t("Close Nexa?")}</h2>
         <p className="relative mt-2 text-[16px] font-medium text-white/85">
           {t("Ask a grown-up before you close.")}
         </p>

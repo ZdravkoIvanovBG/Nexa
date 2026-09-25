@@ -22,6 +22,7 @@ import {
 } from "./transport/control-renderer-stremio";
 import { useView } from "@/lib/view";
 import { useCastModalPlay } from "./use-cast-modal-play";
+import { useTransportHeightVar } from "@/views/player/player-size";
 
 export type TransportStremioProps = {
   snap: PlayerSnapshot;
@@ -154,6 +155,7 @@ export function TransportStremio(p: TransportStremioProps) {
   const { openMeta, exitPlayer } = useView();
   const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
+  useTransportHeightVar(controlsRef);
 
   useEffect(() => {
     onMenuOpenChange?.(audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen);

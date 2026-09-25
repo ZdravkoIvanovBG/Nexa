@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { downloadWithRetry } from "./lib/download.mjs";
 
 const BASE =
   process.env.HARBOR_FONTS_BASE ??
@@ -31,16 +32,16 @@ for (const f of FONTS) {
     console.log(`[fonts] ${f.file} already present and verified`);
     continue;
   }
-  console.log(`[fonts] fetching ${f.url}`);
-  const res = await fetch(f.url, { redirect: "follow" });
-  if (!res.ok) {
-    console.error(`[fonts] download failed (${res.status} ${res.statusText}) for ${f.file}`);
+  let buf;
+  try {
+    buf = await downloadWithRetry(f.url, { label: "[fonts]" });
+  } catch (err) {
+    console.error(`[fonts] ${err.message} for ${f.file}`);
     console.error(
       "[fonts] set HARBOR_FONTS_BASE to a mirror, or drop the .otf into src-tauri/fonts/ by hand",
     );
     process.exit(1);
   }
-  const buf = Buffer.from(await res.arrayBuffer());
   const got = digest(buf);
   if (got !== f.sha256) {
     console.error(`[fonts] checksum mismatch for ${f.file} (expected ${f.sha256}, got ${got})`);

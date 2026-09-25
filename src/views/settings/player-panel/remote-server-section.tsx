@@ -41,7 +41,7 @@ async function probeServer(url: string): Promise<TestResult> {
     const ms = Math.max(1, Math.round(performance.now() - started));
     return {
       ok: true,
-      message: tr("Server reachable in {ms}ms. Harbor will use it for torrent streaming.", { ms }),
+      message: tr("Server reachable in {ms}ms. Nexa will use it for torrent streaming.", { ms }),
     };
   } catch {
     return {
@@ -115,7 +115,7 @@ export function RemoteServerSection() {
           </h2>
           <p className="text-[13.5px] leading-relaxed text-ink-muted">
             {t(
-              "Point Harbor at a streaming server on another machine, like the Stremio service on a home server. Torrents download and stream from that machine instead of this one.",
+              "Point Nexa at a streaming server on another machine, like the Stremio service on a home server. Torrents download and stream from that machine instead of this one.",
             )}
           </p>
         </div>

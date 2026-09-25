@@ -8,6 +8,8 @@ import {
   setProgress,
   type WatchingEntry,
 } from "@/lib/library-tracking";
+import { fetchSeasonEpisodes, fetchSeasonList, isAnimeId } from "@/lib/series-episodes";
+import { capFromNumbers } from "@/lib/stepper-cap";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -107,6 +109,66 @@ export function WatchingCard({ entry }: { entry: WatchingEntry }) {
     };
   }, [entry.id, entry.type, entry.poster, entry.name, settings.tmdbKey, posterFailed]);
 
+  // Cap the season/episode steppers at the real counts, instead of letting
+  // them run to Number.MAX_SAFE_INTEGER. Deferred behind the same
+  // intersection-gate pattern as the poster hydration above, and shared
+  // across cards via fetchSeasonList/fetchSeasonEpisodes's own caches.
+  const isSeriesLike = entry.type === "series" || isAnimeId(entry.id);
+  const [hasIntersected, setHasIntersected] = useState(false);
+  useEffect(() => {
+    setHasIntersected(false);
+  }, [entry.id]);
+  useEffect(() => {
+    if (hasIntersected || !isSeriesLike) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        io.disconnect();
+        setHasIntersected(true);
+      },
+      { rootMargin: "300px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasIntersected, isSeriesLike]);
+
+  // An unknown count must never cap the stepper -- a failed/empty lookup
+  // leaves these null, which passes max={undefined} below and keeps the
+  // button freely incrementable rather than trapping the user at E1.
+  const [seasonCount, setSeasonCount] = useState<number | null>(null);
+  useEffect(() => {
+    setSeasonCount(null);
+    if (!hasIntersected || !isSeriesLike) return;
+    let cancelled = false;
+    const metaLike: Meta = { id: entry.id, type: "series", name: entry.name || entry.id };
+    fetchSeasonList(metaLike, { tmdbKey: settings.tmdbKey })
+      .then((seasons) => {
+        if (!cancelled) setSeasonCount(capFromNumbers(seasons));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.id, entry.name, isSeriesLike, hasIntersected, settings.tmdbKey]);
+
+  const [episodeCount, setEpisodeCount] = useState<number | null>(null);
+  useEffect(() => {
+    setEpisodeCount(null);
+    if (!hasIntersected || !isSeriesLike) return;
+    let cancelled = false;
+    const metaLike: Meta = { id: entry.id, type: "series", name: entry.name || entry.id };
+    fetchSeasonEpisodes(metaLike, entry.season, { tmdbKey: settings.tmdbKey })
+      .then((eps) => {
+        if (!cancelled) setEpisodeCount(capFromNumbers(eps.map((e) => e.episode)));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.id, entry.name, entry.season, isSeriesLike, hasIntersected, settings.tmdbKey]);
+
   const name = hydrated?.name || entry.name || entry.id;
   const poster = usePosterChain(
     settings.rpdbKey,
@@ -166,13 +228,16 @@ export function WatchingCard({ entry }: { entry: WatchingEntry }) {
             label={t("Season")}
             value={entry.season}
             min={1}
-            max={entry.totalSeasons}
-            onChange={(n) => setProgress(entry.id, n, entry.episode)}
+            max={entry.totalSeasons ?? seasonCount ?? undefined}
+            // Changing season resets to episode 1: the old episode number
+            // may not exist in the newly selected season.
+            onChange={(n) => setProgress(entry.id, n, 1)}
           />
           <Stepper
             label={t("Episode")}
             value={entry.episode}
             min={1}
+            max={episodeCount ?? undefined}
             onChange={(n) => setProgress(entry.id, entry.season, n)}
           />
         </div>

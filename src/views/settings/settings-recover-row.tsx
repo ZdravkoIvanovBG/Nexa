@@ -47,7 +47,7 @@ export function SettingsRecoverRow() {
         <span className="text-[14px] font-medium text-ink">{t("Restore previous settings")}</span>
         <span className="text-[12.5px] leading-relaxed text-ink-subtle">
           {t(
-            "Updating separated settings per profile, which may have reset your theme and keys. Harbor still has your old setup saved. Bring it back on this profile, then reload.",
+            "Updating separated settings per profile, which may have reset your theme and keys. Nexa still has your old setup saved. Bring it back on this profile, then reload.",
           )}
         </span>
       </div>

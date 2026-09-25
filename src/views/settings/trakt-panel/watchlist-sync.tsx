@@ -114,7 +114,7 @@ export function WatchlistSync() {
       setPhase({
         kind: "result",
         tone: "ok",
-        message: t("Added {n} to your Harbor watchlist", { n: r.added }),
+        message: t("Added {n} to your Nexa watchlist", { n: r.added }),
       });
     } catch (err) {
       console.error("[trakt] import failed", err);
@@ -133,10 +133,10 @@ export function WatchlistSync() {
         <p className="text-[13.5px] leading-relaxed text-ink">
           {isExport
             ? t(
-                "Add {n} titles from your Harbor watchlist to Trakt? Trakt skips any it already has.",
+                "Add {n} titles from your Nexa watchlist to Trakt? Trakt skips any it already has.",
                 { n: count },
               )
-            : t("Add {n} titles from your Trakt watchlist to Harbor?", { n: count })}
+            : t("Add {n} titles from your Trakt watchlist to Nexa?", { n: count })}
         </p>
         {phase.kind === "confirm-export" && phase.plan.skippedAnime > 0 && (
           <p className="text-[12px] text-ink-subtle">

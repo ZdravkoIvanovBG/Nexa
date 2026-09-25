@@ -98,15 +98,19 @@ export function FilterPill({
   active,
   onClick,
   children,
+  pressed,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
+  /** Opt-in aria-pressed, for pill groups that act as a segmented control. */
+  pressed?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={pressed}
       className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
         active ? "bg-ink text-canvas" : "text-ink-muted hover:bg-raised hover:text-ink"
       }`}
@@ -259,7 +263,7 @@ export function EmptyWatchlist({ connected }: { connected: boolean }) {
       <h2 className="text-[16px] font-semibold text-ink">{t("Your watchlist is empty")}</h2>
       <p className="max-w-md text-[13px] leading-relaxed text-ink-muted">
         {t(
-          'Right-click any title in Harbor or hit "Add to Watchlist" on its detail page to save it here.',
+          'Right-click any title in Nexa or hit "Add to Watchlist" on its detail page to save it here.',
         )}
         {connected
           ? t(" Anything you save also syncs to your Trakt account.")

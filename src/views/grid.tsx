@@ -77,7 +77,7 @@ export function GridView({ grid }: { grid: GridSpec }) {
               draggable={false}
               className="pointer-events-none absolute bottom-0 end-0 h-[56%] w-auto max-w-[30%] object-contain object-bottom drop-shadow-[0_14px_28px_rgba(0,0,0,0.4)]"
             />
-            <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 px-12 pb-9">
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 px-5 pb-9 sm:px-8 lg:px-12">
               <h1 className="max-w-[62%] font-display text-[clamp(46px,7vw,88px)] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.7)]">
                 {hero.name}
               </h1>
@@ -86,10 +86,10 @@ export function GridView({ grid }: { grid: GridSpec }) {
               </p>
             </div>
           </section>
-          <div className="flex w-full flex-col gap-8 px-12 pb-24 pt-6">{body}</div>
+          <div className="flex w-full flex-col gap-8 px-5 pb-24 pt-6 sm:px-8 lg:px-12">{body}</div>
         </>
       ) : (
-        <div className="flex w-full flex-col gap-8 px-12 pb-24 pt-24">
+        <div className="flex w-full flex-col gap-8 px-5 pb-24 pt-24 sm:px-8 lg:px-12">
           <div className="flex items-center gap-4">
             {!layoutHasGlobalBack() && (
               <button

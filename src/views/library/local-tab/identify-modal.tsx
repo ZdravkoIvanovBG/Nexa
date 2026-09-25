@@ -201,7 +201,7 @@ export function IdentifyModal({
 
         {noKey ? (
           <p className="rounded-xl bg-danger/15 px-3 py-2 text-[12px] text-danger ring-1 ring-danger/30">
-            {t("Add a TMDB key in Settings → Library to search.")}
+            {t("Add a TMDB key in Settings → API Keys to search.")}
           </p>
         ) : (
           <div className="flex max-h-[42vh] flex-col gap-1 overflow-y-auto">

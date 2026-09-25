@@ -14,7 +14,7 @@ export function AdvancedMpvSection() {
     <Section
       title={t("Advanced (mpv.conf)")}
       subtitle={t(
-        "The escape hatch for power users. One mpv option per line as key=value, exactly like mpv.conf. These apply last, so they override every dial above. Anything Harbor can't read is skipped, so a typo won't break playback. Restart playback to apply.",
+        "The escape hatch for power users. One mpv option per line as key=value, exactly like mpv.conf. These apply last, so they override every dial above. Anything Nexa can't read is skipped, so a typo won't break playback. Restart playback to apply.",
       )}
     >
       <textarea

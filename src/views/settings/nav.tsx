@@ -3,6 +3,8 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { activeLayout } from "@/lib/theme";
 import { useView } from "@/lib/view";
+import { useTrakt } from "@/lib/trakt/provider";
+import { useSimkl } from "@/lib/simkl/provider";
 import { matchesSettingsSearch } from "./search-match";
 import { settingsAnchor, type SectionId } from "./shared";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
@@ -60,6 +62,18 @@ function IconLibrary(p: IconProps) {
   );
 }
 
+function IconApiKeys(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <circle cx="8" cy="14.5" r="4.3" />
+      <circle cx="8" cy="14.5" r="1.1" fill="currentColor" stroke="none" />
+      <path d="M11.3 11.2 19 3.5" />
+      <path d="M15.5 7 18 9.5" strokeWidth="1.6" />
+      <path d="M18.5 4 20.5 6" strokeWidth="1.6" />
+    </IconBase>
+  );
+}
+
 function IconRelay(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -78,28 +92,6 @@ function IconStreaming(p: IconProps) {
     <IconBase {...p}>
       <path d="M12 5v14" strokeWidth={p.strokeWidth ?? 2} />
       <path d="M5 12h14" strokeWidth={p.strokeWidth ?? 2} />
-    </IconBase>
-  );
-}
-
-function IconFilters(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <path d="M4 5.5h16l-6.1 7.2v5.2l-3.8 1.9v-7.1z" />
-    </IconBase>
-  );
-}
-
-function IconP2P(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <path d="M16.6 6.8l2.8-1.2M16.8 10.4l2.6 1.1" strokeWidth="1.4" />
-      <path d="M7.4 6.8 4.6 5.6M7.2 10.4 4.6 11.5" strokeWidth="1.4" />
-      <path d="M12 3.2 13.7 6h-3.4z" fill="currentColor" stroke="none" />
-      <rect x="9.9" y="6" width="4.2" height="2.7" rx="0.5" />
-      <path d="M9 20.6 10.3 8.7h3.4L15 20.6z" />
-      <path d="M9.6 12.4h4.8" />
-      <path d="M7.3 20.6h9.4" strokeLinecap="round" />
     </IconBase>
   );
 }
@@ -215,38 +207,12 @@ function IconTheme(p: IconProps) {
   );
 }
 
-function IconWebhooks(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <circle cx="6" cy="17.5" r="2.4" />
-      <circle cx="18" cy="17.5" r="2.4" />
-      <circle cx="12" cy="6.5" r="2.4" />
-      <path d="M10.4 8.4 7.2 15.4" />
-      <path d="M13.6 8.4 16.8 15.4" />
-      <path d="M8.4 17.5h7.2" />
-    </IconBase>
-  );
-}
-
 function IconTrakt(p: IconProps) {
   return (
     <IconBase {...p}>
       <circle cx="12" cy="12" r="9" />
       <path d="M6 13.5l4-4 6 6" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6 9.5l4-4 8 8" strokeLinecap="round" strokeLinejoin="round" />
-    </IconBase>
-  );
-}
-
-function IconSimkl(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
-      <path
-        d="M15 9c-2.4-1.3-4.8-.4-4.8 1.5 0 2.4 4.6 1.8 4.6 4 0 1.8-2.6 2.4-5 1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </IconBase>
   );
 }
@@ -258,16 +224,6 @@ function IconGames(p: IconProps) {
       <path d="M7.2 11v3M5.7 12.5h3" strokeWidth="1.4" />
       <circle cx="17" cy="11.5" r="0.9" fill="currentColor" stroke="none" />
       <circle cx="14.8" cy="13.5" r="0.9" fill="currentColor" stroke="none" />
-    </IconBase>
-  );
-}
-
-function IconLetterboxd(p: IconProps) {
-  return (
-    <IconBase {...p}>
-      <circle cx="5" cy="12" r="3.5" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
-      <circle cx="19" cy="12" r="3.5" fill="currentColor" stroke="none" />
     </IconBase>
   );
 }
@@ -315,35 +271,47 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "library",
         label: "Library & metadata",
         Icon: IconLibrary,
+        keywords: ["ratings", "badges", "home layout", "spoilers", "episode cards"],
+      },
+      {
+        id: "apiKeys",
+        label: "API Keys",
+        Icon: IconApiKeys,
         keywords: [
+          "api key",
           "tmdb",
           "omdb",
           "rpdb",
+          "mdblist",
+          "audd",
           "fanart",
           "tvdb",
-          "metadata",
-          "api key",
-          "ratings",
-          "posters",
+          "debrid",
+          "real-debrid",
+          "alldebrid",
+          "premiumize",
+          "torbox",
+          "debrid-link",
+          "token",
         ],
       },
       {
-        id: "trakt",
-        label: "Trakt",
+        id: "tracking",
+        label: "Tracking",
         Icon: IconTrakt,
-        keywords: ["scrobble", "history", "sync", "watchlist"],
-      },
-      {
-        id: "simkl",
-        label: "Simkl",
-        Icon: IconSimkl,
-        keywords: ["scrobble", "sync", "watched", "history", "watchlist"],
-      },
-      {
-        id: "letterboxd",
-        label: "Letterboxd",
-        Icon: IconLetterboxd,
-        keywords: ["letterboxd", "stremboxd", "watchlist", "diary", "films", "ratings", "friends"],
+        keywords: [
+          "trakt",
+          "simkl",
+          "letterboxd",
+          "stremboxd",
+          "scrobble",
+          "history",
+          "sync",
+          "watchlist",
+          "watched",
+          "diary",
+          "friends",
+        ],
       },
     ],
   },
@@ -351,21 +319,10 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
     heading: "Streaming",
     items: [
       {
-        id: "relay",
-        label: "Harbor Relay",
-        Icon: IconRelay,
-        keywords: ["together", "watch party", "p2p", "host", "share"],
-      },
-      {
         id: "streaming",
         label: "Streaming sources",
         Icon: IconStreaming,
         keywords: [
-          "debrid",
-          "real-debrid",
-          "alldebrid",
-          "premiumize",
-          "torbox",
           "torrentio",
           "mediafusion",
           "scrapers",
@@ -373,62 +330,33 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
           "iptv",
           "m3u",
           "xtream",
+          "picker layout",
+          "result order",
         ],
       },
       {
-        id: "streamFilters",
-        label: "Stream filters",
-        Icon: IconFilters,
+        id: "network",
+        label: "Network & Relay",
+        Icon: IconRelay,
         keywords: [
+          "together",
+          "watch party",
+          "p2p",
+          "host",
+          "share",
+          "relay",
+          "peer to peer",
+          "torrent engine",
+          "local engine",
+          "streaming server",
+          "server address",
+          "remote server",
           "stream filter",
           "custom filter",
           "saved filter",
           "quality filter",
-          "resolution",
-          "codec",
-          "hdr",
-          "cached only",
           "seeders",
-          "max size",
-          "hide cam",
-          "only 4k",
-        ],
-      },
-      {
-        id: "p2p",
-        label: "P2P & servers",
-        Icon: IconP2P,
-        keywords: [
-          "p2p",
-          "peer to peer",
-          "torrent engine",
-          "local engine",
-          "librqbit",
-          "built-in engine",
-          "rust engine",
-          "self-test",
-          "self test",
-          "peer test",
-          "restart engine",
-          "clear and restart",
-          "streaming server",
-          "server address",
-          "localhost",
-          "11470",
-          "11471",
-          "remote server",
-          "stremio server",
-          "direct torrent",
-          "seeders",
-          "connecting",
           "dht",
-          "download whole file",
-          "full download",
-          "prebuffer",
-          "buffer ahead",
-          "remux",
-          "scrub freely",
-          "webdav",
         ],
       },
     ],
@@ -541,17 +469,6 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
           "velvet",
           "custom",
         ],
-      },
-    ],
-  },
-  {
-    heading: "Notifications",
-    items: [
-      {
-        id: "webhooks",
-        label: "Webhooks",
-        Icon: IconWebhooks,
-        keywords: ["discord", "telegram", "calendar", "alerts", "notifications", "rules"],
       },
     ],
   },
@@ -928,7 +845,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Local torrent engine",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: [
       "local engine",
@@ -944,7 +861,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Your streaming server address",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Your streaming server address",
     keywords: [
       "streaming server",
@@ -966,7 +883,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Remote streaming server",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Remote streaming server",
     keywords: [
       "remote server",
@@ -1225,30 +1142,20 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["region", "country", "availability", "location", "iso"],
   },
   {
-    label: "Metadata providers (TMDB, OMDb, RPDB, MDBList, Fanart, TVDB)",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    label: "Metadata & ratings keys (TMDB, OMDb, RPDB, MDBList, Fanart, TVDB)",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: [
       "metadata",
       "tmdb",
       "omdb",
       "rpdb",
       "mdblist",
-      "letterboxd",
       "fanart",
       "tvdb",
       "api key",
-      "ratings",
-      "scores",
       "custom poster service",
       "btttr",
-      "posters",
-      "hide titles under posters",
-      "imdb score",
-      "rotten tomatoes",
-      "hover preview",
-      "peek",
-      "badge position",
     ],
   },
   {
@@ -1353,7 +1260,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Debrid services (RealDebrid / TorBox / AllDebrid / Premiumize / Debrid-Link)",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: [
       "debrid",
@@ -1396,8 +1303,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
 
   {
     label: "Watch Together relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["watch together", "relay", "party", "p2p", "host", "cloudflare", "deploy", "share"],
   },
 
@@ -1489,22 +1396,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Updates & rollback",
-    section: "advanced",
-    anchorTitle: "Updates",
-    keywords: [
-      "updates",
-      "version",
-      "check for updates",
-      "beta updates",
-      "roll back",
-      "rollback",
-      "downgrade",
-      "previous version",
-      "build feedback",
-    ],
-  },
-  {
     label: "Backup & restore",
     section: "advanced",
     anchorTitle: "Backup & restore",
@@ -1573,15 +1464,15 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Harbor identity (avatar / color)",
+    label: "Nexa identity (avatar / color)",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["avatar", "profile photo", "upload photo", "color", "identity", "picture"],
   },
   {
-    label: "Harbor account (email / sign out)",
+    label: "Nexa account (email / sign out)",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["email", "sign out", "logout", "password", "account"],
   },
   {
@@ -1593,7 +1484,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
 
   {
     label: "Trakt connection",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: [
       "trakt",
       "scrobble",
@@ -1607,12 +1499,14 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Simkl connection",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["simkl", "sync", "watched", "watchlist", "connect", "disconnect", "avatar"],
   },
   {
     label: "Letterboxd connection",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: [
       "letterboxd",
       "stremboxd",
@@ -1625,20 +1519,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "disconnect",
       "top 250",
       "popular",
-    ],
-  },
-  {
-    label: "Webhooks (Discord / Telegram)",
-    section: "webhooks",
-    keywords: [
-      "webhooks",
-      "discord",
-      "telegram",
-      "notifications",
-      "alerts",
-      "calendar sources",
-      "rules",
-      "upcoming",
     ],
   },
   {
@@ -1669,9 +1549,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
 
   {
-    label: "Harbor account",
+    label: "Nexa account",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["sign in", "login", "sync", "manage account", "email", "log in", "sign out"],
   },
   {
@@ -1714,9 +1594,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["theme", "appearance", "recolor", "fonts", "poster size", "wallpaper", "customize"],
   },
   {
-    label: "Harbor identity",
+    label: "Nexa identity",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "display name",
       "nickname",
@@ -1730,19 +1610,19 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Upload photo",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["avatar", "upload", "profile picture", "custom photo", "image", "change avatar"],
   },
   {
     label: "Reset to default avatar",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: ["reset avatar", "default avatar", "remove photo", "revert", "reset to default"],
   },
   {
     label: "Your color",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "color",
       "cursor color",
@@ -1756,7 +1636,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Profiles (switch, add, edit)",
     section: "account",
-    anchorTitle: "Harbor identity",
+    anchorTitle: "Nexa identity",
     keywords: [
       "profiles",
       "profile",
@@ -1780,13 +1660,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Sign out",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["logout", "sign out", "log off", "disconnect account"],
   },
   {
     label: "Change password",
     section: "account",
-    anchorTitle: "Harbor account",
+    anchorTitle: "Nexa account",
     keywords: ["change password", "reset password", "new password", "forgot password"],
   },
   {
@@ -1960,7 +1840,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Episode ordering (TVDB, DVD, absolute, arc order)",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: [
       "episode ordering",
       "episode order",
@@ -2062,8 +1942,8 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "TMDB · catalogs and rails",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: [
       "tmdb",
       "api key",
@@ -2077,32 +1957,32 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "OMDb · Rotten Tomatoes scores",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: ["omdb", "rotten tomatoes", "imdb ratings", "api key", "activation link"],
   },
   {
     label: "RPDB · scores baked into posters",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: ["rpdb", "rating poster db", "poster ratings", "ratingposterdb", "baked scores"],
   },
   {
     label: "MDBList · Letterboxd and Trakt scores",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: ["mdblist", "letterboxd ratings", "trakt ratings", "community scores", "api key"],
   },
   {
     label: "AudD · in-player song ID",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: ["audd", "song recognition", "music id", "api token", "identify song key"],
   },
   {
     label: "Custom poster service",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: [
       "poster server",
       "better posters",
@@ -2116,13 +1996,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Hide titles under posters",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["poster titles", "hide names", "clean grid", "minimal"],
   },
   {
     label: "Prefer my installed metadata addon",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: [
       "meta addon",
       "localized cinemeta",
@@ -2133,14 +2013,14 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Fanart.tv · logos and backdrops",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: ["fanart", "logos", "backdrops", "artwork", "personal key"],
   },
   {
     label: "TheTVDB · episode data",
-    section: "library",
-    anchorTitle: "Metadata providers",
+    section: "apiKeys",
+    anchorTitle: "Metadata & ratings",
     keywords: [
       "tvdb",
       "thetvdb",
@@ -2153,67 +2033,67 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Show tags on cards (New, In Cinema, Rerun, Awards)",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["card tags", "new badge", "in cinema", "rerun", "awards", "chips", "overlays"],
   },
   {
     label: "Show ratings on detail pages",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["detail ratings", "hide ratings", "movie page scores", "show scores"],
   },
   {
     label: "Show IMDb score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["imdb badge", "yellow chip", "poster rating", "card score", "imdb"],
   },
   {
     label: "Show TMDB score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["tmdb score", "fallback rating", "unreleased rating", "card badge"],
   },
   {
     label: "Show Rotten Tomatoes score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["rotten tomatoes", "rt badge", "tomato", "splat", "fresh", "critic score"],
   },
   {
     label: "Show audience score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["popcornmeter", "audience score", "popcorn", "rt audience", "percent"],
   },
   {
     label: "Show Metacritic score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["metacritic", "metascore", "critic rating", "green yellow red"],
   },
   {
     label: "Show Letterboxd score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["letterboxd", "letterbox", "film rating", "out of 5", "card badge"],
   },
   {
     label: "Show MDBList score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["mdblist score", "aggregate score", "all sources", "card badge"],
   },
   {
     label: "Show Trakt score on cards",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["trakt rating", "percent", "community rating", "card badge"],
   },
   {
     label: "Hover preview",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Hover preview",
     keywords: [
       "hover preview",
       "peek",
@@ -2227,7 +2107,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Hover style",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Hover preview",
     keywords: [
       "hover style",
       "card hover",
@@ -2246,13 +2126,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Open preview",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Hover preview",
     keywords: ["on the card", "to the side", "preview placement", "hover position"],
   },
   {
     label: "Mark watched button",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: [
       "mark watched",
       "watched button",
@@ -2265,19 +2145,19 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Badge position",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["badge placement", "top", "bottom", "score position", "chip position"],
   },
   {
     label: "Max badges per card",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: ["badge limit", "max badges", "number of scores", "2 3 4 5 6", "cap"],
   },
   {
     label: "Watchlist badge",
     section: "library",
-    anchorTitle: "Metadata providers",
+    anchorTitle: "Ratings & badges",
     keywords: [
       "bookmark badge",
       "watchlist icon",
@@ -2297,42 +2177,50 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Connect your Trakt account",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["trakt", "connect", "tracking", "scrobble", "watchlist", "recommendations"],
   },
   {
     label: "Connect Trakt",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["trakt login", "device code", "authorize", "link trakt"],
   },
   {
     label: "About Trakt",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["trakt.tv", "what is trakt", "info", "website"],
   },
   {
     label: "Open Trakt profile",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["open profile", "trakt profile", "view profile", "my trakt", "profile page"],
   },
   {
-    label: "Use my Trakt avatar as my Harbor avatar",
-    section: "trakt",
+    label: "Use my Trakt avatar as my Nexa avatar",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["trakt avatar", "profile picture", "avatar sync", "wear avatar"],
   },
   {
     label: "Disconnect from Trakt",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Trakt",
     keywords: ["disconnect", "unlink", "remove trakt", "stop scrobbling", "sign out"],
   },
   {
     label: "Export to Trakt",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Move your watchlist",
     keywords: ["export watchlist", "copy watchlist", "send to trakt", "upload", "move watchlist"],
   },
   {
     label: "Import from Trakt",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Move your watchlist",
     keywords: [
       "import watchlist",
       "pull watchlist",
@@ -2343,12 +2231,14 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Show comments on detail pages",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Comments",
     keywords: ["trakt comments", "community comments", "reviews", "discussion", "episodes"],
   },
   {
     label: "Blur Trakt comments by default",
-    section: "trakt",
+    section: "tracking",
+    anchorTitle: "Comments",
     keywords: [
       "blur comments by default",
       "blur comments",
@@ -2359,72 +2249,86 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Connect your Simkl account",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["simkl", "connect", "tracking", "plan to watch", "mark watched", "sync"],
   },
   {
     label: "Connect Simkl",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["simkl login", "device code", "authorize", "link"],
   },
   {
     label: "About Simkl",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["simkl.com", "info", "website", "what is simkl"],
   },
   {
     label: "Open Simkl profile",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["open profile", "simkl profile", "view profile", "profile page", "my simkl"],
   },
   {
-    label: "Use my Simkl avatar as my Harbor avatar",
-    section: "simkl",
+    label: "Use my Simkl avatar as my Nexa avatar",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["simkl avatar", "profile picture", "avatar", "wear avatar"],
   },
   {
     label: "Disconnect from Simkl",
-    section: "simkl",
+    section: "tracking",
+    anchorTitle: "Simkl",
     keywords: ["disconnect", "unlink", "remove simkl", "stop sync"],
   },
   {
     label: "Enable Letterboxd integration",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["letterboxd", "letterbox", "stremboxd", "enable", "films", "diary", "watchlist"],
   },
   {
     label: "Mode",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["public mode", "full mode", "username only", "password mode", "segmented"],
   },
   {
     label: "Letterboxd username",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["username", "handle", "account name", "letterbox user"],
   },
   {
     label: "Letterboxd password",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["password", "sign in", "2fa", "totp", "two-factor", "full mode"],
   },
   {
     label: "Connect / Verify",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["verify", "connect", "validate", "check catalogs", "public"],
   },
   {
     label: "Connect",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["login", "sign in", "verify & connect", "full login"],
   },
   {
     label: "About Stremboxd",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["stremboxd", "bridge", "configure", "info", "website"],
   },
   {
     label: "Catalogs to show",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: [
       "watchlist",
       "diary",
@@ -2437,33 +2341,38 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Custom lists",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["add list", "list url", "remove list", "letterboxd list", "import list", "slug"],
   },
   {
     label: "Show my rating on movie posters",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["my rating", "poster overlay", "stars", "personal rating"],
   },
   {
     label: "Blur reviews by default",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["blur reviews", "spoilers", "film pages", "reveal"],
   },
   {
     label: "Hidden catalogs",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["unhide", "show hidden", "restore catalog", "hidden rows"],
   },
   {
     label: "Disconnect",
-    section: "letterboxd",
+    section: "tracking",
+    anchorTitle: "Letterboxd",
     keywords: ["logout", "disconnect", "sign out letterboxd", "unlink", "full mode"],
   },
   {
-    label: "Harbor Relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    label: "Nexa Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: [
       "relay",
       "watch together",
@@ -2476,68 +2385,68 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Deploy a relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["deploy", "cloudflare", "worker", "self host", "setup relay", "desktop only"],
   },
   {
-    label: "Use Harbor's public relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    label: "Use Nexa's public relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["public relay", "hosted relay", "default relay", "quota", "pub relay"],
   },
   {
     label: "Enter an existing relay URL:",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["relay url", "wss", "workers.dev", "custom relay", "paste url", "save"],
   },
   {
     label: "Test relay connection",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["test connection", "run test", "ping", "health", "reachable", "verify relay"],
   },
   {
     label: "Backup credentials",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["export", "backup", "api token", "credentials", "json file", "cloudflare token"],
   },
   {
     label: "Stop relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["stop", "delete worker", "remove relay", "teardown"],
   },
   {
     label: "Forget URL",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["forget", "clear url", "reset relay", "remove url"],
   },
   {
     label: "Use a different URL",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["change relay", "switch relay", "different url", "replace"],
   },
   {
     label: "Deploy mine instead",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["own relay", "deploy mine", "self host", "migrate"],
   },
   {
     label: "Redeploy",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["redeploy", "update relay", "upgrade", "new version", "redeploy instructions"],
   },
   {
     label: "Documentation: run your own relay",
-    section: "relay",
-    anchorTitle: "Harbor Relay",
+    section: "network",
+    anchorTitle: "Nexa Relay",
     keywords: ["docs", "documentation", "guide", "run your own", "instructions"],
   },
   {
@@ -2607,31 +2516,31 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Real-Debrid API token",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: ["real-debrid", "realdebrid", "rd", "api token", "debrid", "cached streams"],
   },
   {
     label: "TorBox API key",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: ["torbox", "tor box", "tb", "api key", "queue torrents", "debrid"],
   },
   {
     label: "AllDebrid API key",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: ["alldebrid", "all debrid", "ad", "api key", "debrid", "cache check"],
   },
   {
     label: "Premiumize API key",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: ["premiumize", "pm", "api key", "directdl", "debrid"],
   },
   {
     label: "Debrid-Link API key",
-    section: "streaming",
+    section: "apiKeys",
     anchorTitle: "Debrid services",
     keywords: ["debrid-link", "debridlink", "dl", "api key", "eu debrid"],
   },
@@ -2659,7 +2568,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Saved stream filters",
-    section: "streamFilters",
+    section: "network",
     anchorTitle: "Saved stream filters",
     keywords: [
       "custom filters",
@@ -2672,25 +2581,25 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "New filter",
-    section: "streamFilters",
+    section: "network",
     anchorTitle: "Saved stream filters",
     keywords: ["create filter", "add filter", "build filter", "new"],
   },
   {
     label: "Edit filter",
-    section: "streamFilters",
+    section: "network",
     anchorTitle: "Saved stream filters",
     keywords: ["edit", "modify filter", "rename filter", "change filter"],
   },
   {
     label: "Delete filter",
-    section: "streamFilters",
+    section: "network",
     anchorTitle: "Saved stream filters",
     keywords: ["delete", "remove filter", "trash", "clear filter"],
   },
   {
     label: "Local engine",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: [
       "torrent engine",
@@ -2705,13 +2614,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Show P2P status overlay",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: ["p2p chip", "peers", "speed", "progress overlay", "status chip", "player overlay"],
   },
   {
     label: "Download the whole file while streaming",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: [
       "download whole file",
@@ -2747,25 +2656,25 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Run self-test",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: ["self test", "engine test", "diagnostics", "udp", "https", "egress", "tracker test"],
   },
   {
     label: "Restart engine",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: ["restart", "reboot engine", "engine stuck", "fix streams"],
   },
   {
     label: "Clear & restart",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Local engine",
     keywords: ["hard reset", "wipe engine", "clear engine", "fresh port", "streams stop loading"],
   },
   {
     label: "Keep cached files for",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Stream cache",
     keywords: [
       "cache retention",
@@ -2779,7 +2688,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Keep at most",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Stream cache",
     keywords: [
       "cache limit",
@@ -2793,13 +2702,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Delete after I finish watching",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Stream cache",
     keywords: ["delete watched", "auto delete", "cleanup", "finished file", "free space"],
   },
   {
     label: "Cache location",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Stream cache",
     keywords: [
       "cache folder",
@@ -2812,13 +2721,13 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Clear cache now",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Stream cache",
     keywords: ["clear cache", "wipe cache", "free space", "delete files", "confirm clear"],
   },
   {
     label: "Direct torrent streaming",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Power tools & diagnostics",
     keywords: [
       "direct torrent",
@@ -2831,25 +2740,25 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Auto-confirm peer-to-peer streaming",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Power tools & diagnostics",
     keywords: ["auto confirm", "consent prompt", "skip prompt", "p2p prompt", "uncached torrents"],
   },
   {
     label: "Copy diagnostics",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Power tools & diagnostics",
     keywords: ["diagnostics", "debug json", "bug report", "engine status", "copy debug"],
   },
   {
     label: "Reveal engine folder",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Power tools & diagnostics",
     keywords: ["engine folder", "dht.json", "open folder", "explorer", "torrent data"],
   },
   {
     label: "Start server",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Your streaming server address",
     keywords: [
       "start server",
@@ -2861,20 +2770,20 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Harbor in your browser",
-    section: "p2p",
+    label: "Nexa in your browser",
+    section: "network",
     anchorTitle: "Your streaming server address",
     keywords: ["web ui", "browser app", "serve web", "phone", "tv browser", "11471", "web version"],
   },
   {
     label: "Use exclusively (never fall back to local)",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Remote streaming server",
     keywords: ["strict remote", "vpn", "no fallback", "exclusive", "playback fails"],
   },
   {
     label: "Test remote server connection",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Remote streaming server",
     keywords: [
       "test connection",
@@ -2887,7 +2796,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Forget",
-    section: "p2p",
+    section: "network",
     anchorTitle: "Remote streaming server",
     keywords: ["forget server", "clear url", "remove server", "reset"],
   },
@@ -3269,7 +3178,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["mpv", "libmpv", "truehd", "dts", "av1", "hdr player", "plays anything"],
   },
   {
-    label: "Embed mpv inside Harbor window",
+    label: "Embed mpv inside Nexa window",
     section: "player",
     anchorTitle: "Player engine",
     keywords: [
@@ -4540,138 +4449,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Where alerts go",
-    section: "webhooks",
-    anchorTitle: "Where alerts go",
-    keywords: ["discord telegram", "notifications destination", "alerts channel", "webhook setup"],
-  },
-  {
-    label: "Discord webhook URL",
-    section: "webhooks",
-    anchorTitle: "Where alerts go",
-    keywords: [
-      "discord webhook",
-      "discord alerts",
-      "channel ping",
-      "webhook url",
-      "send test",
-      "discord notifications",
-    ],
-  },
-  {
-    label: "Telegram bot",
-    section: "webhooks",
-    anchorTitle: "Where alerts go",
-    keywords: [
-      "telegram alerts",
-      "telegram webhook",
-      "botfather",
-      "send test",
-      "telegram notifications",
-    ],
-  },
-  {
-    label: "Bot token",
-    section: "webhooks",
-    anchorTitle: "Where alerts go",
-    keywords: ["telegram bot token", "botfather token", "api token", "bot key"],
-  },
-  {
-    label: "Chat ID",
-    section: "webhooks",
-    anchorTitle: "Where alerts go",
-    keywords: ["telegram chat id", "group id", "channel id", "chat number"],
-  },
-  {
-    label: "What to send",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: ["alert sources", "calendars", "feeds", "which alerts", "dedupe sources"],
-  },
-  {
-    label: "My library",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: [
-      "library alerts",
-      "saved shows notifications",
-      "stremio library releases",
-      "my shows",
-    ],
-  },
-  {
-    label: "All upcoming",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: ["everything releasing", "monthly releases", "tmdb upcoming", "all new"],
-  },
-  {
-    label: "My Trakt",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: [
-      "trakt watchlist alerts",
-      "trakt upcoming",
-      "trakt notifications",
-      "watchlist pings",
-    ],
-  },
-  {
-    label: "Anticipated",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: ["trakt anticipated", "most hyped", "anticipated releases", "no login source"],
-  },
-  {
-    label: "Custom calendar",
-    section: "webhooks",
-    anchorTitle: "What to send",
-    keywords: [
-      "tracked people",
-      "genres providers countries",
-      "custom calendar alerts",
-      "my calendar",
-    ],
-  },
-  {
-    label: "Media types",
-    section: "webhooks",
-    anchorTitle: "Media types",
-    keywords: ["filter type", "movies tv filter", "type filter", "media filter"],
-  },
-  {
-    label: "Movies",
-    section: "webhooks",
-    anchorTitle: "Media types",
-    keywords: ["movie alerts", "films only", "movie filter", "notify movies"],
-  },
-  {
-    label: "TV",
-    section: "webhooks",
-    anchorTitle: "Media types",
-    keywords: ["tv alerts", "series only", "shows", "notify tv"],
-  },
-  {
-    label: "AUTOMATIONS",
-    section: "webhooks",
-    keywords: ["rules", "automations", "custom alert rules", "triggers", "ping rules", "rule list"],
-  },
-  {
-    label: "New rule",
-    section: "webhooks",
-    keywords: [
-      "create rule",
-      "new automation",
-      "when then",
-      "tracked person trigger",
-      "genre trigger",
-      "streamer trigger",
-      "country trigger",
-      "live tv reminder",
-      "lead minutes",
-    ],
-  },
-  {
     label: "What broke?",
     section: "bug",
     anchorTitle: "What broke?",
@@ -4733,7 +4510,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: [
       "export log",
       "save log to downloads",
-      "harbor-mpv-log",
+      "nexa-mpv-log",
       "diagnostics file",
       "attach log",
     ],
@@ -4782,45 +4559,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
       "update now",
       "install update",
       "restart to update",
-    ],
-  },
-  {
-    label: "Get beta updates",
-    section: "advanced",
-    anchorTitle: "Updates",
-    keywords: [
-      "beta channel",
-      "early builds",
-      "prerelease",
-      "beta opt in",
-      "nightly",
-      "back to stable",
-    ],
-  },
-  {
-    label: "Roll back to an earlier build",
-    section: "advanced",
-    anchorTitle: "Updates",
-    keywords: [
-      "rollback",
-      "downgrade",
-      "previous version",
-      "earlier build",
-      "old installer",
-      "broken beta",
-    ],
-  },
-  {
-    label: "How is this build treating you?",
-    section: "advanced",
-    anchorTitle: "Updates",
-    keywords: [
-      "rate build",
-      "build feedback",
-      "better or worse",
-      "feedback slider",
-      "send rating",
-      "beta rating",
     ],
   },
   {
@@ -4903,7 +4641,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["pause on focus loss", "alt tab pause", "unfocused pause", "another window"],
   },
   {
-    label: "Catch stremio:// install links inside Harbor",
+    label: "Catch stremio:// install links inside Nexa",
     section: "advanced",
     anchorTitle: "Stremio install links",
     keywords: [
@@ -5039,7 +4777,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["version", "build info", "bug email", "app version", "desktop or web"],
   },
   {
-    label: "Get Harbor for desktop",
+    label: "Get Nexa for desktop",
     section: "advanced",
     keywords: ["download desktop app", "desktop version", "web limitations", "install harbor"],
   },
@@ -5059,6 +4797,8 @@ export function SettingsNav({
 }) {
   const { settings } = useSettings();
   const { goBack, canGoBack, setView } = useView();
+  const { isConnected: isTraktConnected } = useTrakt();
+  const { isConnected: isSimklConnected } = useSimkl();
   const t = useT();
   const isNew = useSettingsNew();
   const navLayout = activeLayout(settings.theme);
@@ -5111,30 +4851,24 @@ export function SettingsNav({
     settings.dlKey,
   ].filter(Boolean).length;
 
-  const debridChip = libraryKeys > 0 ? `${libraryKeys}/6` : null;
+  const apiKeysChip = libraryKeys + debridKeys > 0 ? `${libraryKeys + debridKeys}/11` : null;
 
   const relayLive = settings.togetherRelayUrl ? "live" : null;
-  const webhookActive =
-    (settings.webhooks.discordUrl || settings.webhooks.telegramUrl) &&
-    Object.values(settings.webhooks.sources).some(Boolean);
+  const streamFiltersCount = settings.customStreamFilters?.length ?? 0;
+  const networkChip = relayLive ?? (streamFiltersCount > 0 ? String(streamFiltersCount) : null);
+
+  const trackingConnected =
+    (isTraktConnected ? 1 : 0) + (isSimklConnected ? 1 : 0) + (settings.letterboxd.enabled ? 1 : 0);
+  const trackingChip = trackingConnected > 0 ? `${trackingConnected}/3` : null;
 
   const status: Record<SectionId, string | null> = {
     basics: null,
     account: null,
-    library: libraryKeys > 0 ? `${libraryKeys}/6` : null,
-    trakt: null,
-    simkl: null,
-    letterboxd: settings.letterboxd.enabled
-      ? settings.letterboxd.mode === "full"
-        ? "FULL"
-        : "ON"
-      : null,
-    relay: relayLive,
-    streaming: debridChip,
-    streamFilters: settings.customStreamFilters?.length
-      ? String(settings.customStreamFilters.length)
-      : null,
-    p2p: null,
+    library: null,
+    apiKeys: apiKeysChip,
+    tracking: trackingChip,
+    network: networkChip,
+    streaming: null,
     language: null,
     player: settings.playerEngine === "auto" ? null : settings.playerEngine,
     mpv:
@@ -5149,7 +4883,6 @@ export function SettingsNav({
       settings.theme.preset === "cool-grey" && settings.theme.fontPair === "sentient-switzer"
         ? null
         : "•",
-    webhooks: webhookActive ? "live" : null,
     hotkeys: null,
     bug: null,
     advanced: null,
@@ -5159,7 +4892,6 @@ export function SettingsNav({
   const renderItem = ({ id, label, Icon }: NavItem) => {
     const isActive = id === active;
     const chip = status[id];
-    const debridChipLocal = id === "streaming" && debridKeys > 0 ? `${debridKeys}D` : null;
     return (
       <button
         key={id}
@@ -5183,24 +4915,17 @@ export function SettingsNav({
           <Icon size={20} strokeWidth={1.6} />
         </span>
         <span className="flex-1 truncate text-[14.5px] font-medium">{t(label)}</span>
-        {(chip || debridChipLocal) && (
+        {chip && (
           <span className="flex shrink-0 gap-1">
-            {debridChipLocal && (
-              <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-accent">
-                {debridChipLocal}
-              </span>
-            )}
-            {chip && (
-              <span
-                className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
-                  chip === "live" || chip === "via relay"
-                    ? "bg-accent/15 text-accent"
-                    : "bg-canvas/70 text-ink-subtle"
-                }`}
-              >
-                {chip}
-              </span>
-            )}
+            <span
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
+                chip === "live" || chip === "via relay"
+                  ? "bg-accent/15 text-accent"
+                  : "bg-canvas/70 text-ink-subtle"
+              }`}
+            >
+              {chip}
+            </span>
           </span>
         )}
       </button>
@@ -5211,7 +4936,7 @@ export function SettingsNav({
     <nav
       data-harbor-sidebar
       data-tv-scroll-focus
-      className="relative flex w-72 shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)]"
+      className="relative flex w-56 shrink-0 flex-col bg-surface pt-24 shadow-[1px_0_0_var(--color-edge)] lg:w-72"
     >
       <div data-tauri-drag-region className="h-3 shrink-0" />
       {showBack && (
@@ -5400,7 +5125,6 @@ export function SettingsNav({
               {group.items.map(({ id, label, Icon }) => {
                 const isActive = id === active;
                 const chip = status[id];
-                const debridChip = id === "streaming" && debridKeys > 0 ? `${debridKeys}D` : null;
                 return (
                   <button
                     key={id}
@@ -5430,24 +5154,17 @@ export function SettingsNav({
                         {t("New")}
                       </span>
                     )}
-                    {(chip || debridChip) && (
+                    {chip && (
                       <span className="flex shrink-0 gap-1">
-                        {debridChip && (
-                          <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-accent">
-                            {debridChip}
-                          </span>
-                        )}
-                        {chip && (
-                          <span
-                            className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
-                              chip === "live" || chip === "via relay"
-                                ? "bg-accent/15 text-accent"
-                                : "bg-canvas/70 text-ink-subtle"
-                            }`}
-                          >
-                            {chip}
-                          </span>
-                        )}
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${
+                            chip === "live" || chip === "via relay"
+                              ? "bg-accent/15 text-accent"
+                              : "bg-canvas/70 text-ink-subtle"
+                          }`}
+                        >
+                          {chip}
+                        </span>
                       </span>
                     )}
                   </button>

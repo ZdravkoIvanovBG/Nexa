@@ -117,7 +117,7 @@ export function TmdbStep() {
       </div>
       <p className="text-[13px] text-ink-subtle">
         {t(
-          "Skip if you'd rather just use Cinemeta. Harbor still works, you'll just see fewer rails.",
+          "Skip if you'd rather just use Cinemeta. Nexa still works, you'll just see fewer rails.",
         )}
       </p>
     </div>

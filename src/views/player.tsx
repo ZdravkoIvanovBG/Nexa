@@ -40,6 +40,8 @@ import { useLobbyGate } from "./player/hooks/use-lobby-gate";
 import { hostSourceMatchesMedia } from "@/lib/together/room-derive";
 import { useLiveChannelOverlay } from "./player/hooks/use-live-channel-overlay";
 import { useStreamSwitcher } from "./player/hooks/use-stream-switcher";
+import { AutoFallbackGuard } from "./player/hooks/auto-fallback-policy";
+import type { ScoredStream } from "@/lib/streams/types";
 import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
 import { requestPlayerClose } from "./player/request-player-close";
 import { useMpvEmbed } from "./player/hooks/use-mpv-embed";
@@ -81,6 +83,7 @@ import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import { SFX } from "@/lib/sfx";
+import { PlayerSizeProvider } from "./player/player-size";
 
 let hdrFallbackNoticeShown = false;
 
@@ -160,13 +163,81 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const shellSnapRef = useRef(snap);
   const snapRef = useRef(snap);
   snapRef.current = snap;
-  const [foreignNotice, setForeignNotice] = useState<{ title: string | null; from: string } | null>(
-    null,
-  );
+  const [foreignNotice, setForeignNotice] = useState<{
+    title: string | null;
+    from: string;
+  } | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const cast = usePlayerCast({ src, debrids, snapRef, bridgeRef, settings });
   const [now, setNow] = useState(() => Date.now());
-  const { pipMode, togglePipMode, exitPip } = usePipMode({ bridgeRef, setChromeHidden });
+  const { pipMode, togglePipMode, exitPip } = usePipMode({
+    bridgeRef,
+    setChromeHidden,
+  });
+
+  // Hoisted above useAutoRetry (moved up from its original position further
+  // down) so the switcher's pickAnother/liveUrl are available to wire the
+  // halt-on-failure path below, and so every hook that keys off "the stream
+  // actually playing" can see a manual swap instead of only src.url (the
+  // ORIGINAL auto-picked stream, which never changes across a swap).
+  const {
+    streamCheckOpen,
+    setStreamCheckOpen,
+    switcherOpen,
+    setSwitcherOpen,
+    swapResolvingKey,
+    liveUrl,
+    liveStreamRef,
+    pickAnother,
+    onSwitchStream: onSwitchStreamRaw,
+  } = useStreamSwitcher({
+    bridgeRef,
+    src,
+    snap,
+    debrids,
+  });
+  const playStreamRef = liveStreamRef ?? src.streamRef;
+  const playUrl = liveUrl ?? src.url;
+
+  // Once a manual pick lands, the auto-retry ladder below must never revert
+  // it back to the auto-picked src.url -- see onSwitchStream below and its
+  // use in useAutoRetry's hasManuallySwappedRef param.
+  const hasManuallySwappedRef = useRef(false);
+  useEffect(() => {
+    hasManuallySwappedRef.current = false;
+  }, [src.url]);
+  const onSwitchStream = useCallback(
+    async (stream: ScoredStream) => {
+      const ok = await onSwitchStreamRaw(stream);
+      if (ok) hasManuallySwappedRef.current = true;
+      return ok;
+    },
+    [onSwitchStreamRaw],
+  );
+
+  // Auto-play used to keep bouncing to a different candidate on every
+  // failure (destroying and remounting the whole player each time -- the
+  // flicker) and could run unbounded. Same-source rescues (retry the same
+  // URL, the same torrent via another debrid, a local proxy/remux wrap)
+  // still happen inside useAutoRetry; the moment those are exhausted, this
+  // halts instead of picking a new candidate and opens the source switcher
+  // so the user chooses.
+  const autoFallbackGuardRef = useRef(new AutoFallbackGuard());
+  const [autoHalted, setAutoHalted] = useState(false);
+  useEffect(() => {
+    autoFallbackGuardRef.current = new AutoFallbackGuard();
+    setAutoHalted(false);
+  }, [src.url]);
+  const haltAutoFallback = useCallback(
+    (reason: string) => {
+      if (!autoFallbackGuardRef.current.halt()) return;
+      console.warn(`[player] halting auto-fallback (${reason}) — opening source switcher`);
+      setAutoHalted(true);
+      pickAnother();
+    },
+    [pickAnother],
+  );
+
   const { slowLoad, transcodedUrl, sourceError, clearSourceError } = useAutoRetry({
     bridgeRef,
     src,
@@ -177,6 +248,8 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     debrids,
     selfFrameReadyRef,
     openPicker,
+    onHalt: haltAutoFallback,
+    hasManuallySwappedRef,
     engineFailure: genuineFailure,
     isP2pEngine,
     engineStats,
@@ -329,22 +402,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     playing,
   );
 
-  const {
-    streamCheckOpen,
-    setStreamCheckOpen,
-    switcherOpen,
-    setSwitcherOpen,
-    swapResolvingKey,
-    liveUrl,
-    liveStreamRef,
-    pickAnother,
-    onSwitchStream,
-  } = useStreamSwitcher({
-    bridgeRef,
-    src,
-    snap,
-    debrids,
-  });
   const { hostSourceRef } = useHostSource({
     inRoom,
     isHost,
@@ -365,7 +422,13 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     replacePlayerSrc,
   });
 
-  usePlaybackPresence({ src, snap, season, episode, liveGuideOpen: liveOverlay.open });
+  usePlaybackPresence({
+    src,
+    snap,
+    season,
+    episode,
+    liveGuideOpen: liveOverlay.open,
+  });
   useCastReturnPublish({
     casting: !!cast.castDevice,
     inRoom,
@@ -441,15 +504,23 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   useEffect(() => {
     if (snap.status !== "error" || autoAdvancedRef.current) return;
     if (!src.autoFired || hasStarted || src.isLive || inRoom) return;
+    if (hasManuallySwappedRef.current) return;
     autoAdvancedRef.current = true;
     if (src.streamRef) markStreamDead(src.streamRef, "load-failed", STUB_TTL_MS);
-    exitPlayback();
-    openPicker(src.meta, src.episode, {
-      autoPlay: true,
-      attempt: (src.attempt ?? 0) + 1,
-      resume: src.resume,
-    });
-  }, [snap.status, src, hasStarted, inRoom, exitPlayback, openPicker]);
+    // Used to strip the player/picker frames and re-push the picker with
+    // attempt+1, auto-picking the next (often worse) candidate -- unbounded,
+    // since nothing here ever checked MAX_AUTORETRY_ATTEMPTS. That was one
+    // half of the flicker loop; halt and hand off to the switcher instead.
+    haltAutoFallback(`load failed for "${snap.errorCode ?? "unknown"}"`);
+  }, [
+    snap.status,
+    snap.errorCode,
+    src,
+    hasStarted,
+    inRoom,
+    hasManuallySwappedRef,
+    haltAutoFallback,
+  ]);
 
   const [dvrOpen, setDvrOpen] = useState(false);
   const pickAnotherOrGuide = useCallback(() => {
@@ -642,6 +713,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     bridgeReady,
     bridgeKey,
     src,
+    effectiveUrl: playUrl,
     transcodedUrl,
     season,
     episode,
@@ -655,7 +727,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     inRoomRef,
   });
 
-  useStubDetection({ src, snap, onStub: onStubEject, instantPlay: settings.instantPlay });
+  useStubDetection({
+    src,
+    snap,
+    onStub: onStubEject,
+    instantPlay: settings.instantPlay,
+    effectiveUrl: playUrl,
+    effectiveStreamRef: playStreamRef,
+  });
 
   const isLiveLike =
     liveOverlay.isLive ||
@@ -716,8 +795,6 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     streamCheckOpen,
   });
 
-  const playStreamRef = liveStreamRef ?? src.streamRef;
-  const playUrl = liveUrl ?? src.url;
   useTrickplay({
     url: playUrl,
     enabled: settings.seekPreviewEnabled,
@@ -783,7 +860,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
   const [loaderShowing, setLoaderShowing] = useState(false);
   const showChrome = !loaderActive && !loaderShowing && (chromeVisible || drawMode);
   const liveShellSnap = cast.castDevice
-    ? { ...snap, status: (cast.castPlaying ? "playing" : "paused") as typeof snap.status }
+    ? {
+        ...snap,
+        status: (cast.castPlaying ? "playing" : "paused") as typeof snap.status,
+      }
     : snap;
   if (showChrome) shellSnapRef.current = liveShellSnap;
   const shellSnap = showChrome ? liveShellSnap : shellSnapRef.current;
@@ -849,6 +929,7 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
     isLocalSrc,
     swappingEp,
     swapResolvingKey,
+    autoHalted,
     closePlayer,
     cancelToPicker,
     engineStats,
@@ -1000,7 +1081,11 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
           if (resuming) hideForResume();
         }}
       />
-      {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      {!hdrStageActive && (
+        <PlayerSizeProvider stageRef={stageRef}>
+          <PlayerOverlayLayers {...overlayProps} />
+        </PlayerSizeProvider>
+      )}
       {sourceError && (
         <SourceErrorCard
           error={sourceError}
@@ -1045,7 +1130,10 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
             if (queue.length > 0) {
               const item = queueShift();
               if (item) {
-                openPicker(item.meta, item.episode, { autoPlay: true, resume: true });
+                openPicker(item.meta, item.episode, {
+                  autoPlay: true,
+                  resume: true,
+                });
                 return;
               }
             }

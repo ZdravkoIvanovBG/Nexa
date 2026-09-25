@@ -15,6 +15,7 @@ import { TopDock } from "@/chrome/topdock";
 import { CinematicOverlay } from "@/chrome/cinematic-overlay";
 import { Topbar } from "@/chrome/topbar";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
+import { proactiveStorageCleanup } from "@/lib/storage-recovery";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
 import { exitWindowFullscreenOnPlayerClose, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloud } from "@/lib/cloud/mirror";
@@ -41,7 +42,6 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { OfflineBanner } from "@/chrome/offline-banner";
 import { MobileNotice } from "@/components/mobile-notice";
-import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
@@ -97,6 +97,7 @@ import {
 } from "@/lib/deep-link";
 import { HarborQueryProvider, useIdlePagePrefetch } from "@/lib/query";
 import { HarborRouterProvider, ViewRouterSync } from "@/router";
+import { sidebarWidthClass } from "@/lib/chrome-metrics";
 
 const importCalendar = () => import("@/views/calendar");
 const importDetail = () => import("@/views/detail");
@@ -660,6 +661,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
   useEffect(() => startMaintenance(), []);
 
   useEffect(() => {
+    proactiveStorageCleanup();
+  }, []);
+
+  useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
         const localBack = new Event("harbor:local-back", { cancelable: true });
@@ -744,7 +749,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
       stepUiScale(e.deltaY < 0 ? 1 : -1);
     };
     window.addEventListener("keydown", onKey, true);
-    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    window.addEventListener("wheel", onWheel, {
+      capture: true,
+      passive: false,
+    });
     return () => {
       window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("wheel", onWheel, true);
@@ -861,8 +869,18 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   const playerActive = !!player;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
+  const hadPlayer = useRef(false);
   useEffect(() => {
-    if (!playerActive) void exitWindowFullscreenOnPlayerClose();
+    if (playerActive) {
+      hadPlayer.current = true;
+      return;
+    }
+    // Only when a player actually closed. Effects run once on mount with
+    // playerActive already false, and the app launches fullscreen, so
+    // exiting here would undo the launch state.
+    if (!hadPlayer.current) return;
+    hadPlayer.current = false;
+    void exitWindowFullscreenOnPlayerClose();
   }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
@@ -942,7 +960,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const gameDetailAlive = useKeepAlive(gameDetailTop, gameDetailId !== null);
 
   return (
-    <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
+    <div
+      data-kids={kidsTop || kid ? "on" : undefined}
+      className={`relative flex h-full ${
+        settingsTop || playerActive || pickerTop
+          ? sidebarWidthClass("none", false)
+          : sidebarWidthClass(layout, settings.sidebarCollapsed)
+      }`}
+    >
       {!settingsTop && !playerActive && !pickerTop && layout === "sidebar" && <Sidebar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "dracula" && <DraculaSidebar />}
       {!settingsTop && !playerActive && !pickerTop && layout === "nord" && <NordSidebar />}
@@ -959,7 +984,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
       {!playerActive && !pickerTop && layout === "cinematic" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
       {!playerActive && !pickerTop && layout === "rail" && (
-        <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />
+        <FloatingBack offsetLeft="calc(var(--harbor-sidebar-w, 0px) + 20px)" offsetTop={28} />
       )}
       {!playerActive && !pickerTop && layout === "custom" && (
         <FloatingBack offsetLeft={20} offsetTop={20} />
@@ -972,7 +997,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
       {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
         <CustomLayoutSafetyNet />
       )}
-      {!playerActive && <WindowResizeEdges />}
+      <WindowResizeEdges />
       <div
         className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}
       >
@@ -1195,7 +1220,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
         </Suspense>
       )}
       <CustomCodeMount />
-      <WebhookLoopMount />
       <MemoryHud />
       {!player && <OfflineBanner />}
     </div>

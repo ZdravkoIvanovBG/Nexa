@@ -67,7 +67,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Global",
     group: "Interface",
     label: "Increase interface scale",
-    description: "Make Harbor's interface larger.",
+    description: "Make Nexa's interface larger.",
     defaultBinding: "ctrl+=",
   },
   {
@@ -75,7 +75,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Global",
     group: "Interface",
     label: "Decrease interface scale",
-    description: "Make Harbor's interface smaller.",
+    description: "Make Nexa's interface smaller.",
     defaultBinding: "ctrl+-",
   },
   {
@@ -83,7 +83,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Global",
     group: "Interface",
     label: "Reset interface scale",
-    description: "Restore Harbor's interface scale to 100%.",
+    description: "Restore Nexa's interface scale to 100%.",
     defaultBinding: "ctrl+0",
   },
 
@@ -156,7 +156,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Player",
     group: "Playback",
     label: "Screenshot",
-    description: "Save the current frame (video only, no subtitles) as a PNG to Pictures/Harbor.",
+    description: "Save the current frame (video only, no subtitles) as a PNG to your Pictures folder.",
     defaultBinding: "p",
   },
   {
@@ -165,7 +165,7 @@ export const HOTKEYS: HotkeyDef[] = [
     group: "Playback",
     label: "Record GIF",
     description:
-      "Start or stop recording a GIF of the video (no subtitles). Saves to Pictures/Harbor.",
+      "Start or stop recording a GIF of the video (no subtitles). Saves to your Pictures folder.",
     defaultBinding: "o",
   },
   {
@@ -174,7 +174,7 @@ export const HOTKEYS: HotkeyDef[] = [
     group: "Playback",
     label: "Save video clip",
     description:
-      "Save the last 30 seconds as a video clip with audio, choosing subtitles on or off. Saves to Pictures/Harbor.",
+      "Save the last 30 seconds as a video clip with audio, choosing subtitles on or off. Saves to your Pictures folder.",
     defaultBinding: "c",
   },
   {

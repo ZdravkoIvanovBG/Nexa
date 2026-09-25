@@ -151,9 +151,9 @@ pub fn tray_set_custom_themes(app: AppHandle, themes: Vec<CustomThemeEntry>) {
 }
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "tray_show", "Show Harbor", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "tray_show", "Show Nexa", true, None::<&str>)?;
     let themes: [(&str, &str); 13] = [
-        ("cool-grey", "Harbor default"),
+        ("cool-grey", "Nexa default"),
         ("nord", "Nord"),
         ("stremio", "Stremio"),
         ("crunch", "Crunchy"),
@@ -217,7 +217,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
         None::<&str>,
     )?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let quit = MenuItem::with_id(app, "tray_quit", "Quit Harbor", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "tray_quit", "Quit Nexa", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
@@ -240,7 +240,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
     });
 
     let mut builder = TrayIconBuilder::with_id("harbor-tray")
-        .tooltip("Harbor")
+        .tooltip("Nexa")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| {
@@ -256,6 +256,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                 let _ = app.emit("harbor://set-theme", theme);
             }
             "tray_quit" => {
+                eprintln!("[app] exit requested (tray)");
                 if let Some(w) = app.get_webview_window("main") {
                     crate::CLOSE_FLUSH_DONE.store(false, Ordering::SeqCst);
                     let _ = w.emit("harbor://app-closing", ());
@@ -265,6 +266,8 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
                         }
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
+                    #[cfg(desktop)]
+                    crate::leave_fullscreen_before_exit(&w);
                 }
                 crate::shutdown_services(app);
                 app.exit(0);

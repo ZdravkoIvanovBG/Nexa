@@ -14,6 +14,13 @@ export function useBridgeLoad(params: {
   bridgeReady: boolean;
   bridgeKey: string;
   src: PlayerSrc;
+  // The stream actually playing right now -- src.url unless the user has
+  // manually swapped via the in-player Switch Stream overlay, in which case
+  // this is the swapped stream's URL. Without this, a load fired by an
+  // unrelated bridgeKey change (SVP toggle, embed toggle, html5->mpv
+  // fallback) would silently revert playback to the original auto-picked
+  // stream instead of reloading the one the user chose.
+  effectiveUrl: string;
   transcodedUrl: string | null;
   season: number | undefined;
   episode: number | undefined;
@@ -30,6 +37,7 @@ export function useBridgeLoad(params: {
     bridgeReady,
     bridgeKey,
     src,
+    effectiveUrl,
     transcodedUrl,
     season,
     episode,
@@ -51,7 +59,7 @@ export function useBridgeLoad(params: {
     if (!bridgeReady) return;
     const bridge = bridgeRef.current;
     if (!bridge) return;
-    const playUrl = transcodedUrl ?? src.url;
+    const playUrl = transcodedUrl ?? effectiveUrl;
     const loadKey = `${playUrl}|s${season ?? ""}e${episode ?? ""}`;
     if (lastLoadedUrlRef.current === loadKey) return;
     lastLoadedUrlRef.current = loadKey;
@@ -148,7 +156,7 @@ export function useBridgeLoad(params: {
   }, [
     bridgeReady,
     bridgeKey,
-    src.url,
+    effectiveUrl,
     src.notWebReady,
     src.meta.id,
     src.subtitles,

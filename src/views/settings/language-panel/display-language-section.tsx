@@ -9,7 +9,7 @@ export function DisplayLanguageSection() {
     <Section
       title={t("Display language")}
       subtitle={t(
-        "Sets Harbor's interface language and automatically follows its text direction. This is separate from subtitle and metadata languages below.",
+        "Sets Nexa's interface language and automatically follows its text direction. This is separate from subtitle and metadata languages below.",
       )}
     >
       <div className="flex flex-col gap-2.5">

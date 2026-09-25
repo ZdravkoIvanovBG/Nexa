@@ -7,6 +7,16 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const assets = join(here, "..", "..", "src", "assets");
 
+// The wordmark SVG below renders live text (not outlined paths), so resvg needs the actual
+// font file to rasterize it -- it has no access to the browser's Google Fonts CSS.
+const FONT_OPTS = {
+  font: {
+    loadSystemFonts: false,
+    fontFiles: [join(here, "fonts", "Fraunces-Medium.ttf")],
+    defaultFontFamily: "Fraunces",
+  },
+};
+
 const MARK_PATHS = [
   "m 72.0781,1534.27 c 0,0 1127.5819,922.03 1526.9319,2636.89 0,0 463.95,-1274.4 17.61,-2625.15 L 72.0781,1534.27",
   "M 3975.59,2945.05 2812.18,2222.26 c -36.68,-22.79 -84.13,3.59 -84.13,46.78 v 1391.45 c 0,42.35 45.8,68.85 82.51,47.75 l 1163.41,-668.68 c 36.11,-20.75 37,-72.53 1.62,-94.51 z M 2021.85,4821.57 V 1438.84 l 2818.94,416.96 c 0,0 252.54,2501.82 -2818.94,2965.77",
@@ -19,22 +29,26 @@ function markSvg(fill) {
 }
 
 function wordmarkSvg(fill) {
-  return readFileSync(join(assets, "harbor-wordmark.svg"), "utf8").replace(
+  return readFileSync(join(assets, "nexa-wordmark.svg"), "utf8").replace(
     /class="cls-1"/g,
     `fill="${fill}"`,
   );
 }
 
 function rasterByWidth(svg, width) {
-  return new Resvg(svg, { fitTo: { mode: "width", value: Math.round(width) } }).render().asPng();
+  return new Resvg(svg, { ...FONT_OPTS, fitTo: { mode: "width", value: Math.round(width) } })
+    .render()
+    .asPng();
 }
 
 function rasterByHeight(svg, height) {
-  return new Resvg(svg, { fitTo: { mode: "height", value: Math.round(height) } }).render().asPng();
+  return new Resvg(svg, { ...FONT_OPTS, fitTo: { mode: "height", value: Math.round(height) } })
+    .render()
+    .asPng();
 }
 
 function rasterIntrinsic(svg) {
-  return new Resvg(svg, {}).render().asPng();
+  return new Resvg(svg, FONT_OPTS).render().asPng();
 }
 
 function writeBmp24(path, width, height, rgb) {

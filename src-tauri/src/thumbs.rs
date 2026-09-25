@@ -137,6 +137,7 @@ struct Inner {
 
 struct Shadow {
     child: Child,
+    pid: u32,
     writer_tx: mpsc::Sender<Value>,
     cache_dir: PathBuf,
     pipe: String,
@@ -230,22 +231,26 @@ fn cache_dir(session: &str) -> PathBuf {
     std::env::temp_dir().join("harbor-thumbs").join(session)
 }
 
-async fn drop_shadow(shadow: &mut Shadow) {
+async fn drop_shadow(shadow: &mut Shadow, reason: &str) {
+    let pid = shadow.pid;
+    eprintln!("[thumbs] cleanup start pid={pid} reason={reason}");
     let _ = shadow.writer_tx.try_send(json!({"command": ["quit"]}));
     tokio::time::sleep(SHADOW_QUIT_GRACE).await;
     if shadow.child.try_wait().ok().flatten().is_none() {
+        eprintln!("[thumbs] kill sent pid={pid}");
         if let Err(error) = shadow.child.start_kill() {
             eprintln!("[thumbs] failed to kill shadow mpv: {error}");
         }
-        if tokio::time::timeout(SHADOW_KILL_WAIT, shadow.child.wait())
-            .await
-            .is_err()
-        {
-            eprintln!("[thumbs] shadow mpv did not exit after kill request");
+        match tokio::time::timeout(SHADOW_KILL_WAIT, shadow.child.wait()).await {
+            Ok(status) => eprintln!("[thumbs] child exited pid={pid} status={status:?}"),
+            Err(_) => eprintln!("[thumbs] shadow mpv did not exit after kill request pid={pid}"),
         }
+    } else {
+        eprintln!("[thumbs] child already exited pid={pid}");
     }
     let _ = tokio::fs::remove_file(&shadow.pipe).await;
     let _ = tokio::fs::remove_dir_all(&shadow.cache_dir).await;
+    eprintln!("[thumbs] cleanup complete pid={pid}");
 }
 
 async fn send_ipc_message(
@@ -274,7 +279,7 @@ pub async fn thumbs_set_url(state: State<'_, ThumbsState>, url: String) -> Resul
     };
     let _spawn_guard = state.spawn_lock.lock().await;
     if let Some(mut s) = shadow {
-        drop_shadow(&mut s).await;
+        drop_shadow(&mut s, "set-url").await;
     }
     Ok(())
 }
@@ -307,7 +312,7 @@ pub async fn thumbs_spawn_eager(state: State<'_, ThumbsState>) -> Result<(), Str
         }
     };
     if let Some(mut shadow) = stale {
-        drop_shadow(&mut shadow).await;
+        drop_shadow(&mut shadow, "stale").await;
     }
     Ok(())
 }
@@ -415,7 +420,7 @@ async fn worker(inner_arc: Arc<Mutex<Inner>>, spawn_lock: Arc<Mutex<()>>, worker
                 }
             };
             if let Some(mut stale) = stale {
-                drop_shadow(&mut stale).await;
+                drop_shadow(&mut stale, "stale").await;
             }
         }
         let (writer_tx, dir, request_id, seek_notify) = {
@@ -527,12 +532,12 @@ async fn generate_thumb(
 
 #[tauri::command]
 pub async fn thumbs_stop(state: State<'_, ThumbsState>) -> Result<(), String> {
-    state.stop().await;
+    state.stop("stop").await;
     Ok(())
 }
 
 impl ThumbsState {
-    async fn stop(&self) {
+    async fn stop(&self, reason: &str) {
         let shadow = {
             let mut inner = self.inner.lock().await;
             let shadow = inner.shadow.take();
@@ -545,7 +550,7 @@ impl ThumbsState {
         };
         let _spawn_guard = self.spawn_lock.lock().await;
         if let Some(mut s) = shadow {
-            drop_shadow(&mut s).await;
+            drop_shadow(&mut s, reason).await;
         }
     }
 }
@@ -554,7 +559,7 @@ pub(crate) fn shutdown(app: &tauri::AppHandle) {
     use tauri::Manager;
 
     let state = app.state::<ThumbsState>();
-    tauri::async_runtime::block_on(state.stop());
+    tauri::async_runtime::block_on(state.stop("shutdown"));
 }
 
 async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shadow, String> {
@@ -583,6 +588,11 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
         format!("--screenshot-jpeg-quality={}", SCREENSHOT_QUALITY),
         "--screenshot-tag-colorspace=no".into(),
         "--hr-seek=no".into(),
+        // This is an invisible, audio-less helper process — it must never
+        // surface in the Windows volume/media overlay or steal media keys
+        // from the real player.
+        "--media-controls=no".into(),
+        "--input-media-keys=no".into(),
         // End-of-options terminator: without it, an addon-controlled stream
         // URL beginning with `-`/`--` (e.g. `--log-file=<path>`) would be
         // parsed by mpv as an option, allowing arbitrary file writes.
@@ -590,6 +600,7 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
         url.to_string(),
     ];
 
+    eprintln!("[thumbs] spawn requested session={session}");
     let mut cmd = Command::new(&bin);
     cmd.kill_on_drop(true);
     cmd.args(&args)
@@ -601,6 +612,22 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
     let mut child = cmd.spawn().map_err(|e| format!("spawn shadow: {}", e))?;
+    crate::child_jobs::adopt(&child);
+    let pid = child.id().unwrap_or(0);
+    eprintln!("[thumbs] spawned pid={pid} session={session}");
+
+    // Debug-only, opt-in delay to make the spawn/shutdown race reproducible:
+    // set HARBOR_THUMBS_SPAWN_DELAY_MS and close Nexa while a stream is
+    // loading to exercise the window between spawn and the child handle
+    // being stored.
+    #[cfg(debug_assertions)]
+    if let Some(delay_ms) = std::env::var("HARBOR_THUMBS_SPAWN_DELAY_MS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        eprintln!("[thumbs] debug spawn delay {delay_ms}ms pid={pid}");
+        tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+    }
 
     tokio::time::sleep(Duration::from_millis(400)).await;
     if let Some(status) = child
@@ -618,6 +645,7 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
 
     Ok(Shadow {
         child,
+        pid,
         writer_tx,
         cache_dir: dir,
         pipe,
@@ -843,7 +871,7 @@ mod cache_tests {
             inner.active_worker = Some(1);
         }
 
-        state.stop().await;
+        state.stop("test").await;
 
         let inner = state.inner.lock().await;
         assert!(inner.shadow.is_none());

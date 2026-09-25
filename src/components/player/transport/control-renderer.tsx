@@ -81,6 +81,7 @@ export type ControlContext = {
   mid: boolean;
   compact: boolean;
   tight: boolean;
+  short: boolean;
   active: boolean;
   isLiveChannel: boolean;
   showEpisodeNav: boolean;
@@ -209,10 +210,13 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
       const qual = realQualityLabel(ctx.snap.videoWidth, ctx.snap.videoHeight);
       const lines = (
         <>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <h1
-              style={{ fontSize: `${Math.round(19 * scale)}px` }}
-              className="font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+              title={primary}
+              style={{
+                fontSize: `clamp(${Math.round(14 * scale)}px, 1.4vw, ${Math.round(19 * scale)}px)`,
+              }}
+              className="min-w-0 truncate font-semibold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
             >
               {primary}
             </h1>
@@ -224,8 +228,13 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           </div>
           {secondary && (
             <p
-              style={{ fontSize: `${Math.round(13 * scale)}px` }}
-              className="text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+              title={secondary}
+              style={{
+                fontSize: `clamp(${Math.round(11 * scale)}px, 1vw, ${Math.round(13 * scale)}px)`,
+              }}
+              className={`min-w-0 max-w-full truncate text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)] ${
+                ctx.tight ? "hidden" : ""
+              }`}
             >
               {secondary}
             </p>
@@ -237,20 +246,20 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           <button
             type="button"
             onClick={ctx.onTitleClick}
-            className="pointer-events-auto group inline-flex items-center gap-2 rounded-lg px-2 py-0.5 text-start transition-colors hover:bg-white/10"
+            className="pointer-events-auto group inline-flex min-w-0 items-center gap-2 rounded-lg px-2 py-0.5 text-start transition-colors hover:bg-white/10"
             aria-label={t("Title info")}
           >
-            <div className="flex flex-col items-start gap-0.5">{lines}</div>
+            <div className="flex min-w-0 flex-col items-start gap-0.5">{lines}</div>
             <Info
               size={14}
               strokeWidth={2.2}
-              className="opacity-50 transition-opacity group-hover:opacity-95"
+              className="shrink-0 opacity-50 transition-opacity group-hover:opacity-95"
             />
           </button>
         );
       }
       return (
-        <div className="pointer-events-none flex flex-col items-start gap-0.5 text-start">
+        <div className="pointer-events-none flex min-w-0 flex-col items-start gap-0.5 text-start">
           {lines}
         </div>
       );

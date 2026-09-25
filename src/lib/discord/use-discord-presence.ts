@@ -30,7 +30,7 @@ const NORMAL_AWARD_IMG: Record<string, string> = {
   berlin: "berlin.png",
 };
 const STATIC_LABELS: Record<string, BrowsePresence> = {
-  home: { details: "Browsing Harbor" },
+  home: { details: "Browsing Nexa" },
   discover: { details: "Browsing Discover" },
   movies: { details: "Browsing movies" },
   shows: { details: "Browsing shows" },
@@ -145,7 +145,7 @@ export function useDiscordPresence(): void {
         cancelled = true;
       };
     }
-    setBrowsePresence(STATIC_LABELS[topKind] ?? { details: "Browsing Harbor" });
+    setBrowsePresence(STATIC_LABELS[topKind] ?? { details: "Browsing Nexa" });
   }, [topKind, service, meta, awardType, filter, personId, settings.tmdbKey, hint]);
 
   useEffect(() => {

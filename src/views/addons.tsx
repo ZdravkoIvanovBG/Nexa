@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Library, Sparkles, Star, TrendingUp } from "lucide-react";
+import { Boxes, Check, ChevronRight, Library, Sparkles, Star, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AgeGateModal } from "@/components/age-gate-modal";
 import { HarborLoader } from "@/components/harbor-loader";
@@ -30,6 +30,7 @@ import toolsIcon from "@/assets/category/tools.svg";
 import adultIcon from "@/assets/category/adult.svg";
 import { AddByUrlBar } from "./addons/add-by-url-bar";
 import { AddonDetail } from "./addons/addon-detail";
+import { BundlesPane } from "./addons/bundles-pane";
 import { AddonInstallModal } from "./addons/install-modal";
 import { OrganizeAddonsPage } from "./addons/organize/page";
 import { consumeAddonsTab, type Tab, type ToastInfo } from "./addons/addons-types";
@@ -58,8 +59,18 @@ const BROWSE_MODES: Array<{
   Icon: typeof Star;
 }> = [
   { id: "top", label: "Top rated", sub: "By community stars", Icon: Star },
-  { id: "rising", label: "Top rising", sub: "Most starred in 24 hours", Icon: TrendingUp },
-  { id: "new", label: "Just added", sub: "Freshest on stremio-addons.net", Icon: Sparkles },
+  {
+    id: "rising",
+    label: "Top rising",
+    sub: "Most starred in 24 hours",
+    Icon: TrendingUp,
+  },
+  {
+    id: "new",
+    label: "Just added",
+    sub: "Freshest on stremio-addons.net",
+    Icon: Sparkles,
+  },
 ];
 
 void Library;
@@ -102,7 +113,12 @@ export function AddonsView() {
     | { kind: "install"; url: string }
     | {
         kind: "manage";
-        existing: { id: string; name: string; logo?: string | null; transportUrl: string };
+        existing: {
+          id: string;
+          name: string;
+          logo?: string | null;
+          transportUrl: string;
+        };
       }
     | null
   >(null);
@@ -180,7 +196,7 @@ export function AddonsView() {
   }, [allAddons]);
   const trimmedQuery = query.trim();
   useEffect(() => {
-    if (trimmedQuery.length > 0 && tab !== "installed") setTab("browse");
+    if (trimmedQuery.length > 0 && tab !== "installed" && tab !== "bundles") setTab("browse");
   }, [trimmedQuery, tab]);
 
   const onInstall = async (r: ResolvedAddon) => {
@@ -271,10 +287,10 @@ export function AddonsView() {
         onClose={() => setAgeGateOpen(false)}
         onPass={() => update({ showAdultAddons: true })}
       />
-      <header className="shrink-0 px-12 pt-20 pb-3">
+      <header className="shrink-0 px-5 pt-20 pb-3 sm:px-8 lg:px-12">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <nav className="flex flex-wrap items-center gap-1">
-            {(["discover", "browse", "installed"] as Tab[]).map((tabId) => {
+            {(["discover", "browse", "installed", "bundles"] as Tab[]).map((tabId) => {
               const active = tab === tabId;
               if (tabId === "installed") {
                 return (
@@ -305,13 +321,20 @@ export function AddonsView() {
                     setTab(tabId);
                     if (tabId === "browse") setCategoryFilter(null);
                   }}
-                  className={`flex h-12 items-center rounded-full px-5 text-[14px] font-semibold transition-colors ${
+                  className={`flex h-12 items-center gap-1.5 rounded-full px-5 text-[14px] font-semibold transition-colors ${
                     active
                       ? "bg-ink text-canvas"
                       : "text-ink-muted hover:bg-elevated hover:text-ink"
                   }`}
                 >
-                  {tabId === "discover" ? t("Discover") : t("Browse")}
+                  {tabId === "bundles" && (
+                    <Boxes size={15} strokeWidth={2.6} className={active ? "" : "text-accent"} />
+                  )}
+                  {tabId === "discover"
+                    ? t("Discover")
+                    : tabId === "browse"
+                      ? t("Browse")
+                      : t("Recommended Bundles")}
                 </button>
               );
               if (tabId === "discover") {
@@ -329,17 +352,17 @@ export function AddonsView() {
               return <span key={tabId}>{btn}</span>;
             })}
           </nav>
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="min-w-0 max-w-72 flex-1">
-              <SearchBar value={query} onChange={setQuery} />
-            </div>
-            <div className="min-w-0 flex-[1.4]">
+          <div className="ms-auto flex min-w-0 items-center gap-3">
+            <div className="w-64 shrink-0">
               <AddByUrlBar
                 onSubmit={async (raw) => {
                   setInstallModal({ kind: "install", url: raw });
                 }}
                 compact
               />
+            </div>
+            <div className="w-72 shrink-0">
+              <SearchBar value={query} onChange={setQuery} />
             </div>
             <button
               onClick={() => {
@@ -455,7 +478,7 @@ export function AddonsView() {
         )}
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 pb-20 pt-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-20 pt-6 sm:px-8 lg:px-12">
         {loading && allAddons.length === 0 ? (
           <div className="flex h-full items-center justify-center py-24">
             <HarborLoader size="lg" caption={t("Loading the catalog")} keyed />
@@ -481,6 +504,8 @@ export function AddonsView() {
             onOpen={openAddonDetail}
             onRefetch={refetch}
           />
+        ) : tab === "bundles" ? (
+          <BundlesPane onInstalled={refetch} showToast={showToast} />
         ) : (
           <InstalledPane
             installed={installed}
@@ -605,7 +630,11 @@ function RemoteOrLocalDetail({
 
   const resolved = local ?? remote;
   const recs = useMemo(() => {
-    if (!resolved) return { related: [] as ResolvedAddon[], recommended: [] as ResolvedAddon[] };
+    if (!resolved)
+      return {
+        related: [] as ResolvedAddon[],
+        recommended: [] as ResolvedAddon[],
+      };
     const related = relatedAddons(resolved, allAddons, 8);
     const exclude = new Set(related.map((r) => r.manifest?.id ?? r.curated?.id ?? r.transportUrl));
     exclude.add(addonDetailId);

@@ -142,7 +142,7 @@ function joinBlock(arr: string[]): string {
 }
 
 export function serializeHarborStyle(theme: ThemePreset | CustomTheme): string {
-  const lines: string[] = ["# Harbor Style", `name: ${theme.name}`];
+  const lines: string[] = ["# Nexa Style", `name: ${theme.name}`];
   if (theme.blurb) lines.push(`blurb: ${theme.blurb}`);
   if (theme.layout) lines.push(`layout: ${theme.layout}`);
   if (theme.cardStyle) lines.push(`card: ${theme.cardStyle}`);
@@ -180,7 +180,7 @@ export function serializeHarborStyle(theme: ThemePreset | CustomTheme): string {
 }
 
 export function harborStyleStarter(): string {
-  return `# Harbor Style
+  return `# Nexa Style
 name: My Theme
 blurb: A short tagline shown in the picker.
 layout: sidebar

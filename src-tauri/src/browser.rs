@@ -1,6 +1,4 @@
-use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder};
-#[cfg(target_os = "linux")]
-use tauri::Emitter;
+use tauri::{AppHandle, Emitter, Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
 const BROWSER_LABEL: &str = "harbor-browser";
 
@@ -101,7 +99,7 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
         #[allow(unused_mut)]
         let mut builder =
             WebviewWindowBuilder::new(&app_for_main, BROWSER_LABEL, WebviewUrl::External(parsed))
-                .title("Harbor Browser")
+                .title("Nexa Browser")
                 .inner_size(target_w, target_h)
                 .position(target_x, target_y)
                 .resizable(true)
@@ -112,7 +110,14 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
             builder = builder.decorations(true).shadow(true).focused(true);
         }
 
-        #[cfg(target_os = "linux")]
+        // Capture stremio:// / manifest.json install links wherever on_navigation
+        // fires for them. On Linux, STREMIO_CAPTURE_SCRIPT above rewrites clicks and
+        // window.open() calls into a top-level location change so this actually
+        // sees them; on Windows/macOS a stremio:// click is normally handed to the
+        // OS by WebView2/WKWebView before on_navigation runs, so the OS-level
+        // `stremio` deep-link (see tauri.conf.json) is the real capture path there
+        // -- this hook still catches a bare /manifest.json navigation on every
+        // platform.
         {
             let nav_app = app_for_main.clone();
             builder = builder.on_navigation(move |url| {

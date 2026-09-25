@@ -1,9 +1,12 @@
 import { useT } from "@/lib/i18n";
+import { HUD_ABOVE_CONTROLS } from "@/views/player/player-size";
 
 export function ForeignNoticeBox(props: { title: string | null; onDismiss: () => void }) {
   const t = useT();
   return (
-    <div className="pointer-events-auto absolute end-6 bottom-32 z-30 flex max-w-sm items-center gap-3 rounded-2xl border border-white/15 bg-black/72 px-4 py-3 text-white backdrop-blur-xl">
+    <div
+      className={`pointer-events-auto absolute end-6 ${HUD_ABOVE_CONTROLS} z-30 flex max-w-[min(24rem,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-white/15 bg-black/72 px-4 py-3 text-white backdrop-blur-xl`}
+    >
       <div className="flex flex-col">
         <span className="text-[11px] uppercase tracking-wider text-white/55">
           {t("Now watching")}

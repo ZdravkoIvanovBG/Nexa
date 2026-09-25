@@ -55,7 +55,7 @@ let flags: Flags = readStored();
  * The app is gated behind sign-in, so the wizard would render the instant the
  * gate lifts -- a frame or more before the profile pull that reveals this
  * account is years old. The wizard holds until this flips, which is what stops
- * a returning user seeing a flash of "welcome to Harbor" on every sign-in.
+ * a returning user seeing a flash of "welcome to Nexa" on every sign-in.
  */
 let cloudAnswered = false;
 

@@ -16,7 +16,7 @@ mod mac {
         unsafe {
             let info: *mut AnyObject = msg_send![cls, processInfo];
             let info = info.as_ref()?;
-            let reason = NSString::from_str("Harbor playback");
+            let reason = NSString::from_str("Nexa playback");
             let opts: u64 = IDLE_DISPLAY_SLEEP_DISABLED | IDLE_SYSTEM_SLEEP_DISABLED;
             let token: Retained<AnyObject> =
                 msg_send![info, beginActivityWithOptions: opts, reason: &*reason];
@@ -83,7 +83,7 @@ mod linux {
         .await
         .ok()?;
         let cookie = proxy
-            .call("Inhibit", &("Harbor", "Harbor playback"))
+            .call("Inhibit", &("Nexa", "Nexa playback"))
             .await
             .ok()?;
 
@@ -102,7 +102,7 @@ mod linux {
         )
         .await
         .ok()?;
-        let options = HashMap::from([("reason", Value::from("Harbor playback"))]);
+        let options = HashMap::from([("reason", Value::from("Nexa playback"))]);
         let handle = proxy
             .call("Inhibit", &("", INHIBIT_SUSPEND_AND_IDLE, options))
             .await

@@ -163,7 +163,7 @@ export function TogetherDeployModal({
               <img
                 src={cfTokenTutorial}
                 alt={t(
-                  "Cloudflare token form filled with name 'Harbor Relay' and one permission row set to Account / Workers Scripts / Edit",
+                  "Cloudflare token form filled with name 'Nexa Relay' and one permission row set to Account / Workers Scripts / Edit",
                 )}
                 className="mt-2 w-full rounded-lg border border-edge"
               />
@@ -326,7 +326,7 @@ export function TogetherDeployModal({
           </div>
           <p className="text-[12px] text-ink-subtle">
             {t(
-              "Send this to anyone you want to watch with. They paste it in their Settings → Harbor Relay. After that, share a 6-character room code from the people icon up top.",
+              "Send this to anyone you want to watch with. They paste it in their Settings → Nexa Relay. After that, share a 6-character room code from the people icon up top.",
             )}
           </p>
           <button
@@ -361,7 +361,7 @@ export function TogetherDeployModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge bg-surface p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
+        className="flex max-h-[88vh] w-[560px] max-w-[calc(100vw-2rem)] flex-col gap-5 overflow-y-auto rounded-2xl border border-edge bg-surface p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
       >
         {body}
       </div>
@@ -411,7 +411,9 @@ function ErrorPanel({
               text={t(
                 "Your account hasn't picked its free {code} address yet. Cloudflare only asks the first time. Quick to set up.",
               )}
-              values={{ code: <span className="font-mono text-ink">workers.dev</span> }}
+              values={{
+                code: <span className="font-mono text-ink">workers.dev</span>,
+              }}
             />
           </p>
         </div>

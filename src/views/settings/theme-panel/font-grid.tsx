@@ -40,7 +40,7 @@ export function FontGrid({
                 className="text-[28px] font-medium leading-none tracking-tight text-ink"
                 style={{ fontFamily: p.display }}
               >
-                Harbor
+                Nexa
               </span>
               <span className="text-[13px] text-ink-muted" style={{ fontFamily: p.sans }}>
                 The quick brown fox jumps over the lazy dog

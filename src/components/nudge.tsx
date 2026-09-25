@@ -25,7 +25,7 @@ export function TmdbNudge({ suppress }: { suppress?: boolean } = {}) {
       />
       <div className="min-w-0 flex-1">
         <p className="text-[13.5px] font-medium text-ink">
-          {t("Add a TMDB key for the full Harbor")}
+          {t("Add a TMDB key for the full Nexa")}
         </p>
         <p className="text-[12.5px] text-ink-subtle">
           {t("Free key unlocks Trending, In Theaters, and per-service catalogs. 60 seconds.")}

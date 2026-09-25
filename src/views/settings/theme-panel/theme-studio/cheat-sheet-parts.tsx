@@ -121,7 +121,7 @@ export function CodeBlock({
   };
   const download = () => {
     const name = filename ?? "snippet.txt";
-    void downloadText(name, code, [name.split(".").pop() ?? "txt"], "Harbor snippet");
+    void downloadText(name, code, [name.split(".").pop() ?? "txt"], "Nexa snippet");
   };
   return (
     <div

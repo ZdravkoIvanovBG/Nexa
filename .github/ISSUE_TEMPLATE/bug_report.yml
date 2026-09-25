@@ -1,5 +1,5 @@
 name: Bug report
-description: Report broken behavior, a regression, crash, or reliability problem in Harbor.
+description: Report broken behavior, a regression, crash, or reliability problem in Nexa.
 title: "[Bug]: "
 labels:
   - bug
@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve Harbor. Search existing issues first and keep this report focused on one problem.
+        Thanks for helping improve Nexa. Search existing issues first and keep this report focused on one problem.
         Do not include passwords, API keys, tokens, private stream URLs, or personal data.
 
   - type: checkboxes
@@ -23,7 +23,7 @@ body:
     id: area
     attributes:
       label: Affected area
-      description: Which part of Harbor is affected?
+      description: Which part of Nexa is affected?
       options:
         - Playback, player, or mpv
         - Subtitles, audio, or synchronization
@@ -44,7 +44,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Harbor version
+      label: Nexa version
       description: Enter the numeric version only, without a leading "v" or channel name.
       placeholder: 0.9.21
     validations:
@@ -93,7 +93,7 @@ body:
     attributes:
       label: What happened?
       description: Describe what happened and what you expected instead.
-      placeholder: Harbor did ... instead of ...
+      placeholder: Nexa did ... instead of ...
     validations:
       required: true
 
@@ -103,7 +103,7 @@ body:
       label: How to reproduce
       description: List the actions that reliably trigger the problem.
       placeholder: |
-        1. Open Harbor.
+        1. Open Nexa.
         2. Go to ...
         3. Select ...
 

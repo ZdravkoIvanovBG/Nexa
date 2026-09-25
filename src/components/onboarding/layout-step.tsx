@@ -15,7 +15,7 @@ export function LayoutStep() {
   }> = [
     {
       id: "harbor",
-      label: t("Harbor curated"),
+      label: t("Nexa curated"),
       sub: t(
         "Hero, Top 10, Trending, In Theaters, per-service rails. Your addons append underneath.",
       ),
@@ -25,7 +25,7 @@ export function LayoutStep() {
       id: "classic",
       label: t("Classic Stremio"),
       sub: t(
-        "Continue Watching, then your addon catalogs in install order. No hero, no Harbor rails.",
+        "Continue Watching, then your addon catalogs in install order. No hero, no Nexa rails.",
       ),
       img: traditionalStyleImg,
     },

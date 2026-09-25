@@ -18,12 +18,12 @@ export function AutoExhaustedModal({
   const epSuffix = episode
     ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : "";
-  const subject = `Harbor: no working stream for ${title}${epSuffix}`;
+  const subject = `Nexa: no working stream for ${title}${epSuffix}`;
   const body =
     `Title: ${title}${epSuffix}\n` +
     `IMDb: ${meta.id ?? ""}\n` +
     `Streams tried: ${triedCount}\n` +
-    `\nWhat happened: Harbor could not find a working stream automatically.\n` +
+    `\nWhat happened: Nexa could not find a working stream automatically.\n` +
     `\n(Add any extra detail here)`;
   const mailto = `mailto:bugs@harbor.site?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   return (
@@ -33,13 +33,13 @@ export function AutoExhaustedModal({
     >
       <div className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
-          Harbor
+          Nexa
         </p>
         <h2 className="mt-3 text-start text-[24px] font-semibold leading-tight text-ink" dir="auto">
           We could not find a working stream
         </h2>
         <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
-          Harbor checked every available source for {title}
+          Nexa checked every available source for {title}
           {epSuffix} and none of them played. The most common reasons:
         </p>
         <ul

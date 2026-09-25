@@ -1,11 +1,12 @@
 import { X } from "lucide-react";
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Poster, usePosterChain } from "@/components/poster";
 import { type Meta } from "@/lib/cinemeta";
 import { removeFromWatched, type Tier, type WatchedEntry } from "@/lib/library-tracking";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { hydrateLibraryMeta } from "./hydrate-meta";
 
 export function TierTile({
   entry,
@@ -24,11 +25,28 @@ export function TierTile({
   const { settings } = useSettings();
   const { openMeta } = useView();
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const poster = usePosterChain(settings.rpdbKey, entry.id, entry.poster, entry.type);
-  const name = entry.name || entry.id;
+  const [fetched, setFetched] = useState<{ id: string; meta: Meta } | null>(null);
+  // Movies marked watched from a path that only stored their id (the eye
+  // button, the context menu, an older build) arrive with no poster or name.
+  useEffect(() => {
+    if (entry.poster && entry.name) return;
+    let cancelled = false;
+    hydrateLibraryMeta(entry.id, entry.type, settings.tmdbKey ?? null)
+      .then((full) => {
+        if (!cancelled && full) setFetched({ id: entry.id, meta: full });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.id, entry.type, entry.poster, entry.name, settings.tmdbKey]);
+  // Keyed by id so a recycled tile never shows the previous entry's art.
+  const hydrated = fetched?.id === entry.id ? fetched.meta : null;
+  const posterUrl = entry.poster ?? hydrated?.poster;
+  const poster = usePosterChain(settings.rpdbKey, entry.id, posterUrl, entry.type);
+  const name = entry.name || hydrated?.name || entry.id;
 
-  const open = () =>
-    openMeta({ id: entry.id, type: entry.type, name, poster: entry.poster } as Meta);
+  const open = () => openMeta({ id: entry.id, type: entry.type, name, poster: posterUrl } as Meta);
 
   return (
     <div

@@ -15,17 +15,6 @@ export type StreamingService =
   | "peacock"
   | "crunchyroll";
 
-export type WebhookTrigger =
-  | { event: "newMovie" }
-  | { event: "newSeries" }
-  | { event: "fromTrackedPerson"; personIds?: number[] }
-  | { event: "fromGenre"; genreIds: number[]; mediaType: "movie" | "tv" }
-  | { event: "fromProvider"; providerIds: number[] }
-  | { event: "fromCountry"; countryCodes: string[] }
-  | { event: "fromTraktAnticipated" }
-  | { event: "fromTraktWatchlist" }
-  | { event: "liveTvEvent"; channelIds?: string[]; favoritesOnly?: boolean; leadMinutes?: number };
-
 export type ContentCategory = "liveTv" | "sports" | "adult";
 
 export type ContentFilters = Record<ContentCategory, boolean>;
@@ -232,7 +221,6 @@ export type Settings = {
   preferEmbeddedSubs: boolean;
   subtitleAutoUpgrade: boolean;
   subtitlePreselect: boolean;
-  betaUpdates: boolean;
   autoSkipIntro: boolean;
   autoSkipRecap: boolean;
   autoSkipOutro: boolean;
@@ -360,19 +348,6 @@ export type Settings = {
   customCss: string;
   customJs: string;
   customHtml: string;
-  webhooks: {
-    discordUrl: string;
-    telegramUrl: string;
-    notifyMovies: boolean;
-    notifyTv: boolean;
-    sources: {
-      library: boolean;
-      all: boolean;
-      trakt: boolean;
-      anticipated: boolean;
-      custom: boolean;
-    };
-  };
   calendarSource:
     | "library"
     | "all"
@@ -400,13 +375,6 @@ export type Settings = {
     originCountries: string[];
     mediaTypes: { movie: boolean; tv: boolean };
   };
-  webhookRules: Array<{
-    id: string;
-    name: string;
-    enabled: boolean;
-    trigger: WebhookTrigger;
-    channels: { discord: boolean; telegram: boolean };
-  }>;
   downloadDir: string;
   downloadCreateFolders: boolean;
   stremioDeeplinkInstall: boolean;

@@ -13,7 +13,7 @@ export function SmoothingPanel() {
       <Section
         title={t("Desktop only")}
         subtitle={t(
-          "Smooth motion runs on the bundled mpv engine in the Harbor desktop app. It has no effect in the browser.",
+          "Smooth motion runs on the bundled mpv engine in the Nexa desktop app. It has no effect in the browser.",
         )}
       >
         <span className="text-[13px] text-ink-subtle">
@@ -34,7 +34,7 @@ export function SmoothingPanel() {
         <ToggleRow
           label={t("Motion smoothing")}
           sub={t(
-            "Harbor's built-in frame interpolation. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. Lighter than SVP.",
+            "Nexa's built-in frame interpolation. Needs a display refresh rate above the video's frame rate, and can stutter on weak GPUs. Lighter than SVP.",
           )}
           value={settings.playerMotionInterp}
           onChange={(v) => update({ playerMotionInterp: v })}

@@ -7,7 +7,8 @@ export function FloatingBack({
   offsetLeft = 24,
   offsetTop = 90,
 }: {
-  offsetLeft?: number;
+  /** A number of px, or any CSS length (e.g. a calc() off --harbor-sidebar-w). */
+  offsetLeft?: number | string;
   offsetTop?: number;
 }) {
   const { canGoBack, goBack, exitPlayback, topKind, chromeHidden } = useView();

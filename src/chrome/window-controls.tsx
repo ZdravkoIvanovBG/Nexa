@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import { close, minimize } from "@/lib/window";
-import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
-import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
+import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 
@@ -9,7 +7,7 @@ const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in windo
 
 export function WindowControls() {
   const { settings } = useSettings();
-  const fullscreen = useWindowFullscreen();
+  const maximized = useMaximized();
   const t = useT();
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (
@@ -18,10 +16,10 @@ export function WindowControls() {
         <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
       <Ctl
-        label={fullscreen ? t("chrome.restore") : t("chrome.maximize")}
-        onClick={() => void toggleWindowFullscreen()}
+        label={maximized ? t("chrome.restore") : t("chrome.maximize")}
+        onClick={() => void toggleMaximize()}
       >
-        {fullscreen ? (
+        {maximized ? (
           <>
             <rect
               x="2.5"

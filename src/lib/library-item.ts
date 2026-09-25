@@ -3,7 +3,7 @@ import { readResumeEntry } from "@/lib/resume";
 /**
  * A row in the user's library.
  *
- * The shape originated with the Stremio API but is now Harbor's own: local
+ * The shape originated with the Stremio API but is now Nexa's own: local
  * Continue Watching, Trakt and Simkl all synthesize these, so it outlives the
  * account layer it came from.
  */

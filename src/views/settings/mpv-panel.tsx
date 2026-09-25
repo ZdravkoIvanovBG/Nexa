@@ -15,7 +15,7 @@ export function MpvPanel() {
       <Section
         title={t("Desktop only")}
         subtitle={t(
-          "These tune the bundled mpv engine, which runs in the Harbor desktop app. They have no effect in the browser.",
+          "These tune the bundled mpv engine, which runs in the Nexa desktop app. They have no effect in the browser.",
         )}
       >
         <span className="text-[13px] text-ink-subtle">
@@ -61,7 +61,7 @@ export function MpvPanel() {
                   "Forces the graphics card on. Smoothest and coolest, but a few old or unusual files may refuse to play. Switch back to Auto if something won't start.",
                 )
               : t(
-                  "Harbor uses the graphics card when it's safe and falls back to the CPU when it isn't. The right call for almost everyone.",
+                  "Nexa uses the graphics card when it's safe and falls back to the CPU when it isn't. The right call for almost everyone.",
                 )}
         </p>
       </Section>
@@ -73,7 +73,7 @@ export function MpvPanel() {
       <Section
         title={t("Slow or unstable connection")}
         subtitle={t(
-          "If video keeps pausing to buffer, or you're on spotty Wi-Fi or a far-away server, this gives Harbor a bigger head start so playback rides through the rough patches.",
+          "If video keeps pausing to buffer, or you're on spotty Wi-Fi or a far-away server, this gives Nexa a bigger head start so playback rides through the rough patches.",
         )}
       >
         <ToggleRow

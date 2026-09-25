@@ -7,12 +7,13 @@ import {
   mkdtempSync,
   readdirSync,
   rmSync,
-  statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { downloadWithRetry, isValidBinary } from "./lib/download.mjs";
 
 if (process.platform !== "win32") {
   console.log("[mpv] not Windows, skipping bundled mpv.exe");
@@ -39,9 +40,13 @@ if (!spec) {
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const destination = join(root, "src-tauri", "binaries", "mpv-x86_64-pc-windows-msvc.exe");
 
-if (existsSync(destination) && statSync(destination).size > 0) {
-  console.log(`[mpv] ${destination} already present`);
-  process.exit(0);
+if (existsSync(destination)) {
+  if (isValidBinary(destination)) {
+    console.log(`[mpv] ${destination} already present`);
+    process.exit(0);
+  }
+  console.warn(`[mpv] ${destination} present but invalid; re-downloading`);
+  unlinkSync(destination);
 }
 
 function findFile(dir, name) {
@@ -61,13 +66,8 @@ const url = `https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$
 const temp = mkdtempSync(join(tmpdir(), "harbor-mpv-"));
 
 try {
-  console.log(`[mpv] fetching ${url}`);
-  const response = await fetch(url, { redirect: "follow" });
-  if (!response.ok)
-    throw new Error(`[mpv] download failed (${response.status} ${response.statusText})`);
-
+  const bytes = await downloadWithRetry(url, { label: "[mpv]" });
   const archive = join(temp, spec.asset);
-  const bytes = Buffer.from(await response.arrayBuffer());
   const digest = createHash("sha256").update(bytes).digest("hex");
   if (digest !== spec.sha256)
     throw new Error(`[mpv] checksum mismatch (expected ${spec.sha256}, got ${digest})`);
@@ -85,6 +85,10 @@ try {
   if (!mpv) throw new Error("[mpv] mpv.exe was not found in the archive");
   mkdirSync(dirname(destination), { recursive: true });
   copyFileSync(mpv, destination);
+  if (!isValidBinary(destination)) {
+    unlinkSync(destination);
+    throw new Error("[mpv] extracted mpv.exe failed validation (too small or not a native binary)");
+  }
   console.log(`[mpv] wrote ${destination}`);
 } finally {
   rmSync(temp, { recursive: true, force: true });

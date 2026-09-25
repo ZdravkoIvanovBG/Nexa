@@ -391,7 +391,7 @@ function RendererSheet({
               </span>
               <span className="flex flex-1 flex-col">
                 <span className="text-[16px] font-medium">This PC</span>
-                <span className="text-[12px] text-ink-muted">Harbor on the server display</span>
+                <span className="text-[12px] text-ink-muted">Nexa on the server display</span>
               </span>
             </button>
           </li>

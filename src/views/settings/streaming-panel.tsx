@@ -100,8 +100,8 @@ export function RecommendedAddonCard({
         {error && <span className="text-[12px] text-danger">{error}</span>}
         {!debrid && !installed && (
           <span className="text-[12px] text-ink-subtle">
-            Save a debrid key above (TorBox, Real-Debrid, AllDebrid, Premiumize, or Debrid-Link) to
-            enable this.
+            Save a debrid key in API Keys (TorBox, Real-Debrid, AllDebrid, Premiumize, or
+            Debrid-Link) to enable this.
           </span>
         )}
       </div>

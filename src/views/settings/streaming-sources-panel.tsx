@@ -1,22 +1,7 @@
-import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import allDebridLogo from "@/assets/addon-logos/alldebrid.webp";
-import debridLinkLogo from "@/assets/addon-logos/debridlink.png";
-import premiumizeLogo from "@/assets/addon-logos/premiumize.png";
-import realDebridLogo from "@/assets/addon-logos/realdebrid.png";
-import torboxLogo from "@/assets/addon-logos/torbox.png";
-import type { Addon } from "@/lib/addons";
-import { installedAddonsResolved } from "@/lib/addon-store";
 import { SERVICES } from "@/lib/providers/streaming";
 import { useSettings, type StreamingService } from "@/lib/settings";
-import {
-  fetchAioStatusHealth,
-  type AioStatusSnapshot,
-  type ServiceHealth,
-} from "@/lib/streams/aiostatus";
-import { ExtLink, KeyField, Section, ToggleRow } from "./shared";
+import { Section, ToggleRow } from "./shared";
 import { ManualAddonCard, ServiceCard } from "./streaming-panel";
-import { AioStatusModal } from "./aiostatus-modal";
 import { StreamFilterPreview } from "./stream-filter-preview";
 import {
   PickerLayoutPreview,
@@ -26,44 +11,15 @@ import {
 import { AdSkipShowcase } from "./ad-skip-showcase";
 import { useT } from "@/lib/i18n";
 
-export type DebridKey = "rd" | "tb" | "ad" | "pm" | "dl";
-
-export function StreamingSourcesPanel({
-  rdDraft,
-  tbDraft,
-  adDraft,
-  pmDraft,
-  dlDraft,
-  setRdDraft,
-  setTbDraft,
-  setAdDraft,
-  setPmDraft,
-  setDlDraft,
-  savedKey,
-  saveKey,
-}: {
-  rdDraft: string;
-  tbDraft: string;
-  adDraft: string;
-  pmDraft: string;
-  dlDraft: string;
-  setRdDraft: (v: string) => void;
-  setTbDraft: (v: string) => void;
-  setAdDraft: (v: string) => void;
-  setPmDraft: (v: string) => void;
-  setDlDraft: (v: string) => void;
-  savedKey: string | null;
-  saveKey: (which: DebridKey, value: string) => void;
-}) {
+export function StreamingSourcesPanel() {
   const t = useT();
   const { settings, update, toggleStreaming } = useSettings();
-  const aioHealth = useAioStatusHealth();
   return (
     <>
       <Section
         title={t("Stream safety filter")}
         subtitle={t(
-          "How aggressively Harbor rejects shady or mismatched streams before showing them in the picker.",
+          "How aggressively Nexa rejects shady or mismatched streams before showing them in the picker.",
         )}
       >
         <StreamFilterPicker
@@ -170,133 +126,15 @@ export function StreamingSourcesPanel({
       <Section
         title={t("Result order")}
         subtitle={t(
-          "Harbor ranking puts the best-scoring sources first. Addon order follows your addon priority (organize it in Addons, Installed tab, Reorder) and keeps each addon's results in the order it returned them, like the Stremio and Vidi apps.",
+          "Nexa ranking puts the best-scoring sources first. Addon order follows your addon priority (organize it in Addons, Installed tab, Reorder) and keeps each addon's results in the order it returned them, like the Stremio and Vidi apps.",
         )}
       >
         <StreamSortPicker value={settings.streamSort} onChange={(v) => update({ streamSort: v })} />
         <p className="mt-3 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
           {t(
-            "Using AIOStreams or another aggregator addon? Its own sorting and filtering happen inside the addon before Harbor ever sees the results, then Harbor applies the stream filter and result order above on top. If results look thinner than expected, keep one side permissive: either relax the addon's internal filters or set Harbor's stream filter to Balanced or Off.",
+            "Using AIOStreams or another aggregator addon? Its own sorting and filtering happen inside the addon before Nexa ever sees the results, then Nexa applies the stream filter and result order above on top. If results look thinner than expected, keep one side permissive: either relax the addon's internal filters or set Nexa's stream filter to Balanced or Off.",
           )}
         </p>
-      </Section>
-
-      <Section
-        title={t("Debrid services")}
-        subtitle={t(
-          "Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link. Cached streams play direct. Keys stay local.",
-        )}
-      >
-        {aioHealth && <AioStatusBanner snapshot={aioHealth} />}
-        <KeyField
-          label={t("Real-Debrid API token")}
-          placeholder={t("API token")}
-          value={rdDraft}
-          onChange={setRdDraft}
-          onSave={() => saveKey("rd", rdDraft)}
-          saved={savedKey === "rd"}
-          iconSrc={realDebridLogo}
-          help={
-            <>
-              Get yours at{" "}
-              <ExtLink href="https://real-debrid.com/apitoken">real-debrid.com/apitoken</ExtLink>.
-              Used to check cache and unrestrict links. Harbor never adds or removes torrents on its
-              own.
-            </>
-          }
-          headerExtra={
-            aioHealth?.health.has("rd") ? (
-              <HealthBadge health={aioHealth.health.get("rd")} logo={aioHealth.addonLogo} />
-            ) : undefined
-          }
-        />
-        <KeyField
-          label={t("TorBox API key")}
-          placeholder={t("API key")}
-          value={tbDraft}
-          onChange={setTbDraft}
-          onSave={() => saveKey("tb", tbDraft)}
-          saved={savedKey === "tb"}
-          iconSrc={torboxLogo}
-          help={
-            <>
-              Get yours at <ExtLink href="https://torbox.app/settings">torbox.app/settings</ExtLink>
-              . Same read-only usage as Real-Debrid. Also lets you queue uncached torrents from the
-              play picker.
-            </>
-          }
-          headerExtra={
-            aioHealth?.health.has("tb") ? (
-              <HealthBadge health={aioHealth.health.get("tb")} logo={aioHealth.addonLogo} />
-            ) : undefined
-          }
-        />
-        <KeyField
-          label={t("AllDebrid API key")}
-          placeholder={t("API key")}
-          value={adDraft}
-          onChange={setAdDraft}
-          onSave={() => saveKey("ad", adDraft)}
-          saved={savedKey === "ad"}
-          iconSrc={allDebridLogo}
-          help={
-            <>
-              Get yours at{" "}
-              <ExtLink href="https://alldebrid.com/apikeys/">alldebrid.com/apikeys</ExtLink>.
-              AllDebrid deprecated their cache-check endpoint, so streams may show as unknown until
-              you actually hit Play.
-            </>
-          }
-          headerExtra={
-            aioHealth?.health.has("ad") ? (
-              <HealthBadge health={aioHealth.health.get("ad")} logo={aioHealth.addonLogo} />
-            ) : undefined
-          }
-        />
-        <KeyField
-          label={t("Premiumize API key")}
-          placeholder={t("API key")}
-          value={pmDraft}
-          onChange={setPmDraft}
-          onSave={() => saveKey("pm", pmDraft)}
-          saved={savedKey === "pm"}
-          iconSrc={premiumizeLogo}
-          help={
-            <>
-              Get yours at{" "}
-              <ExtLink href="https://www.premiumize.me/account">premiumize.me/account</ExtLink>.
-              Uses the directdl endpoint, which skips queueing for anything already cached.
-            </>
-          }
-          headerExtra={
-            aioHealth?.health.has("pm") ? (
-              <HealthBadge health={aioHealth.health.get("pm")} logo={aioHealth.addonLogo} />
-            ) : undefined
-          }
-        />
-        <KeyField
-          label={t("Debrid-Link API key")}
-          placeholder={t("API key")}
-          value={dlDraft}
-          onChange={setDlDraft}
-          onSave={() => saveKey("dl", dlDraft)}
-          saved={savedKey === "dl"}
-          iconSrc={debridLinkLogo}
-          help={
-            <>
-              Get yours at{" "}
-              <ExtLink href="https://debrid-link.com/webapp/apikey">
-                debrid-link.com/webapp/apikey
-              </ExtLink>
-              . EU-hosted, fast cache check. Same read-only usage as the others.
-            </>
-          }
-          headerExtra={
-            aioHealth?.health.has("dl") ? (
-              <HealthBadge health={aioHealth.health.get("dl")} logo={aioHealth.addonLogo} />
-            ) : undefined
-          }
-        />
       </Section>
 
       <Section
@@ -330,7 +168,7 @@ export function StreamingSourcesPanel({
         </div>
         {!settings.tmdbKey && (
           <p className="mt-3 text-[13px] text-ink-subtle">
-            {t("Save a TMDB key in Library & metadata to turn on streaming catalogs.")}
+            {t("Save a TMDB key in API Keys to turn on streaming catalogs.")}
           </p>
         )}
       </Section>
@@ -415,7 +253,7 @@ function PickerLayoutPicker({
       id: "condensed",
       label: t("Condensed"),
       sub: t(
-        "Default. Top pick at the top, quality tiles, and an All-Sources drawer. Harbor scores and ranks results.",
+        "Default. Top pick at the top, quality tiles, and an All-Sources drawer. Nexa scores and ranks results.",
       ),
     },
     {
@@ -470,8 +308,8 @@ function StreamSortPicker({
   const options: Array<{ id: "harbor" | "addon"; label: string; sub: string }> = [
     {
       id: "harbor",
-      label: t("Harbor ranking"),
-      sub: t("Default. Harbor parses and scores every source and surfaces the best quality first."),
+      label: t("Nexa ranking"),
+      sub: t("Default. Nexa parses and scores every source and surfaces the best quality first."),
     },
     {
       id: "addon",
@@ -511,121 +349,5 @@ function StreamSortPicker({
         );
       })}
     </div>
-  );
-}
-
-function useAioStatusHealth(): AioStatusSnapshot | null {
-  const [snapshot, setSnapshot] = useState<AioStatusSnapshot | null>(null);
-  useEffect(() => {
-    const ac = new AbortController();
-    let cancelled = false;
-    void (async () => {
-      const list = await installedAddonsResolved().catch(() => [] as Addon[]);
-      if (cancelled || list.length === 0) return;
-      const snap = await fetchAioStatusHealth(list, ac.signal);
-      if (!cancelled) setSnapshot(snap);
-    })();
-    return () => {
-      cancelled = true;
-      ac.abort();
-    };
-  }, []);
-  return snapshot;
-}
-
-function AioStatusBanner({ snapshot }: { snapshot: AioStatusSnapshot }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const total = snapshot.services.length;
-  if (total === 0) return null;
-  const expiringSoon = snapshot.services.filter(
-    (s) => s.status === "expiring" || s.status === "expired",
-  );
-  const hasWarning = expiringSoon.length > 0;
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`mb-2 flex w-full items-center gap-2.5 rounded-xl border px-3.5 py-2 text-start text-[12px] transition-colors ${
-          hasWarning
-            ? "border-amber-300/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
-            : "border-edge-soft bg-canvas/40 text-ink-muted hover:bg-canvas/60"
-        }`}
-      >
-        <span className="shrink-0 font-semibold tracking-wide">{snapshot.addonName}</span>
-        <span className="text-ink-subtle">·</span>
-        <span className="min-w-0 flex-1 truncate">
-          {hasWarning
-            ? expiringSoon.length === 1
-              ? t("{n} service needs attention", { n: expiringSoon.length })
-              : t("{n} services need attention", { n: expiringSoon.length })
-            : total === 1
-              ? t("Health for {n} service", { n: total })
-              : t("Health for {n} services", { n: total })}
-        </span>
-        <span className="flex shrink-0 items-center gap-0.5 font-semibold text-ink-subtle">
-          {t("View all")}
-          <ChevronRight size={13} strokeWidth={2.4} />
-        </span>
-      </button>
-      {open && <AioStatusModal snapshot={snapshot} onClose={() => setOpen(false)} />}
-    </>
-  );
-}
-
-function HealthBadge({ health, logo }: { health: ServiceHealth | undefined; logo: string | null }) {
-  const t = useT();
-  if (!health) return null;
-  const palette =
-    health.status === "expired"
-      ? "text-rose-200"
-      : health.status === "expiring"
-        ? "text-amber-200"
-        : health.status === "active"
-          ? "text-emerald-200"
-          : "text-ink-subtle";
-  const dot =
-    health.status === "expired"
-      ? "bg-rose-300"
-      : health.status === "expiring"
-        ? "bg-amber-300"
-        : health.status === "active"
-          ? "bg-emerald-300"
-          : "bg-ink-subtle";
-  const label = (() => {
-    if (health.status === "expired") return t("Expired");
-    if (health.daysLeft != null && health.status === "expiring")
-      return t("{n}d left", { n: health.daysLeft });
-    if (health.daysLeft != null) return t("{n}d left", { n: health.daysLeft });
-    if (health.status === "active") return t("Active");
-    return health.rawLine.slice(0, 40);
-  })();
-  return (
-    <span className="flex items-center gap-2 text-[11px] font-medium">
-      <span className={`flex items-center gap-1.5 ${palette}`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        <span>{label}</span>
-        {health.quotaUsedPercent != null && (
-          <span className="text-ink-subtle">· {health.quotaUsedPercent}%</span>
-        )}
-      </span>
-      <span className="flex items-center gap-1.5 text-ink-muted">
-        {logo && (
-          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-canvas ring-1 ring-edge-soft">
-            <img
-              src={logo}
-              alt=""
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-              draggable={false}
-            />
-          </span>
-        )}
-        <span>AIOStatus</span>
-      </span>
-    </span>
   );
 }

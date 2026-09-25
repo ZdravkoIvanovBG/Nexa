@@ -60,6 +60,23 @@ impl DvrState {
             inner: Arc::new(Mutex::new(HashMap::new())),
         }
     }
+
+    /// Kill and reap every in-progress recording. Used on app shutdown so an
+    /// active DVR session doesn't survive as an orphaned mpv.exe silently
+    /// writing to disk after Nexa exits.
+    async fn stop_all(&self, app: &AppHandle) {
+        let ids: Vec<String> = { self.inner.lock().await.keys().cloned().collect() };
+        for id in ids {
+            let _ = finalize(app, &self.inner, &id, None).await;
+        }
+    }
+}
+
+pub(crate) fn shutdown(app: &AppHandle) {
+    use tauri::Manager;
+
+    let state = app.state::<DvrState>();
+    tauri::async_runtime::block_on(state.stop_all(app));
 }
 
 pub(crate) fn locate_mpv() -> Option<PathBuf> {
@@ -141,6 +158,14 @@ pub async fn dvr_start(
         .arg("--network-timeout=60")
         .arg("--user-agent=VLC/3.0.20 LibVLC/3.0.20")
         .arg(format!("--stream-record={}", output_path.display()))
+        // This is a headless recorder, not user-facing playback — it must
+        // never surface in the Windows volume/media overlay or steal media
+        // keys from the real player.
+        .arg("--media-controls=no")
+        .arg("--input-media-keys=no")
+        // End-of-options terminator: without it a channel URL beginning with
+        // `-`/`--` would be parsed by mpv as an option.
+        .arg("--")
         .arg(&args.url);
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
@@ -149,6 +174,8 @@ pub async fn dvr_start(
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
     let child = cmd.spawn().map_err(|e| format!("spawn mpv: {}", e))?;
+    crate::child_jobs::adopt(&child);
+    eprintln!("[dvr] spawned pid={} channel={}", child.id().unwrap_or(0), args.channel_name);
 
     let id = Uuid::new_v4().to_string();
     let started_at = Instant::now();
@@ -254,7 +281,10 @@ async fn finalize(
 ) -> Result<(), String> {
     let recording = { state.lock().await.remove(id) };
     if let Some(mut rec) = recording {
+        let pid = rec.child.id().unwrap_or(0);
+        eprintln!("[dvr] cleanup start pid={pid} id={id}");
         let _ = rec.child.kill().await;
+        eprintln!("[dvr] cleanup complete pid={pid} id={id}");
         let bytes = tokio::fs::metadata(&rec.output_path)
             .await
             .map(|m| m.len())
@@ -353,7 +383,14 @@ pub async fn dvr_default_dir(app: AppHandle) -> Result<String, String> {
         .or_else(|_| app.path().download_dir())
         .or_else(|_| app.path().app_data_dir())
         .map_err(|e| format!("no base dir: {}", e))?;
-    let dir = base.join("Harbor DVR");
+    // Harbor -> Nexa rename: keep writing into an existing "Harbor DVR" folder from a pre-rename
+    // install so recordings stay in one place; only new installs get "Nexa DVR".
+    let legacy_dir = base.join("Harbor DVR");
+    let dir = if legacy_dir.exists() {
+        legacy_dir
+    } else {
+        base.join("Nexa DVR")
+    };
     if !dir.exists() {
         let _ = std::fs::create_dir_all(&dir);
     }

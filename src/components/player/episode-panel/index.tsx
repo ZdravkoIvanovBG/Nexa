@@ -194,7 +194,7 @@ export function EpisodePanel({
       <aside
         role="dialog"
         aria-label={t("Up next")}
-        className={`absolute top-0 h-full w-full max-w-[440px] overflow-hidden shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] transition-transform duration-300 ease-out ${
+        className={`absolute top-0 h-full w-full max-w-[min(440px,86vw)] overflow-hidden shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] transition-transform duration-300 ease-out ${
           corner === "top-left" || corner === "bottom-left" ? "left-0" : "right-0"
         } ${
           open
@@ -258,11 +258,14 @@ export function EpisodePanel({
             ) : (
               <>
                 <header className="flex items-center justify-between gap-3 px-6 pb-4 pt-7">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
                       {t("Up Next")}
                     </p>
-                    <h2 className="mt-1 font-display text-[22px] font-semibold leading-tight text-ink">
+                    <h2
+                      title={meta.name}
+                      className="mt-1 truncate font-display text-[22px] font-semibold leading-tight text-ink"
+                    >
                       {meta.name}
                     </h2>
                   </div>

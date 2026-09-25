@@ -7,6 +7,7 @@ import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { HeaderWarning, NoAudioWarning } from "./header-warning";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
+import { usePlayerSize } from "./player-size";
 
 export const PanelsLayer = memo(function PanelsLayer({
   engine,
@@ -62,6 +63,7 @@ export const PanelsLayer = memo(function PanelsLayer({
   onPickAnother: () => void;
 }) {
   const t = useT();
+  const { short, tight } = usePlayerSize();
 
   const episodesOnLeft = episodesCorner === "top-left" || episodesCorner === "bottom-left";
 
@@ -71,9 +73,9 @@ export const PanelsLayer = memo(function PanelsLayer({
     <>
       {upNextButtonVisible && (
         <div
-          className={`pointer-events-auto absolute top-1/2 z-20 h-32 w-11 -translate-y-1/2 ${
-            episodesOnLeft ? "left-0" : "right-0"
-          }`}
+          className={`pointer-events-auto absolute top-1/2 z-20 -translate-y-1/2 ${
+            short ? "h-24 w-9" : "h-32 w-11"
+          } ${episodesOnLeft ? "left-0" : "right-0"}`}
         >
           <ThreeLiquidGlassSurface
             radius={episodesOnLeft ? "0 16px 16px 0" : "16px 0 0 16px"}
@@ -133,15 +135,17 @@ export const PanelsLayer = memo(function PanelsLayer({
                 />
               </svg>
 
-              <span
-                className="text-[11px] font-semibold uppercase tracking-[0.28em]"
-                style={{
-                  writingMode: "vertical-rl",
-                  transform: "rotate(180deg)",
-                }}
-              >
-                {t("Up Next")}
-              </span>
+              {!short && !tight && (
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-[0.28em]"
+                  style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)",
+                  }}
+                >
+                  {t("Up Next")}
+                </span>
+              )}
             </button>
           </ThreeLiquidGlassSurface>
         </div>

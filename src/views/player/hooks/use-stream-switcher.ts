@@ -76,7 +76,7 @@ export function useStreamSwitcher(params: {
   }, []);
 
   const onSwitchStream = useCallback(
-    async (stream: ScoredStream) => {
+    async (stream: ScoredStream): Promise<boolean> => {
       const key = stream.infoHash ?? stream.url ?? `${stream.addonId}:${stream.title ?? ""}`;
       setSwapResolvingKey(key);
       swapAcRef.current?.abort();
@@ -100,11 +100,11 @@ export function useStreamSwitcher(params: {
           ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
           : undefined;
         const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
-        if (!isCurrentSwap()) return;
+        if (!isCurrentSwap()) return false;
         if (!r.ok) {
           console.warn(`[player] stream swap failed: ${r.code}`);
           resumeOnFailure();
-          return;
+          return false;
         }
         let playUrl = r.data.url;
         if (r.data.headers && Object.keys(r.data.headers).length > 0) {
@@ -113,17 +113,17 @@ export function useStreamSwitcher(params: {
             playUrl = proxied.url;
             if (!isCurrentSwap()) {
               void unregisterStreamProxy(proxied.sessionId).catch(() => {});
-              return;
+              return false;
             }
           } catch {
             resumeOnFailure();
-            return;
+            return false;
           }
         }
         const b = bridgeRef.current;
         if (!b) {
           resumeOnFailure();
-          return;
+          return false;
         }
         try {
           const current = getPlaybackPosition();
@@ -138,15 +138,15 @@ export function useStreamSwitcher(params: {
             notWebReady: r.data.notWebReady,
             startAtSec: resumeAt > 5 ? resumeAt : undefined,
           });
-          if (!isCurrentSwap()) return;
+          if (!isCurrentSwap()) return false;
           await b.play().catch(() => {});
         } catch (e) {
           // The old stream is already gone here (load stops it), so there is
           // nothing to resume; the bridge error state drives the UI.
           console.warn("[player] stream swap failed", e);
-          return;
+          return false;
         }
-        if (!isCurrentSwap()) return;
+        if (!isCurrentSwap()) return false;
         setLiveUrl(playUrl);
         setLiveStreamRef({
           infoHash: stream.infoHash ?? null,
@@ -187,6 +187,7 @@ export function useStreamSwitcher(params: {
         setSwitcherOpen(false);
         checkShownRef.current = false;
         setStreamCheckOpen(false);
+        return true;
       } finally {
         // The swap loader is keyed on swapResolvingKey, so it must always
         // clear — but only the latest swap may clear it, or an aborted swap

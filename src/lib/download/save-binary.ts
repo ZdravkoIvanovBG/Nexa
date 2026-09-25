@@ -39,7 +39,7 @@ async function writeBytes(
     const { writeFile } = await import("@tauri-apps/plugin-fs");
     const path = await save({
       defaultPath: filename,
-      filters: [{ name: "Harbor", extensions: [ext] }],
+      filters: [{ name: "Nexa", extensions: [ext] }],
     });
     if (!path) return { saved: false, path: null };
     await writeFile(path, bytes);

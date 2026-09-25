@@ -197,7 +197,7 @@ export function parseThemeJson(
     return { ok: false, error: "This file isn't a readable theme." };
   }
   if (!raw || typeof raw !== "object") {
-    return { ok: false, error: "This file isn't a Harbor theme." };
+    return { ok: false, error: "This file isn't a Nexa theme." };
   }
   const o = raw as Partial<CustomTheme>;
   const name = typeof o.name === "string" ? o.name.trim() : "";

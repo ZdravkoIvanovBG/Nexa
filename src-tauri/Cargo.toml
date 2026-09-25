@@ -1,6 +1,6 @@
 [package]
 name = "harbor"
-version = "0.9.21"
+version = "0.9.28"
 description = "A Stremio client built for adventure"
 edition = "2021"
 
@@ -12,7 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
@@ -21,11 +21,6 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-process = "2"
-tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
-tauri-plugin-window-state = "2"
-tauri-plugin-updater = "2"
-libmpv2 = "4"
-libmpv2-sys = "4"
 walkdir = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -65,6 +60,17 @@ hickory-resolver = "0.25"
 rusqlite = { version = "0.32", features = ["bundled"] }
 steamlocate = "2"
 
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-window-state = "2"
+tauri-plugin-updater = "2"
+# libmpv2-sys's build script emits an unconditional `cargo:rustc-link-lib=mpv`.
+# There is no Android/iOS libmpv in this repo, so linking fails on those targets.
+# Keep these desktop-only; `src/mpv_stub.rs` stands in for `src/mpv.rs` on mobile.
+libmpv2 = "4"
+libmpv2-sys = "4"
+
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = [
   "Win32_Foundation",
@@ -78,6 +84,8 @@ windows = { version = "0.61", features = [
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_SystemInformation",
   "Win32_System_LibraryLoader",
+  "Win32_System_JobObjects",
+  "Win32_Security",
 ] }
 window-vibrancy = "0.6"
 wasapi = "0.15"

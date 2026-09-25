@@ -6,7 +6,6 @@ import {
   usePlaybackFlag,
 } from "@/lib/player/playback-clock";
 import { isLocalUrl } from "@/lib/player/local-url";
-import { clearOnePickerCache } from "@/lib/picker-cache";
 import { resolveViaDebrids } from "@/lib/streams/resolve";
 import { registerStreamProxy } from "@/lib/stream-proxy";
 import { buildTranscodedUrl, probeStremioServer } from "@/lib/stremio-server";
@@ -61,6 +60,17 @@ export function useAutoRetry(params: {
   debrids: DebridStore[];
   selfFrameReadyRef: RefObject<boolean>;
   openPicker: OpenPicker;
+  // Called instead of bouncing to a new auto-picked candidate once the
+  // same-source rescues below are exhausted -- opens the source switcher
+  // and stops the auto loop for this playback session. See
+  // auto-fallback-policy.ts.
+  onHalt: (reason: string) => void;
+  // True once the user has manually picked a stream via Switch Stream.
+  // Every rescue below reloads src.url (the ORIGINAL auto-picked stream),
+  // so once this is set the whole ladder must stay silent -- otherwise a
+  // failure on the manually-picked stream would silently revert playback
+  // back to the stream the user just moved away from.
+  hasManuallySwappedRef: RefObject<boolean>;
   engineFailure: boolean;
   isP2pEngine: boolean;
   engineStats: EngineStats | null;
@@ -75,6 +85,8 @@ export function useAutoRetry(params: {
     debrids,
     selfFrameReadyRef,
     openPicker,
+    onHalt,
+    hasManuallySwappedRef,
     engineFailure,
     isP2pEngine,
     engineStats,
@@ -164,6 +176,7 @@ export function useAutoRetry(params: {
   const triggerAutoRetry = useCallback(
     (reason: string) => {
       if (autoRetriedRef.current) return;
+      if (hasManuallySwappedRef.current) return;
       if (isLocal) {
         console.warn(`[player] local file: skipping auto-retry (${reason})`);
         return;
@@ -172,43 +185,43 @@ export function useAutoRetry(params: {
         console.warn(`[player] live channel: skipping auto-retry (${reason})`);
         return;
       }
-      const currentAttempt = src.attempt ?? 0;
-      if (currentAttempt >= MAX_AUTORETRY_ATTEMPTS) {
-        console.warn(`[player] giving up after ${currentAttempt} attempts (${reason})`);
+      autoRetriedRef.current = true;
+      if (!instantPlay && !inRoom && /^https?:\/\//i.test(src.url)) {
+        // Not an auto-play/room session -- this is a manually opened stream,
+        // so there's no auto loop to halt. Show what actually went wrong.
+        console.warn(`[player] ${reason} — probing source status`);
+        if (bridgeRef.current) {
+          bridgeRef.current.destroy();
+          bridgeRef.current = null;
+        }
+        void probeSourceStatus(src.url, src.headers).then(setSourceError);
         return;
       }
-      autoRetriedRef.current = true;
-      const nextAttempt = currentAttempt + 1;
-      console.warn(`[player] ${reason} — retrying with candidate #${nextAttempt}`);
+      if (instantPlay || inRoom) {
+        // Same-source rescues above are exhausted. Never auto-switch to a
+        // different candidate here (that was the flicker/bad-quality-skip
+        // loop) -- halt and let the user pick.
+        onHalt(reason);
+        return;
+      }
       if (bridgeRef.current) {
         bridgeRef.current.destroy();
         bridgeRef.current = null;
       }
-      if (nextAttempt >= 2) {
-        clearOnePickerCache(src.meta, src.episode);
-      }
-      if (!instantPlay && !inRoom && /^https?:\/\//i.test(src.url)) {
-        void probeSourceStatus(src.url, src.headers).then(setSourceError);
-        return;
-      }
-      openPicker(
-        src.meta,
-        src.episode,
-        instantPlay || inRoom ? { autoPlay: true, attempt: nextAttempt } : { autoPlay: false },
-      );
+      openPicker(src.meta, src.episode, { autoPlay: false });
     },
     [
-      src.attempt,
+      hasManuallySwappedRef,
       src.meta,
       src.episode,
       openPicker,
+      onHalt,
       instantPlay,
       isLocal,
       isLive,
       inRoom,
       src.url,
-      src.subtitles,
-      src.notWebReady,
+      src.headers,
       bridgeRef,
     ],
   );
@@ -216,6 +229,11 @@ export function useAutoRetry(params: {
   useEffect(() => {
     if (snap.errorCode == null) return;
     if (snap.status === "ended") return;
+    // Every rescue below reloads src.url -- the ORIGINAL auto-picked stream
+    // -- so once the user has manually swapped, none of them may run: they
+    // would silently revert the user's choice back to the stream they just
+    // moved away from.
+    if (hasManuallySwappedRef.current) return;
     if (isLive) {
       console.warn(`[player] live channel: ignoring "${snap.errorCode}", mpv handles reconnection`);
       return;
@@ -358,6 +376,7 @@ export function useAutoRetry(params: {
     bridgeRef,
     isP2pEngine,
     engineFailure,
+    hasManuallySwappedRef,
   ]);
 
   const lastPosRef = useRef({ pos: 0, at: 0, started: false, urlAt: 0 });

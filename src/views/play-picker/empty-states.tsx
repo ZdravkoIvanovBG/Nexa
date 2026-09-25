@@ -40,12 +40,12 @@ export function NoSourcesState({
   const isWeb = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
   const libraryOnly = hasDebrid && addonCount === 0;
   const tip = libraryOnly
-    ? "Harbor searched your debrid library, but this title is not already saved there. Install a stream addon if you want to search for new torrents."
+    ? "Nexa searched your debrid library, but this title is not already saved there. Install a stream addon if you want to search for new torrents."
     : isAnime
       ? "Anime sources are usually richer through Torrentio's anime config or AIOStreams. Make sure one is installed in Stremio."
       : isWeb
-        ? "On the web, Harbor can only reach addons that allow browser access (Torrentio, TorBox, Cinemeta). For unreleased titles, no source typically exists yet."
-        : "Try signing in to Stremio so Harbor can use your addon collection. Older or foreign titles often need Torrentio + a debrid addon to find anything.";
+        ? "On the web, Nexa can only reach addons that allow browser access (Torrentio, TorBox, Cinemeta). For unreleased titles, no source typically exists yet."
+        : "Try signing in to Stremio so Nexa can use your addon collection. Older or foreign titles often need Torrentio + a debrid addon to find anything.";
   return (
     <div className="rounded-[24px] border border-edge-soft/70 bg-canvas/80 px-9 py-11">
       <div className="flex flex-col items-center gap-5 text-center">
@@ -55,7 +55,7 @@ export function NoSourcesState({
         <h2 className="font-display text-[28px] leading-tight text-ink">
           {libraryOnly
             ? "Your library does not contain a matching file"
-            : `Harbor queried ${addonCount} addon${addonCount === 1 ? "" : "s"} and got nothing back`}
+            : `Nexa queried ${addonCount} addon${addonCount === 1 ? "" : "s"} and got nothing back`}
         </h2>
         <p className="max-w-md text-[13.5px] leading-relaxed text-ink-muted">{tip}</p>
         <p className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-ink-subtle/70">
@@ -89,7 +89,7 @@ export function FilteredOutState({
           Strict filters dropped everything
         </h2>
         <p className="max-w-lg text-[14px] leading-relaxed text-ink-muted">
-          Harbor blocks suspicious files and mismatched releases by default. For older shows and
+          Nexa blocks suspicious files and mismatched releases by default. For older shows and
           unusual titles this is sometimes too tight.
         </p>
         {groups.length > 0 && (
@@ -152,8 +152,8 @@ export function TheatresEmptyState({
           {meta.name}
         </h2>
         <p className="max-w-md text-[14px] leading-relaxed text-ink-muted">
-          No clean release has surfaced yet. This may be too new. Harbor's filters dropped
-          everything that came back as wrong-movie noise.
+          No clean release has surfaced yet. This may be too new. Nexa's filters dropped everything
+          that came back as wrong-movie noise.
         </p>
         {onShowAll && !showingAll && (
           <button

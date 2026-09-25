@@ -612,7 +612,7 @@ export function createHtml5Bridge(): PlayerBridge {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: info.title,
-          artist: info.artist ?? "Harbor",
+          artist: info.artist ?? "Nexa",
           artwork: info.artwork ? [{ src: info.artwork, sizes: "512x512" }] : [],
         });
       } catch {}
@@ -641,7 +641,7 @@ export function createHtml5Bridge(): PlayerBridge {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = path.split(/[\\/]/).pop() || "harbor-frame.png";
+        a.download = path.split(/[\\/]/).pop() || "nexa-frame.png";
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         return { ok: true, path };

@@ -4,6 +4,7 @@ import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { VolumeStyle } from "@/lib/player-chrome";
 import { useT } from "@/lib/i18n";
 import { Tooltip } from "./tooltip";
+import { usePlayerSize } from "@/views/player/player-size";
 import {
   NORMAL_FRACTION,
   TRACK_WIDTH,
@@ -76,11 +77,16 @@ export function VolumeControl({
           (breakPct / filledPct) * 100
         }%, #f97316 ${(breakPct / filledPct) * 100}%, ${color} 100%)`;
 
+  const { compact, tight } = usePlayerSize();
+  const muteSizeClass = tight ? "h-9 w-9" : compact ? "h-10 w-10" : "h-12 w-12";
+  // Narrow windows drop the drag track; the mute button plus wheel/keyboard
+  // still give full control, and the stepper style keeps its +/- buttons.
+  const trackWidth = compact ? 72 : TRACK_WIDTH;
   const muteBtn = (
     <Tooltip label={label}>
       <button
         onClick={onMute}
-        className="flex h-12 w-12 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+        className={`flex ${muteSizeClass} shrink-0 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/10 hover:text-white`}
         aria-label={label}
       >
         {muted ? (
@@ -133,6 +139,14 @@ export function VolumeControl({
     );
   }
 
+  if (tight) {
+    return (
+      <div className="flex items-center" onWheel={onWheel}>
+        {muteBtn}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2" onWheel={onWheel}>
       {muteBtn}
@@ -143,7 +157,7 @@ export function VolumeControl({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         className="relative h-2 shrink-0 cursor-pointer rounded-full bg-white/15"
-        style={{ width: TRACK_WIDTH }}
+        style={{ width: trackWidth }}
       >
         <div
           className="pointer-events-none absolute inset-y-0 left-0 rounded-full"

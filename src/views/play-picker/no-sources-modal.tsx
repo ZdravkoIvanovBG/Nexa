@@ -11,13 +11,13 @@ export function NoSourcesConfiguredModal({ meta }: { meta: Meta }) {
     >
       <div className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
-          Harbor
+          Nexa
         </p>
         <h2 className="mt-3 text-[24px] font-semibold leading-tight text-ink">
           No streaming sources yet
         </h2>
         <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
-          Harbor needs at least one streaming source before it can play {title}. Pick one of the
+          Nexa needs at least one streaming source before it can play {title}. Pick one of the
           options below to get set up.
         </p>
         <ul className="mt-3 space-y-1.5 text-[13.5px] leading-relaxed text-ink-muted">

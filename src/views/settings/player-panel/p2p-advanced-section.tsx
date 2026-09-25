@@ -157,7 +157,7 @@ export function P2PAdvancedSection() {
           <span className="text-[13.5px] font-semibold text-ink">{t("Keep at most")}</span>
           <p className="text-[12px] leading-relaxed text-ink-subtle">
             {t(
-              "Cap how much disk the cache can use. When it goes over, Harbor deletes the oldest files first. Enforced on launch and as streams close.",
+              "Cap how much disk the cache can use. When it goes over, Nexa deletes the oldest files first. Enforced on launch and as streams close.",
             )}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -254,7 +254,7 @@ export function P2PAdvancedSection() {
         <ToggleRow
           label={t("Disable torrents entirely")}
           sub={t(
-            "Harbor will not start the torrent engine, contact trackers, or run DHT. Use this if you only want debrid and direct links. Turn off to re-enable torrent streaming.",
+            "Nexa will not start the torrent engine, contact trackers, or run DHT. Use this if you only want debrid and direct links. Turn off to re-enable torrent streaming.",
           )}
           value={settings.torrentsDisabled}
           onChange={(v) => {
@@ -283,7 +283,7 @@ export function P2PAdvancedSection() {
         <ToggleRow
           label={t("Direct torrent streaming")}
           sub={t(
-            "Stream torrents straight from Harbor's built-in engine when you have no debrid set up, or a torrent isn't cached. This connects to peers over your own connection. Turn off to only ever play debrid and direct links.",
+            "Stream torrents straight from Nexa's built-in engine when you have no debrid set up, or a torrent isn't cached. This connects to peers over your own connection. Turn off to only ever play debrid and direct links.",
           )}
           value={settings.directTorrentStream}
           onChange={(v) => update({ directTorrentStream: v })}
@@ -298,7 +298,7 @@ export function P2PAdvancedSection() {
         <ToggleRow
           label={t("Auto-confirm peer-to-peer streaming")}
           sub={t(
-            "Skip the 'stream over peer-to-peer?' prompt and start uncached torrents immediately. Harbor remembers your choice after the first confirmation anyway.",
+            "Skip the 'stream over peer-to-peer?' prompt and start uncached torrents immediately. Nexa remembers your choice after the first confirmation anyway.",
           )}
           value={settings.p2pAutoConsent}
           onChange={(v) => update({ p2pAutoConsent: v })}

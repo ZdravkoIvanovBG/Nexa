@@ -13,6 +13,13 @@ import { applyRemote, mirrorProfiles, purgeProfileFromCloud } from "./cloud/mirr
 import { readCachedSupabaseUserId } from "./supabase";
 import type { HiddenTabs } from "./lockable-tabs";
 import type { ContentFilters } from "./settings";
+import {
+  isAutoCreatedProfile,
+  isDisposableDefaultProfile,
+  isPlaceholderName,
+} from "./profile-provenance";
+
+export { isAutoCreatedProfile, isDisposableDefaultProfile, isPlaceholderName };
 
 export const PROFILE_COLORS = [
   "#7dd3fc",
@@ -51,6 +58,16 @@ export type Profile = {
   createdAt: number;
   /** Last edit, cloud-side conflicts resolve on this. */
   updatedAt: number;
+  /**
+   * True only for a profile this device invented on its own (initState's
+   * bootstrap default, or ensureLocalProfile's non-adopting fallback) --
+   * never for one made via the "Add Profile" button. Local-only: deliberately
+   * NOT written to ProfileRow/profileToRow, so it never reaches the cloud
+   * schema (see cloud/rows.ts). Cleared the moment the profile is genuinely
+   * adopted as the account's own (ensureLocalProfile's adopting path) or the
+   * user personalises it (updateProfileRecord). See isAutoCreatedProfile().
+   */
+  autoCreated?: boolean;
 };
 
 type ProfilesState = {
@@ -120,16 +137,6 @@ function readLegacyParental(): { hiddenTabs: HiddenTabs | null; hadPin: boolean 
 
 function generateGuestName(): string {
   return `Guest ${1000 + Math.floor(Math.random() * 9000)}`;
-}
-
-const PLACEHOLDER_NAMES = new Set(["Me", "You", "Profile"]);
-
-export function isPlaceholderName(name: string | null | undefined): boolean {
-  if (!name) return true;
-  const trimmed = name.trim();
-  if (!trimmed) return true;
-  if (PLACEHOLDER_NAMES.has(trimmed)) return true;
-  return /^Guest \d+$/.test(trimmed);
 }
 
 function defaultPrimaryName(): string {
@@ -318,6 +325,10 @@ function makeDefaultPrimary(): Profile {
     kid: null,
     createdAt: now,
     updatedAt: now,
+    // Cleared by updateProfileRecord the first time the user touches this
+    // profile. Until then it marks "the app invented this, not the user" --
+    // see isAutoCreatedProfile() and its use in hydrateProfilesFromCloud.
+    autoCreated: true,
   };
 }
 
@@ -407,13 +418,25 @@ export function replaceProfiles(profiles: Profile[]): void {
 
 /**
  * Seed a default profile if the roster is still empty once the cloud has had
- * its turn -- an account with no profiles yet, a failed pull, or an offline
- * start. Unlike initState's default this one mirrors, so a brand-new account's
- * first profile is uploaded rather than living only on this device.
+ * its turn. Idempotent, and always settles awaitingCloudRoster so the UI
+ * stops waiting.
  *
- * Idempotent, and always settles awaitingCloudRoster so the UI stops waiting.
+ * `adopt` decides whether this profile is genuinely the account's own, or
+ * just a local stand-in:
+ *
+ * - `adopt: true` -- ONLY from hydrateProfilesFromCloud, after a pull that
+ *   *succeeded* and came back with zero rows. That is proof the account has
+ *   no roster yet, so this really is its first profile: it mirrors, same as
+ *   any other local edit.
+ * - `adopt: false` (default) -- the pull failed, is offline, signed out, or
+ *   cloud sync is unconfigured. The roster may simply not have arrived yet,
+ *   so this exists only to keep the app usable: it is suppressed from the
+ *   mirror (applyRemote, same mechanism replaceProfiles uses for an inbound
+ *   cloud roster) so it is never uploaded on its own. If the real roster
+ *   turns out to be non-empty on a later successful pull, this placeholder
+ *   is dropped rather than merged in -- see isAutoCreatedProfile().
  */
-export function ensureLocalProfile(): void {
+export function ensureLocalProfile(opts: { adopt: boolean } = { adopt: false }): void {
   const wasAwaiting = awaitingCloudRoster;
   awaitingCloudRoster = false;
   if (state.profiles.length > 0) {
@@ -421,23 +444,11 @@ export function ensureLocalProfile(): void {
     return;
   }
   const primary = makeDefaultPrimary();
-  commit({ profiles: [primary], activeId: primary.id });
-}
-
-/**
- * A default profile this device invented while it had no roster: auto-named,
- * never personalised. It is a placeholder, not the user's data, so a cloud
- * roster replaces it instead of merging (and uploading) it alongside.
- */
-export function isDisposableDefaultProfile(p: Profile): boolean {
-  return (
-    p.isPrimary &&
-    isPlaceholderName(p.name) &&
-    !p.avatar &&
-    !p.passwordHash &&
-    !p.kid &&
-    !p.lockedTabs
-  );
+  if (opts.adopt) {
+    commit({ profiles: [primary], activeId: primary.id });
+    return;
+  }
+  applyRemote(() => commit({ profiles: [primary], activeId: primary.id }));
 }
 
 function selectProfileRecord(id: string): void {
@@ -482,6 +493,10 @@ function updateProfileRecord(
           ...patch,
           name: patch.name != null ? patch.name.trim().slice(0, 32) || p.name : p.name,
           updatedAt: Date.now(),
+          // Only ever reached via a user-driven edit (this is the sole
+          // caller of updateProfileRecord), so the profile is no longer
+          // "app-invented" from here on -- see isAutoCreatedProfile().
+          autoCreated: undefined,
         }
       : p,
   );

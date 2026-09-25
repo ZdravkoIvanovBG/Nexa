@@ -12,6 +12,7 @@ import {
 } from "@/lib/player-chrome";
 import type { LayoutProfile } from "@/lib/player-chrome-profiles";
 import { renderControl, type ControlContext } from "@/components/player/transport/control-renderer";
+import { PlayerSizeProvider, tiersFor } from "@/views/player/player-size";
 import {
   RenderedStremioControl,
   type StremioRenderCtx,
@@ -87,6 +88,7 @@ export function EditorOverlay({
 }: Props) {
   const chromeRef = useRef<HTMLDivElement>(null);
   const [chromeW, setChromeW] = useState(0);
+  const [chromeH, setChromeH] = useState(0);
   const [winSize, setWinSize] = useState(() => ({
     w: window.innerWidth,
     h: window.innerHeight,
@@ -151,7 +153,11 @@ export function EditorOverlay({
   useEffect(() => {
     const el = chromeRef.current;
     if (!el) return;
-    const measure = () => setChromeW(el.getBoundingClientRect().width);
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setChromeW(r.width);
+      setChromeH(r.height);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -161,6 +167,8 @@ export function EditorOverlay({
   const mid = chromeW > 0 && chromeW < 1300;
   const compact = chromeW > 0 && chromeW < 1000;
   const tight = chromeW > 0 && chromeW < 600;
+  const short = chromeH > 0 && chromeH < 620;
+  const previewSize = useMemo(() => tiersFor(chromeW, chromeH), [chromeW, chromeH]);
   const sizeLabel = tight ? "Tight" : compact ? "Compact" : mid ? "Mid" : "Wide";
 
   const controlVariants = useMemo(
@@ -173,6 +181,7 @@ export function EditorOverlay({
       mid,
       compact,
       tight,
+      short,
       mode,
       customIcons: config.customIcons,
       controlVariants,
@@ -186,6 +195,7 @@ export function EditorOverlay({
     mid,
     compact,
     tight,
+    short,
     mode,
     config.customIcons,
     controlVariants,
@@ -232,7 +242,9 @@ export function EditorOverlay({
           </span>
           <h2
             className="text-[22px] font-medium tracking-tight"
-            style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
+            style={{
+              fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif',
+            }}
           >
             Click any control to edit it.
           </h2>
@@ -334,35 +346,37 @@ export function EditorOverlay({
           onSetPreviewState={setPreviewState}
         />
 
-        <div
-          ref={chromeRef}
-          className={
-            theme === "stremio"
-              ? "absolute inset-x-0 bottom-0 z-30 flex flex-col gap-1 bg-gradient-to-t from-black/35 to-transparent px-8 pb-3 pt-12"
-              : `absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent ${
-                  tight ? "px-3 pt-6 pb-3" : "px-7 pt-10 pb-5"
-                }`
-          }
-        >
-          {theme === "default" ? (
-            <DefaultLayout
-              config={config}
-              selectedId={selectedId}
-              onSelect={selectControl}
-              renderOne={renderOne}
-              isLive={mode === "live"}
-              compact={compact}
-            />
-          ) : (
-            <StremioLayout
-              config={config}
-              selectedId={selectedId}
-              onSelect={selectControl}
-              renderOne={renderOne}
-              isLive={mode === "live"}
-            />
-          )}
-        </div>
+        <PlayerSizeProvider value={previewSize}>
+          <div
+            ref={chromeRef}
+            className={
+              theme === "stremio"
+                ? "absolute inset-x-0 bottom-0 z-30 flex flex-col gap-1 bg-gradient-to-t from-black/35 to-transparent px-8 pb-3 pt-12"
+                : `absolute inset-x-0 bottom-0 z-30 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent ${
+                    tight ? "px-3 pt-6 pb-3" : "px-7 pt-10 pb-5"
+                  }`
+            }
+          >
+            {theme === "default" ? (
+              <DefaultLayout
+                config={config}
+                selectedId={selectedId}
+                onSelect={selectControl}
+                renderOne={renderOne}
+                isLive={mode === "live"}
+                compact={compact}
+              />
+            ) : (
+              <StremioLayout
+                config={config}
+                selectedId={selectedId}
+                onSelect={selectControl}
+                renderOne={renderOne}
+                isLive={mode === "live"}
+              />
+            )}
+          </div>
+        </PlayerSizeProvider>
       </div>
     </div>,
     document.body,
