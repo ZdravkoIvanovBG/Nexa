@@ -77,6 +77,7 @@ import { FavoritesProvider } from "@/lib/iptv/favorites";
 import { MediaFavoritesProvider } from "@/lib/media-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
+import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
 import { effectiveBinding, eventToBinding, shouldHandleGlobalKeyboardEvent } from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import type { MetaType } from "@/lib/cinemeta";
@@ -120,6 +121,11 @@ const importLibrary = () => import("@/views/library");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
 const importOnboarding = () => import("@/components/onboarding");
+// Games chunks are never preloaded: they load only once Games is enabled and opened.
+const importGameDiscovery = () => import("@/views/game-discovery");
+const importGameDetail = () => import("@/views/game-discovery/game-detail");
+const importGameFranchise = () => import("@/views/game-discovery/franchise-view");
+const importGameBrowse = () => import("@/views/game-discovery/browse-view");
 
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
@@ -150,6 +156,12 @@ const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
+const GamesView = lazy(() => importGameDiscovery().then((m) => ({ default: m.GamesView })));
+const GameDetailView = lazy(() => importGameDetail().then((m) => ({ default: m.GameDetailView })));
+const GameFranchiseView = lazy(() =>
+  importGameFranchise().then((m) => ({ default: m.GameFranchiseView })),
+);
+const GameBrowseView = lazy(() => importGameBrowse().then((m) => ({ default: m.GameBrowseView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -485,8 +497,12 @@ function Shell({ onReady }: { onReady?: () => void }) {
     exitPickerToDetail,
     stackKinds,
     chromeHidden,
+    game,
+    gameFranchiseId,
+    gameBrowse,
   } = useView();
   const { settings, update } = useSettings();
+  const gamesOn = gamesFeatureEnabled(settings);
   const { setOpen: setSearchOpen, open: searchOpen } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
@@ -900,6 +916,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const libraryTop = topKind === "library";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const gamesTop = topKind === "games";
+  const gameTop = topKind === "game";
+  const gameFranchiseTop = topKind === "game-franchise";
+  const gameBrowseTop = topKind === "game-browse";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -945,6 +965,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const libraryAlive = useIdleEvict(libraryTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const gamesAlive = useIdleEvict(gamesTop);
+  const gameAlive = useKeepAlive(gameTop, !!game, stackKinds.includes("game"));
+  const gameFranchiseAlive = useKeepAlive(
+    gameFranchiseTop,
+    gameFranchiseId !== null,
+    stackKinds.includes("game-franchise"),
+  );
+  const gameBrowseAlive = useKeepAlive(gameBrowseTop, !!gameBrowse);
 
   return (
     <div
@@ -1058,6 +1086,47 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(downloadsTop)}>
             <Suspense fallback={null}>
               <DownloadsView />
+            </Suspense>
+          </div>
+        )}
+        {gamesOn && gamesAlive && (
+          <div className={layer(gamesTop)}>
+            <Suspense fallback={null}>
+              <GamesView active={gamesTop} />
+            </Suspense>
+          </div>
+        )}
+        {gamesOn && gameBrowseAlive && gameBrowse && (
+          <div className={layer(gameBrowseTop)}>
+            <Suspense fallback={null}>
+              <GameBrowseView
+                key={`game-browse-${gameBrowse.title}-${JSON.stringify(gameBrowse.filter)}`}
+                spec={gameBrowse}
+                active={gameBrowseTop}
+              />
+            </Suspense>
+          </div>
+        )}
+        {gamesOn && gameFranchiseAlive && gameFranchiseId !== null && (
+          <div className={layer(gameFranchiseTop)}>
+            <Suspense fallback={null}>
+              <GameFranchiseView
+                key={`game-franchise-${gameFranchiseId}`}
+                franchiseId={gameFranchiseId}
+                active={gameFranchiseTop}
+              />
+            </Suspense>
+          </div>
+        )}
+        {gamesOn && gameAlive && game && (
+          <div className={layer(gameTop)}>
+            <Suspense fallback={null}>
+              <GameDetailView
+                key={`game-${game.id}`}
+                gameId={game.id}
+                seed={game.seed}
+                active={gameTop}
+              />
             </Suspense>
           </div>
         )}

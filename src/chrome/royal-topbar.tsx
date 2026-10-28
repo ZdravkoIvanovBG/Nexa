@@ -24,7 +24,7 @@ import { useView, type View } from "@/lib/view";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
 import { HoverNavIcon } from "@/chrome/hover-nav-icon";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -41,9 +41,11 @@ export function RoyalTopbar() {
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
 
   const isVisible = (item: NavItem) => {
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;

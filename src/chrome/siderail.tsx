@@ -5,7 +5,7 @@ import { ProfileBlock } from "@/chrome/siderail/profile-block";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { RecordingPill } from "@/chrome/recording-pill";
 import { TogetherButton } from "@/chrome/topbar";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -16,7 +16,7 @@ import { close, minimize, toggleMaximize } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "games", "kids", "vod"]);
 
 export function SideRail() {
   const { view, setView, chromeHidden } = useView();
@@ -40,9 +40,11 @@ export function SideRail() {
     (item.view !== "vod" || settings.showPlaylistsTab) &&
     (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]);
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const primary = items.filter((item) => PRIMARY_IDS.has(item.id) && isVisible(item));
   const secondary = items.filter(
     (item) => item.id !== "settings" && !PRIMARY_IDS.has(item.id) && isVisible(item),

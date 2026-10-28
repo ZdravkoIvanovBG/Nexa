@@ -9,15 +9,20 @@ import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { KidsIcon } from "@/components/icons/kids-icon";
+import { GamepadIcon } from "@/components/icons/gamepad-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
+import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
 import type { LockableTab } from "@/lib/parental";
+import type { Settings } from "@/lib/settings/types";
 import type { View } from "@/lib/view";
+import { mergeNavOrder, navFeatureAllows } from "./nav-order";
 
 export type NavItemId =
   | "home"
   | "discover"
   | "movies"
   | "shows"
+  | "games"
   | "kids"
   | "vod"
   | "calendar"
@@ -64,6 +69,12 @@ export const NAV_ITEMS: NavItem[] = [
     view: "shows",
     parentalKey: "shows",
   },
+  {
+    id: "games",
+    label: "nav.games",
+    render: (active) => <GamepadIcon active={active} />,
+    view: "games",
+  },
   { id: "kids", label: "nav.kids", render: (active) => <KidsIcon active={active} />, view: "kids" },
   {
     id: "vod",
@@ -108,7 +119,14 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 /** Nav entries gated by a setting rather than by theme customization or parental locks. */
-export type NavFeatures = { downloads?: boolean };
+export type NavFeatures = { downloads?: boolean; games?: boolean };
+
+/** The setting-gated features every sidebar layout should pass to applyNavCustomization. */
+export function navFeaturesFor(
+  settings: Pick<Settings, "showDownloadsNav" | "gamesEnabled">,
+): NavFeatures {
+  return { downloads: settings.showDownloadsNav, games: gamesFeatureEnabled(settings) };
+}
 
 export function applyNavCustomization(
   items: NavItem[],
@@ -117,34 +135,26 @@ export function applyNavCustomization(
 ): NavItem[] {
   const shown = items
     .filter((it) => !cfg.hidden.includes(it.id))
-    .filter((it) => it.id !== "downloads" || features?.downloads !== false)
+    .filter((it) => navFeatureAllows(it.id, features))
     .map((it) => (cfg.renamed[it.id] ? { ...it, label: cfg.renamed[it.id] } : it));
   if (cfg.order.length === 0) return shown;
   const byId = new Map<string, NavItem>(shown.map((it) => [it.id, it]));
   const ordered: NavItem[] = [];
-  for (const id of cfg.order) {
+  for (const id of mergeNavOrder(
+    cfg.order,
+    items.map((it) => it.id),
+  )) {
     const it = byId.get(id);
     if (it) ordered.push(it);
-  }
-  const inOrder = new Set(cfg.order);
-  for (const it of shown) {
-    if (!inOrder.has(it.id)) ordered.push(it);
   }
   return ordered;
 }
 
 export function effectiveNavOrder(cfg: NavCustomization): NavItemId[] {
-  const all = NAV_ITEMS.map((it) => it.id);
-  const known = new Set<string>(all);
-  const out: NavItemId[] = [];
-  for (const id of cfg.order) {
-    if (known.has(id)) out.push(id as NavItemId);
-  }
-  const seen = new Set<string>(out);
-  for (const id of all) {
-    if (!seen.has(id)) out.push(id);
-  }
-  return out;
+  return mergeNavOrder(
+    cfg.order,
+    NAV_ITEMS.map((it) => it.id),
+  ) as NavItemId[];
 }
 
 export function moveNavItem(

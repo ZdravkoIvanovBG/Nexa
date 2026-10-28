@@ -17,7 +17,7 @@ import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { TvModalClose } from "@/components/tv-modal-close";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -49,9 +49,11 @@ export function TopDock() {
     setView(item.view);
   };
 
-  const navEntries: NavEntry[] = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  })
+  const navEntries: NavEntry[] = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  )
     .filter(
       (item) =>
         item.id !== "settings" &&

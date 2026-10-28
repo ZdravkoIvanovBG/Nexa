@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 import { DockButton } from "./minui-dock/dock-button";
 import { FloatingTop } from "./minui-dock/floating-top";
@@ -30,9 +30,11 @@ export function MinUIDock() {
     return () => window.cancelAnimationFrame(id);
   }, []);
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const visible = items.filter((it) => {
     if (it.id === "kids") return false;
     if (it.view === "vod" && !settings.showPlaylistsTab) return false;

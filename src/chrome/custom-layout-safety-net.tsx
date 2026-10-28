@@ -1,6 +1,6 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NAV_ITEMS, applyNavCustomization } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor } from "@/chrome/nav-items";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
@@ -94,9 +94,11 @@ export function CustomLayoutSafetyNet() {
 
   if (!navMissing) return null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  }).filter((item) => {
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  ).filter((item) => {
     if (item.view === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;

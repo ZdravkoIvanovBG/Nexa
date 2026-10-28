@@ -20,7 +20,8 @@ export type SectionId =
   | "hotkeys"
   | "theme"
   | "bug"
-  | "advanced";
+  | "advanced"
+  | "games";
 
 export const SettingsActiveContext = createContext<{ setActive: (s: SectionId) => void } | null>(
   null,

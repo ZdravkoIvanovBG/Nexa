@@ -4,7 +4,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { isRtl, useT, useUiLanguage } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
@@ -15,7 +15,15 @@ const SUN = "oklch(0.9 0.12 100)";
 const LEAF = "oklch(0.8 0.15 145)";
 const MIST = "oklch(0.72 0.05 150)";
 
-const PRIMARY_IDS = new Set<string>(["home", "discover", "movies", "shows", "kids", "vod"]);
+const PRIMARY_IDS = new Set<string>([
+  "home",
+  "discover",
+  "movies",
+  "shows",
+  "games",
+  "kids",
+  "vod",
+]);
 
 export function ForestSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -40,9 +48,11 @@ export function ForestSidebar() {
     setView(item.view);
   };
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const primary = items.filter((i) => PRIMARY_IDS.has(i.id) && isVisible(i));
   const collections = items.filter((i) => !PRIMARY_IDS.has(i.id) && isVisible(i));
 

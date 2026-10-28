@@ -404,4 +404,10 @@ export type Settings = {
   adSkipEnabled: boolean;
   adReportAlwaysShow: boolean;
   adReportFirstSeen: boolean;
+  /** Show the Games section. Off by default. Independent of RAWG readiness once on. */
+  gamesEnabled: boolean;
+  /** User's personal RAWG API key. */
+  rawgApiKey: string;
+  /** Fingerprint of the key that last passed validation; "" when none. */
+  rawgKeyVerifiedFor: string;
 };

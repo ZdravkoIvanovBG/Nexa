@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { metaPath, pathFromView, viewFromPath } from "./paths";
@@ -11,8 +12,12 @@ import { metaPath, pathFromView, viewFromPath } from "./paths";
 export function ViewRouterSync() {
   const router = useRouter();
   const { settings } = useSettings();
-  const { view, setView, topKind, meta } = useView();
+  const { view, setView, topKind, meta, stackKinds } = useView();
   const downloadsEnabled = settings.showDownloadsNav;
+  const gamesEnabled = gamesFeatureEnabled(settings);
+  const onGamesFrame =
+    view === "games" ||
+    stackKinds.some((k) => k === "game" || k === "game-franchise" || k === "game-browse");
   const metaId = meta?.id;
   const metaType = meta?.type;
   const lastPath = useRef(router.state.location.pathname);
@@ -64,6 +69,11 @@ export function ViewRouterSync() {
   useEffect(() => {
     if (view === "downloads" && !downloadsEnabled) setView("home");
   }, [view, downloadsEnabled, setView]);
+
+  // Games is opt-in too: leave any Games view or frame as soon as it is turned off.
+  useEffect(() => {
+    if (onGamesFrame && !gamesEnabled) setView("home");
+  }, [onGamesFrame, gamesEnabled, setView]);
 
   return null;
 }

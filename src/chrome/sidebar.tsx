@@ -14,9 +14,9 @@ import { useActiveKid } from "@/lib/profiles";
 import { useView, type View } from "@/lib/view";
 import { KidsSidebarDoodles } from "./kids-sidebar-doodles";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "games", "kids", "vod"]);
 
 export function Sidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -171,9 +171,11 @@ function ScrollableNav({
   const queryClient = useQueryClient();
   const kid = useActiveKid();
   const t = useT();
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const warm = (view: View) => {
     preloadNavPage(queryClient, view, settings.tmdbKey, settings.region, profileId, settings);
   };

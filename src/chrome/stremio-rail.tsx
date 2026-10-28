@@ -2,7 +2,7 @@ import { Lock } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { CatAvatar } from "@/components/icons/cat-avatar";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { NAV_ITEMS, applyNavCustomization } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor } from "@/chrome/nav-items";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
@@ -22,9 +22,11 @@ export function StremioRail() {
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
   const customMark = themePreset?.logo?.mark ?? null;
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const visible = items.filter((item) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;

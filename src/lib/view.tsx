@@ -12,6 +12,7 @@ import {
 } from "react";
 import type { Meta } from "./cinemeta";
 import { profileFromMeta, trackEvent } from "./discover";
+import type { GameBrowseSpec, GameSummary } from "./game-discovery/types";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import { beginMarathonAdvance } from "./fullscreen-state";
@@ -28,7 +29,8 @@ export type View =
   | "kids"
   | "library"
   | "vod"
-  | "downloads";
+  | "downloads"
+  | "games";
 
 export type PlayEpisode = {
   season: number;
@@ -136,7 +138,11 @@ export type Frame =
       intent?: "play" | "download";
       resume?: boolean;
     }
-  | { kind: "player"; src: PlayerSrc };
+  | { kind: "player"; src: PlayerSrc }
+  | { kind: "games" }
+  | { kind: "game"; id: number; seed?: GameSummary }
+  | { kind: "game-franchise"; id: string }
+  | { kind: "game-browse"; spec: GameBrowseSpec };
 
 const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   home: "home",
@@ -163,6 +169,10 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   award: null,
   picker: null,
   player: null,
+  games: "games",
+  game: null,
+  "game-franchise": null,
+  "game-browse": null,
 };
 
 function rootViewFromStack(stack: Frame[]): View {
@@ -199,6 +209,7 @@ export type SettingsSection =
   | "theme"
   | "bug"
   | "advanced"
+  | "games"
   | "trakt"
   | "simkl"
   | "letterboxd"
@@ -241,6 +252,12 @@ type ViewValue = {
   grid: GridSpec | null;
   openGrid: (g: GridSpec) => void;
   openCollections: () => void;
+  game: { id: number; seed?: GameSummary } | null;
+  openGame: (game: GameSummary | number) => void;
+  gameFranchiseId: string | null;
+  openGameFranchise: (id: string) => void;
+  gameBrowse: GameBrowseSpec | null;
+  openGameBrowse: (spec: GameBrowseSpec) => void;
   stackKinds: Frame["kind"][];
   awardType: import("./providers/wikidata").AwardType | null;
   openAward: (t: import("./providers/wikidata").AwardType) => void;
@@ -354,6 +371,14 @@ function frameKey(f: Frame): string {
     }
     case "player":
       return `player:${f.src.meta.id}:${f.src.url.slice(-32)}`;
+    case "games":
+      return "games";
+    case "game":
+      return `game:${f.id}`;
+    case "game-franchise":
+      return `game-franchise:${f.id}`;
+    case "game-browse":
+      return `game-browse:${f.spec.title}:${JSON.stringify(f.spec.filter)}`;
   }
 }
 
@@ -460,6 +485,15 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const filter = filterFrame ? filterFrame.filter : null;
   const gridFrame = lastOfKind(stack, "grid");
   const grid = gridFrame ? gridFrame.grid : null;
+  const gameFrame = lastOfKind(stack, "game");
+  const game = useMemo(
+    () => (gameFrame ? { id: gameFrame.id, seed: gameFrame.seed } : null),
+    [gameFrame],
+  );
+  const gameFranchiseFrame = lastOfKind(stack, "game-franchise");
+  const gameFranchiseId = gameFranchiseFrame ? gameFranchiseFrame.id : null;
+  const gameBrowseFrame = lastOfKind(stack, "game-browse");
+  const gameBrowse = gameBrowseFrame ? gameBrowseFrame.spec : null;
   const awardType = top.kind === "award" ? top.awardType : null;
   const picker =
     top.kind === "picker"
@@ -615,6 +649,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "vod" }];
+        }
+        if (v === "games") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "games" }];
         }
         if (t.kind === "settings") return s;
         return pushFrame(s, { kind: "settings" });
@@ -802,6 +841,42 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     });
   }, [setNavStack]);
 
+  const openGame = useCallback(
+    (g: GameSummary | number) => {
+      const id = typeof g === "number" ? g : g.rawgId;
+      const seed = typeof g === "number" ? undefined : g;
+      setNavStack((cur) => {
+        const t = cur[cur.length - 1];
+        if (t.kind === "game" && t.id === id) return cur;
+        return pushFrame(cur, { kind: "game", id, seed });
+      });
+    },
+    [setNavStack],
+  );
+
+  const openGameFranchise = useCallback(
+    (id: string) => {
+      setNavStack((cur) => {
+        const t = cur[cur.length - 1];
+        if (t.kind === "game-franchise" && t.id === id) return cur;
+        return pushFrame(cur, { kind: "game-franchise", id });
+      });
+    },
+    [setNavStack],
+  );
+
+  const openGameBrowse = useCallback(
+    (spec: GameBrowseSpec) => {
+      setNavStack((cur) => {
+        const t = cur[cur.length - 1];
+        // One browse frame at a time: a new search/filter replaces the current one.
+        if (t.kind === "game-browse") return [...cur.slice(0, -1), { kind: "game-browse", spec }];
+        return pushFrame(cur, { kind: "game-browse", spec });
+      });
+    },
+    [setNavStack],
+  );
+
   const openPicker = useCallback(
     (
       m: Meta,
@@ -929,6 +1004,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       grid,
       openGrid,
       openCollections,
+      game,
+      openGame,
+      gameFranchiseId,
+      openGameFranchise,
+      gameBrowse,
+      openGameBrowse,
       stackKinds,
       awardType,
       openAward,
@@ -992,6 +1073,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       grid,
       openGrid,
       openCollections,
+      game,
+      openGame,
+      gameFranchiseId,
+      openGameFranchise,
+      gameBrowse,
+      openGameBrowse,
       openAward,
       openPicker,
       openPlayer,

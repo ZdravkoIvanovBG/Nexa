@@ -102,7 +102,7 @@ export function ApiKeysPanel({
       <Section
         title={t("Debrid services")}
         subtitle={t(
-          "Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link. Cached streams play direct. Keys stay local.",
+          "Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link. Cached streams play direct. Keys sync with your settings when signed in.",
         )}
       >
         {aioHealth && <AioStatusBanner snapshot={aioHealth} />}

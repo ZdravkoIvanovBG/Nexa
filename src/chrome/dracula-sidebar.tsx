@@ -1,7 +1,7 @@
 import { Lock } from "lucide-react";
 import { useState } from "react";
 import { HarborMark } from "@/components/icons/harbor-mark";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
@@ -11,7 +11,7 @@ import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "games", "kids", "vod"]);
 
 export function DraculaSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -21,9 +21,11 @@ export function DraculaSidebar() {
   const collapsed = settings.sidebarCollapsed;
   const [pinFor, setPinFor] = useState<View | null>(null);
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  });
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  );
   const primary = items.filter((i) => PRIMARY_IDS.has(i.id));
   const collections = items.filter((i) => !PRIMARY_IDS.has(i.id));
 

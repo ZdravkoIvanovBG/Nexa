@@ -1,4 +1,4 @@
-import { Search, X, Loader2, CornerDownLeft, CalendarRange, Tag } from "lucide-react";
+import { Search, X, Loader2, CornerDownLeft, CalendarRange, Gamepad2, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { TvModalClose } from "@/components/tv-modal-close";
@@ -20,13 +20,15 @@ import { AiSearchSection } from "./ai-search-section";
 import { AiModeButton } from "./ai-mode-button";
 import { AiExampleHint, SEARCH_EXAMPLES } from "@/components/ai-example-hint";
 import { useSettings } from "@/lib/settings";
+import { useRawgGate } from "@/lib/game-discovery/use-rawg";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { getSearchDisplayState } from "@/lib/search-display-state";
 
 export function SearchOverlay() {
   const { open, setOpen, query, setQuery, results, status, clear, recordRecent } = useSearch();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { openFilter, openMeta } = useView();
+  const { openFilter, openMeta, openGameBrowse } = useView();
+  const rawgGate = useRawgGate();
   const t = useT();
   const [guideOpen, setGuideOpen] = useState(false);
   const [aiActive, setAiActive] = useState(false);
@@ -246,6 +248,33 @@ export function SearchOverlay() {
                 </span>
                 <span className="text-[15px] font-semibold text-ink">
                   {currentResults.intent.label}
+                </span>
+              </span>
+              <CornerDownLeft size={15} className="ms-auto text-ink-subtle" />
+            </button>
+          )}
+
+          {/* Games shortcut: opens Games search; costs no RAWG request here. */}
+          {trimmed.length >= 2 && !directInput && rawgGate.featureEnabled && rawgGate.ready && (
+            <button
+              onClick={() => {
+                close();
+                openGameBrowse({
+                  title: "Search games",
+                  filter: { search: trimmed },
+                });
+              }}
+              className="mb-5 flex h-14 w-full items-center gap-3 rounded-2xl border border-edge-soft bg-elevated/50 px-5 text-start transition-colors hover:bg-elevated"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-canvas text-ink-muted ring-1 ring-edge-soft">
+                <Gamepad2 size={16} strokeWidth={2.1} />
+              </span>
+              <span className="flex flex-col">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+                  {t("Games")}
+                </span>
+                <span className="text-[15px] font-semibold text-ink">
+                  {t("Search games for “{q}”", { q: trimmed })}
                 </span>
               </span>
               <CornerDownLeft size={15} className="ms-auto text-ink-subtle" />

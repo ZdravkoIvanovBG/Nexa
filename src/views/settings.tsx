@@ -86,6 +86,9 @@ const StreamFiltersPanel = lazy(() =>
 const ThemePanel = lazy(() =>
   import("./settings/theme-panel").then((m) => ({ default: m.ThemePanel })),
 );
+const GamesPanel = lazy(() =>
+  import("./settings/games-panel").then((m) => ({ default: m.GamesPanel })),
+);
 
 function SettingsPanelFallback() {
   return (
@@ -108,7 +111,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   apiKeys: {
     label: "API Keys",
-    sub: "Debrid tokens and metadata & ratings keys, all in one place. Keys stay local to this device.",
+    sub: "Debrid tokens and metadata & ratings keys, all in one place. Keys are saved in your Nexa settings and sync to your account when you're signed in.",
   },
   tracking: {
     label: "Tracking",
@@ -159,6 +162,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   advanced: {
     label: "Advanced",
     sub: "Diagnostics, manual overrides, things most users never need.",
+  },
+  games: {
+    label: "Games",
+    sub: "Game discovery powered by RAWG. Add your API key, then turn Games on.",
   },
 };
 
@@ -368,6 +375,8 @@ export function Settings() {
               {active === "bug" && <BugReportPanel />}
 
               {active === "advanced" && <AdvancedPanel />}
+
+              {active === "games" && <GamesPanel />}
             </Suspense>
           </div>
         </main>

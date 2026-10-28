@@ -369,4 +369,7 @@ export const DEFAULT: Settings = {
   adSkipEnabled: false,
   adReportAlwaysShow: false,
   adReportFirstSeen: false,
+  gamesEnabled: false,
+  rawgApiKey: "",
+  rawgKeyVerifiedFor: "",
 };

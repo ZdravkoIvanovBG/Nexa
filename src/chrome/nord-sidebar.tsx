@@ -4,7 +4,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
 import { useSettings } from "@/lib/settings";
@@ -13,7 +13,7 @@ import { HoverNavIcon } from "@/chrome/hover-nav-icon";
 
 const FROST = "#88c0d0";
 const RAIL = "linear-gradient(180deg, #8fbcbb59, #88c0d033 44%, #b48ead2b 78%, #81a1c14d)";
-const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "kids", "vod"]);
+const PRIMARY_IDS = new Set(["home", "discover", "movies", "shows", "games", "kids", "vod"]);
 
 export function NordSidebar() {
   const { view, setView, chromeHidden } = useView();
@@ -30,9 +30,11 @@ export function NordSidebar() {
     return true;
   };
 
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization, {
-    downloads: settings.showDownloadsNav,
-  }).filter(isVisible);
+  const items = applyNavCustomization(
+    NAV_ITEMS,
+    settings.navCustomization,
+    navFeaturesFor(settings),
+  ).filter(isVisible);
   const primary = items.filter((item) => PRIMARY_IDS.has(item.id));
   const collections = items.filter((item) => !PRIMARY_IDS.has(item.id));
 

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-const NEW_SECTIONS = new Set(["theme", "library"]);
+const NEW_SECTIONS = new Set(["theme", "library", "games"]);
 const LS = "harbor.settingsNewSeen";
 
 function readSeen(): string[] {

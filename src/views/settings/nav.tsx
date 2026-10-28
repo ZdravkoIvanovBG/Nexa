@@ -207,6 +207,20 @@ function IconTheme(p: IconProps) {
   );
 }
 
+function IconGamepad(p: IconProps) {
+  return (
+    <IconBase {...p}>
+      <path
+        d="M7.5 7.5h9a4.5 4.5 0 0 1 4.4 5.4l-.6 3a2.6 2.6 0 0 1-4.5 1.2L14 15.5h-4l-1.8 1.6a2.6 2.6 0 0 1-4.5-1.2l-.6-3a4.5 4.5 0 0 1 4.4-5.4z"
+        strokeLinejoin="round"
+      />
+      <path d="M8 10.2v3M6.5 11.7h3" strokeLinecap="round" />
+      <circle cx="15.5" cy="10.8" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="17.2" cy="12.6" r="0.9" fill="currentColor" stroke="none" />
+    </IconBase>
+  );
+}
+
 function IconTrakt(p: IconProps) {
   return (
     <IconBase {...p}>
@@ -469,6 +483,17 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         label: "Report a bug",
         Icon: IconBug,
         keywords: ["report", "feedback", "issue", "crash"],
+      },
+    ],
+  },
+  {
+    heading: "Games",
+    items: [
+      {
+        id: "games",
+        label: "Games",
+        Icon: IconGamepad,
+        keywords: ["games", "rawg", "gaming", "api key", "discovery", "franchise"],
       },
     ],
   },
@@ -4752,6 +4777,18 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "advanced",
     keywords: ["github repo", "open source", "source", "code repository"],
   },
+  {
+    label: "RAWG API key",
+    section: "games",
+    anchorTitle: "Games discovery",
+    keywords: ["rawg", "games api key", "game discovery", "verify key"],
+  },
+  {
+    label: "Enable Games",
+    section: "games",
+    anchorTitle: "Games",
+    keywords: ["games tab", "show games", "games sidebar", "gaming"],
+  },
 ];
 
 export function SettingsNav({
@@ -4852,6 +4889,7 @@ export function SettingsNav({
     hotkeys: null,
     bug: null,
     advanced: null,
+    games: settings.gamesEnabled ? "on" : null,
   };
 
   const renderItem = ({ id, label, Icon }: NavItem) => {
