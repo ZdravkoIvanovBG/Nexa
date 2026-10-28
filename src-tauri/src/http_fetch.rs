@@ -150,6 +150,26 @@ mod tests {
         append_response_chunk(&mut body, &[0; 5], 4).expect_err("oversized body must fail");
         assert!(body.is_empty());
     }
+
+    // Error strings reach JS (and from there bug reports), so they must never
+    // echo the request URL: query strings carry provider API keys.
+    #[tokio::test]
+    async fn transport_errors_do_not_echo_the_request_url() {
+        let args = HarborFetchArgs {
+            request_id: None,
+            url: "http://127.0.0.1:1/probe?key=SECRET_TEST_KEY".to_string(),
+            method: None,
+            headers: None,
+            body: None,
+            timeout_ms: None,
+        };
+        let error = harbor_fetch_inner(args)
+            .await
+            .expect_err("connecting to port 1 must fail");
+        assert!(error.starts_with("send: "), "unexpected error: {error}");
+        assert!(!error.contains("SECRET_TEST_KEY"), "error leaked the key: {error}");
+        assert!(!error.contains("127.0.0.1:1"), "error leaked the URL: {error}");
+    }
 }
 
 async fn harbor_fetch_inner(args: HarborFetchArgs) -> Result<HarborFetchResponse, String> {
@@ -182,7 +202,12 @@ async fn harbor_fetch_inner(args: HarborFetchArgs) -> Result<HarborFetchResponse
         req = req.body(body);
     }
 
-    let res = req.send().await.map_err(|e| format!("send: {}", e))?;
+    // without_url(): reqwest's Display embeds the full request URL, and query
+    // strings carry provider API keys. These strings reach JS and bug reports.
+    let res = req
+        .send()
+        .await
+        .map_err(|e| format!("send: {}", e.without_url()))?;
     let status = res.status().as_u16();
     let ok = res.status().is_success();
     let content_type = res
@@ -199,7 +224,7 @@ async fn harbor_fetch_inner(args: HarborFetchArgs) -> Result<HarborFetchResponse
     let mut bytes = Vec::new();
     let mut stream = res.bytes_stream();
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|error| format!("body: {error}"))?;
+        let chunk = chunk.map_err(|error| format!("body: {}", error.without_url()))?;
         append_response_chunk(&mut bytes, &chunk, MAX_RESPONSE_BYTES)?;
     }
     let body = String::from_utf8_lossy(&bytes).into_owned();
