@@ -45,11 +45,7 @@ function FranchiseBody({
   const def = franchiseById(franchiseId);
   const [sort, setSort] = useState<FranchiseSort>("release");
   const query = useFranchiseGames(gate, def, active);
-  const art = useFranchiseArt(
-    gate,
-    def ?? { id: "", name: "", artwork: "", mainline: [] },
-    active && !!def,
-  );
+  const art = useFranchiseArt(gate, def, active);
   const resolved = useMemo(
     () => (query.data ? resolveFranchiseData(query.data, sort) : null),
     [query.data, sort],

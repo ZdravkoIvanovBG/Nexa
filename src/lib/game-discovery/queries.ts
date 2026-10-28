@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { rawg, isRawgError, type RawgAuth } from "@/lib/providers/rawg";
+import { getGameDetailRaw } from "@/lib/providers/rawg/detail";
 import {
   normalizeGameDetail,
   normalizeGamePage,
@@ -83,12 +84,18 @@ async function fetchDetail(
   signal?: AbortSignal,
 ): Promise<GameDetail | null> {
   try {
-    const raw = await rawg.get<RawgGameDetail>(`/games/${idOrSlug}`, {}, gate.auth, signal);
+    const raw = await getGameDetailRaw(
+      (path) => rawg.get<RawgGameDetail>(path, {}, gate.auth, signal),
+      idOrSlug,
+    );
     const detail = normalizeGameDetail(raw);
     if (detail) {
-      // Seed the other key form so id and slug lookups share one request.
-      const other = typeof idOrSlug === "number" ? detail.slug : detail.rawgId;
-      qc.setQueryData(gameKeys.detail(gate.fingerprint, other), detail);
+      // Seed the id and canonical-slug keys so every lookup form shares one request.
+      for (const key of [detail.rawgId, detail.slug]) {
+        if (String(key) !== String(idOrSlug)) {
+          qc.setQueryData(gameKeys.detail(gate.fingerprint, key), detail);
+        }
+      }
     }
     return detail;
   } catch (error) {
@@ -219,7 +226,13 @@ async function fetchSeries(
   return out;
 }
 
-export type FranchiseData = { def: FranchiseDef; games: GameSummary[]; seriesAvailable: boolean };
+export type FranchiseData = {
+  def: FranchiseDef;
+  games: GameSummary[];
+  /** RAWG id -> curated slug, for curated games reached through a slug redirect. */
+  aliases: Map<number, string>;
+  seriesAvailable: boolean;
+};
 
 export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled: boolean) {
   const qc = useQueryClient();
@@ -230,6 +243,8 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
       const anchorSlug = def.seriesAnchor ?? def.artwork;
       const anchor = await qc.fetchQuery(detailQueryOptions(qc, gate, anchorSlug));
       const games: GameSummary[] = anchor ? [anchor] : [];
+      const aliases = new Map<number, string>();
+      if (anchor && anchor.slug !== anchorSlug) aliases.set(anchor.rawgId, anchorSlug);
       let seriesAvailable = true;
       if (anchor) {
         try {
@@ -242,15 +257,19 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
         }
       }
       // Curated games RAWG's series data doesn't list; capped to protect the request budget.
-      const missing = missingCuratedSlugs(
-        def,
-        games.map((g) => g.slug),
-      ).slice(0, MAX_CURATED_LOOKUPS);
+      const missing = missingCuratedSlugs(def, [
+        ...games.map((g) => g.slug),
+        ...aliases.values(),
+      ]).slice(0, MAX_CURATED_LOOKUPS);
       const extra = await Promise.all(
         missing.map((slug) => qc.fetchQuery(detailQueryOptions(qc, gate, slug)).catch(() => null)),
       );
-      for (const game of extra) if (game) games.push(game);
-      return { def, games, seriesAvailable };
+      extra.forEach((game, i) => {
+        if (!game) return;
+        games.push(game);
+        if (game.slug !== missing[i]) aliases.set(game.rawgId, missing[i]);
+      });
+      return { def, games, aliases, seriesAvailable };
     },
     enabled: enabled && gate.ready && def !== null,
     ...DETAIL,
@@ -259,32 +278,36 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
 }
 
 export function resolveFranchiseData(data: FranchiseData, sort: FranchiseSort): ResolvedFranchise {
-  return resolveFranchise(data.def, data.games, sort);
+  return resolveFranchise(data.def, data.games, sort, data.aliases);
 }
 
 /**
  * Card art for a franchise: in-memory detail cache first, then the 7-day
  * device cache, and only then one detail request.
  */
-export function useFranchiseArt(gate: Gate, def: FranchiseDef, enabled: boolean) {
+export function useFranchiseArt(gate: Gate, def: FranchiseDef | null, enabled: boolean) {
   const qc = useQueryClient();
-  const cached = useMemo(() => readFranchiseArt(def.id), [def.id]);
+  const id = def?.id ?? "";
+  const artwork = def?.artwork ?? "";
+  const cached = useMemo(() => (id ? readFranchiseArt(id) : null), [id]);
   const known = useMemo(
     () =>
-      qc.getQueryData<GameDetail | null>(gameKeys.detail(gate.fingerprint, def.artwork)) ??
-      findInLoadedLists(qc, gate.fingerprint, def.artwork),
-    [qc, gate.fingerprint, def.artwork],
+      artwork
+        ? (qc.getQueryData<GameDetail | null>(gameKeys.detail(gate.fingerprint, artwork)) ??
+          findInLoadedLists(qc, gate.fingerprint, artwork))
+        : null,
+    [qc, gate.fingerprint, artwork],
   );
   const query = useQuery({
-    ...detailQueryOptions(qc, gate, def.artwork),
-    enabled: enabled && gate.ready && !cached && !known,
+    ...detailQueryOptions(qc, gate, artwork),
+    enabled: enabled && gate.ready && !!artwork && !cached && !known,
   });
   const game: GameSummary | null = known ?? query.data ?? null;
   useEffect(() => {
-    if (game && !cached) {
-      writeFranchiseArt(def.id, { rawgId: game.rawgId, slug: game.slug, image: game.image });
+    if (game && !cached && id) {
+      writeFranchiseArt(id, { rawgId: game.rawgId, slug: game.slug, image: game.image });
     }
-  }, [game, cached, def.id]);
+  }, [game, cached, id]);
   if (game) return { image: game.image, loading: false };
   if (cached) return { image: cached.image, loading: false };
   return { image: null, loading: query.isLoading };

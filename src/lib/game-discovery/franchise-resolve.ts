@@ -1,4 +1,4 @@
-import type { FranchiseDef, FranchiseVariant } from "./franchises.ts";
+import { curatedSlugs, type FranchiseDef, type FranchiseVariant } from "./franchises.ts";
 import type { GameSummary } from "./types.ts";
 
 // Pure franchise resolution. Games are deduplicated by RAWG id only and
@@ -32,14 +32,15 @@ export function sortGames(
   games: GameSummary[],
   sort: FranchiseSort,
   chronology?: string[],
+  slugOf: (game: GameSummary) => string = (game) => game.slug,
 ): GameSummary[] {
   const out = [...games];
   if (sort === "story" && chronology && chronology.length > 0) {
     const rank = new Map(chronology.map((slug, i) => [slug, i]));
     // Story order covers curated games only; the rest keep release order after them.
-    const ranked = out.filter((g) => rank.has(g.slug));
-    const rest = out.filter((g) => !rank.has(g.slug));
-    ranked.sort((a, b) => rank.get(a.slug)! - rank.get(b.slug)!);
+    const ranked = out.filter((g) => rank.has(slugOf(g)));
+    const rest = out.filter((g) => !rank.has(slugOf(g)));
+    ranked.sort((a, b) => rank.get(slugOf(a))! - rank.get(slugOf(b))!);
     return [...ranked, ...sortGames(rest, "release")];
   }
   if (sort === "metacritic") {
@@ -65,19 +66,25 @@ function byRelease(a: GameSummary, b: GameSummary): number {
 /** Curated slugs not already present in `known` -- candidates for individual lookups. */
 export function missingCuratedSlugs(def: FranchiseDef, knownSlugs: Iterable<string>): string[] {
   const known = new Set(knownSlugs);
-  const curated = [...def.mainline, ...Object.keys(def.variants ?? {})];
-  return curated.filter((slug) => !known.has(slug));
+  return curatedSlugs(def).filter((slug) => !known.has(slug));
 }
 
+/**
+ * @param aliases RAWG id -> the curated slug that was requested for it, for
+ *   games reached through a RAWG slug redirect (their canonical slug differs
+ *   from the catalog's). Matching by id keeps them classified correctly.
+ */
 export function resolveFranchise(
   def: FranchiseDef,
   games: (GameSummary | null | undefined)[],
   sort: FranchiseSort = "release",
+  aliases: ReadonlyMap<number, string> = new Map(),
 ): ResolvedFranchise {
   const byId = new Map<number, GameSummary>();
   for (const game of games) {
     if (game && !byId.has(game.rawgId)) byId.set(game.rawgId, game);
   }
+  const slugOf = (game: GameSummary) => aliases.get(game.rawgId) ?? game.slug;
   const mainline = new Set(def.mainline);
   const exclude = new Set(def.exclude ?? []);
   const groups: Record<FranchiseGroupId, GameSummary[]> = {
@@ -88,17 +95,18 @@ export function resolveFranchise(
     other: [],
   };
   for (const game of byId.values()) {
-    if (exclude.has(game.slug)) continue;
-    if (mainline.has(game.slug)) {
+    const slug = slugOf(game);
+    if (exclude.has(slug) || exclude.has(game.slug)) continue;
+    if (mainline.has(slug)) {
       groups.main.push(game);
       continue;
     }
-    const variant = def.variants?.[game.slug];
+    const variant = def.variants?.[slug];
     groups[variant ? GROUP_BY_VARIANT[variant] : "other"].push(game);
   }
   const effectiveSort = sort === "story" && !def.chronology?.length ? "release" : sort;
   for (const id of Object.keys(groups) as FranchiseGroupId[]) {
-    groups[id] = sortGames(groups[id], effectiveSort, def.chronology);
+    groups[id] = sortGames(groups[id], effectiveSort, def.chronology, slugOf);
   }
   const years = groups.main.map(yearOf).filter((y): y is number => y !== null);
   return {

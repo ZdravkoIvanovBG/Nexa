@@ -35,11 +35,11 @@ test("same-named God of War games from different eras stay separate, in release 
     id: "god-of-war",
     name: "God of War",
     artwork: "god-of-war-2",
-    mainline: ["god-of-war-2005", "god-of-war-ii", "god-of-war-2"],
+    mainline: ["god-of-war", "god-of-war-ii", "god-of-war-2"],
   };
   const resolved = resolveFranchise(def, [
     game(58175, "god-of-war-2", "God of War", "2018-04-20"),
-    game(2001, "god-of-war-2005", "God of War", "2005-03-22"),
+    game(2001, "god-of-war", "God of War", "2005-03-22"),
     game(2002, "god-of-war-ii", "God of War II", "2007-03-13"),
   ]);
   assert.deepEqual(names(resolved.groups.main), [
@@ -202,7 +202,124 @@ test("catalog entries are well-formed and ids are unique", () => {
     const curated = [...f.mainline, ...Object.keys(f.variants ?? {})];
     assert.equal(new Set(curated).size, curated.length, `${f.id} lists a slug twice`);
     for (const slug of curated) assert.match(slug, /^[a-z0-9-]+$/, `${f.id}: bad slug ${slug}`);
+    assert.ok(curated.includes(f.artwork), `${f.id}: artwork must be a curated game`);
     assert.equal(f.chronology, undefined, "no story order ships until it is curated reliably");
+    for (const slug of f.exclude ?? []) {
+      assert.ok(!curated.includes(slug), `${f.id}: ${slug} is both curated and excluded`);
+    }
   }
   assert.equal(FRANCHISES.length, 11);
+});
+
+test("every curated slug has an expected release year, and mainline is in release order", () => {
+  for (const f of FRANCHISES) {
+    const curated = [...f.mainline, ...Object.keys(f.variants ?? {})];
+    assert.deepEqual(
+      Object.keys(f.years).sort(),
+      [...curated].sort(),
+      `${f.id}: years must cover exactly the curated slugs`,
+    );
+    for (const [slug, year] of Object.entries(f.years)) {
+      assert.ok(Number.isInteger(year) && year >= 1980 && year <= 2030, `${f.id}: ${slug} ${year}`);
+    }
+    const mainYears = f.mainline.map((slug) => f.years[slug]);
+    assert.deepEqual(
+      mainYears,
+      [...mainYears].sort((a, b) => a - b),
+      `${f.id} mainline order`,
+    );
+  }
+});
+
+test("same-named games are pinned to different years so the dev check can tell them apart", () => {
+  const year = (franchise, slug) => FRANCHISES.find((f) => f.id === franchise).years[slug];
+  assert.equal(year("god-of-war", "god-of-war"), 2005);
+  assert.equal(year("god-of-war", "god-of-war-2"), 2018);
+  assert.equal(year("tomb-raider", "tomb-raider-1996"), 1996);
+  assert.equal(year("tomb-raider", "tomb-raider"), 2013);
+  assert.equal(year("call-of-duty", "call-of-duty-4-modern-warfare"), 2007);
+  assert.equal(year("call-of-duty", "call-of-duty-modern-warfare"), 2019);
+  assert.equal(year("call-of-duty", "call-of-duty-modern-warfare-2"), 2009);
+  assert.equal(year("call-of-duty", "call-of-duty-modern-warfare-ii"), 2022);
+  assert.equal(year("battlefield", "battlefield-6"), 2021);
+  assert.equal(year("battlefield", "battlefield-6-2"), 2025);
+});
+
+test("slugs the RAWG check showed to be wrong are no longer curated", () => {
+  const all = FRANCHISES.flatMap((f) => [...f.mainline, ...Object.keys(f.variants ?? {})]);
+  for (const bad of [
+    "god-of-war-2005", // 404; the 2005 game is `god-of-war`
+    "battlefield-2042", // redirects; the 2021 record is `battlefield-6`
+    "grand-theft-auto-the-trilogy-the-definitive-edition", // 404
+    "resident-evil-revelations-2", // resolves to Resident Evil (2002)
+    "tomb-raider-iii-adventures-of-lara-croft", // 404
+  ]) {
+    assert.ok(!all.includes(bad), bad);
+  }
+});
+
+test("a curated game reached through a slug redirect keeps its curated classification", () => {
+  const def = {
+    id: "far-cry",
+    name: "Far Cry",
+    artwork: "far-cry-5",
+    mainline: ["far-cry", "far-cry-2", "far-cry-5"],
+    variants: { "far-cry-primal": "spinoff" },
+  };
+  const fortunes = game(
+    42,
+    "far-cry-2-fortunes-edition",
+    "Far Cry 2: Fortune's Edition",
+    "2008-10-21",
+  );
+  const resolved = resolveFranchise(
+    def,
+    [
+      game(1, "far-cry", "Far Cry", "2004-03-23"),
+      fortunes, // listed by RAWG's series under its canonical slug...
+      { ...fortunes }, // ...and fetched again through the curated `far-cry-2` redirect
+      game(5, "far-cry-5", "Far Cry 5", "2018-03-27"),
+      game(7, "primal-renamed", "Far Cry Primal", "2016-02-23"),
+    ],
+    "release",
+    new Map([
+      [42, "far-cry-2"],
+      [7, "far-cry-primal"],
+    ]),
+  );
+  assert.deepEqual(
+    resolved.groups.main.map((g) => g.rawgId),
+    [1, 42, 5],
+  );
+  assert.deepEqual(
+    resolved.groups.spinoffs.map((g) => g.rawgId),
+    [7],
+  );
+  assert.equal(resolved.groups.other.length, 0);
+});
+
+test("excludes match either the curated or the canonical slug", () => {
+  const def = {
+    id: "dark-souls",
+    name: "Dark Souls",
+    artwork: "dark-souls-iii",
+    mainline: ["dark-souls-iii"],
+    exclude: ["bloodborne", "old-dlc-slug"],
+  };
+  const resolved = resolveFranchise(
+    def,
+    [
+      game(3, "dark-souls-iii", "Dark Souls III", "2016-03-24"),
+      game(8, "bloodborne", "Bloodborne", "2015-03-24"),
+      game(9, "dlc-canonical", "Some DLC", "2016-10-24"),
+    ],
+    "release",
+    new Map([[9, "old-dlc-slug"]]),
+  );
+  assert.deepEqual(
+    Object.values(resolved.groups)
+      .flat()
+      .map((g) => g.slug),
+    ["dark-souls-iii"],
+  );
 });
