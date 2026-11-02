@@ -161,18 +161,23 @@ async function franchises() {
       const expected = franchise.years[slug];
       const r = await resolveSlug(slug);
       if (r.kind === "missing") {
-        problem(`  MISSING    ${slug} [${role}] -> ${r.detail}; expected ${expected ?? "?"}`);
+        problem(`  MISSING    ${slug} [${role}] -> ${r.detail}; expected ${expected ?? "TBA"}`);
         continue;
       }
       const year = yearOf(r.game.released);
+      // null = expected unreleased: a date appearing means `years` needs updating.
       const yearOk =
-        expected === undefined ? null : year !== null && Math.abs(year - expected) <= 1;
+        expected === undefined
+          ? null
+          : expected === null
+            ? year === null
+            : year !== null && Math.abs(year - expected) <= 1;
       const yearNote =
         expected === undefined
           ? "NO EXPECTED YEAR"
           : yearOk
             ? "year ok"
-            : `YEAR MISMATCH, expected ${expected}`;
+            : `YEAR MISMATCH, expected ${expected ?? "TBA"}`;
       if (r.kind === "redirect") {
         problem(`  REDIRECT   ${slug} [${role}] -> ${r.target} ${label(r.game)}  ${yearNote}`);
       } else if (expected === undefined || !yearOk) {

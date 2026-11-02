@@ -6,7 +6,7 @@ import {
   resolveFranchise,
   sortGames,
 } from "../src/lib/game-discovery/franchise-resolve.ts";
-import { FRANCHISES } from "../src/lib/game-discovery/franchises.ts";
+import { FRANCHISES, franchiseForSlug } from "../src/lib/game-discovery/franchises.ts";
 
 function game(rawgId: number, slug: string, name: string, released: string | null, extra = {}) {
   return {
@@ -220,15 +220,36 @@ test("every curated slug has an expected release year, and mainline is in releas
       `${f.id}: years must cover exactly the curated slugs`,
     );
     for (const [slug, year] of Object.entries(f.years)) {
+      if (year === null) continue; // unreleased, RAWG lists it as TBA
       assert.ok(Number.isInteger(year) && year >= 1980 && year <= 2030, `${f.id}: ${slug} ${year}`);
     }
     const mainYears = f.mainline.map((slug) => f.years[slug]);
+    const dated = mainYears.filter((year) => year !== null);
     assert.deepEqual(
-      mainYears,
-      [...mainYears].sort((a, b) => a - b),
+      dated,
+      [...dated].sort((a, b) => a - b),
       `${f.id} mainline order`,
     );
+    assert.deepEqual(
+      mainYears.slice(0, dated.length),
+      dated,
+      `${f.id}: unreleased games come after released ones`,
+    );
   }
+});
+
+test("no game is curated in two franchises, and franchise links follow the curated slugs", () => {
+  const owners = new Map();
+  for (const f of FRANCHISES) {
+    for (const slug of [...f.mainline, ...Object.keys(f.variants ?? {})]) {
+      assert.ok(!owners.has(slug), `${slug}: in ${owners.get(slug)} and ${f.id}`);
+      owners.set(slug, f.id);
+    }
+  }
+  assert.equal(franchiseForSlug("modern-warfare")?.id, "call-of-duty");
+  assert.equal(franchiseForSlug("resident-evil-2-2019")?.id, "resident-evil");
+  assert.equal(franchiseForSlug("bloodborne"), null);
+  assert.equal(franchiseForSlug("little-nightmares-the-depths"), null);
 });
 
 test("same-named games are pinned to different years so the dev check can tell them apart", () => {
@@ -237,12 +258,122 @@ test("same-named games are pinned to different years so the dev check can tell t
   assert.equal(year("god-of-war", "god-of-war-2"), 2018);
   assert.equal(year("tomb-raider", "tomb-raider-1996"), 1996);
   assert.equal(year("tomb-raider", "tomb-raider"), 2013);
-  assert.equal(year("call-of-duty", "call-of-duty-4-modern-warfare"), 2007);
+  assert.equal(year("call-of-duty", "modern-warfare"), 2007);
   assert.equal(year("call-of-duty", "call-of-duty-modern-warfare"), 2019);
-  assert.equal(year("call-of-duty", "call-of-duty-modern-warfare-2"), 2009);
+  assert.equal(year("call-of-duty", "modern-warfare-2"), 2009);
   assert.equal(year("call-of-duty", "call-of-duty-modern-warfare-ii"), 2022);
   assert.equal(year("battlefield", "battlefield-6"), 2021);
   assert.equal(year("battlefield", "battlefield-6-2"), 2025);
+  assert.equal(year("resident-evil", "resident-evil-2"), 1998);
+  assert.equal(year("resident-evil", "resident-evil-2-2019"), 2019);
+  assert.equal(year("resident-evil", "resident-evil-4"), 2005);
+  assert.equal(year("resident-evil", "resident-evil-4-2023"), 2023);
+  assert.equal(year("the-witcher", "the-witcher"), 2007);
+  assert.equal(year("the-witcher", "the-witcher-remake"), null);
+});
+
+// [slug, name, release date, expected group; null = hidden]
+const CATALOG_CASES = {
+  "resident-evil": [
+    ["resident-evil-2", "Resident Evil 2", "1998-01-21", "main"],
+    ["resident-evil-2-2019", "Resident Evil 2", "2019-01-25", "remakes"],
+    ["resident-evil-3-nemesis", "Resident Evil 3: Nemesis", "1999-09-22", "main"],
+    ["resident-evil-3", "Resident Evil 3", "2020-04-02", "remakes"],
+    ["resident-evil-4", "Resident Evil 4", "2005-01-11", "main"],
+    ["resident-evil-4-2023", "Resident Evil 4", "2023-03-24", "remakes"],
+    ["resident-evil-zero", "Resident Evil Zero", "2002-11-12", "main"],
+    ["resident-evil-0", "Resident Evil 0 / Biohazard 0 HD REMASTER", "2016-01-18", "remakes"],
+    ["resident-evil-9-requiem", "Resident Evil 9: Requiem", "2026-02-27", "main"],
+    ["re-revelations-2", "Resident Evil Revelations 2", "2015-02-24", "spinoffs"],
+    ["resident-evil-directors-cut", "Resident Evil Director's Cut", "1997-09-25", "editions"],
+    ["resident-evil-0-demake", "Resident Evil 0 Demake", "2023-06-01", null],
+  ],
+  "call-of-duty": [
+    ["modern-warfare", "Call of Duty 4: Modern Warfare", "2007-11-05", "main"],
+    ["call-of-duty-modern-warfare", "Call of Duty: Modern Warfare", "2019-10-25", "main"],
+    ["call-of-duty-black-ops-7", "Call of Duty: Black Ops 7", "2025-11-13", "main"],
+    ["call-of-duty-warzone", "Call of Duty: Warzone", "2020-03-10", "spinoffs"],
+    ["call-of-duty-united-offensive", "Call of Duty: United Offensive", "2004-09-14", null],
+    ["little-nightmares-the-depths", "Little Nightmares: The Depths", "2017-07-07", null],
+  ],
+  "dark-souls": [
+    ["dark-souls", "Dark Souls", "2011-09-22", "main"],
+    ["dark-souls-remastered", "Dark Souls Remastered", "2021-03-09", "remakes"],
+    ["bloodborne", "Bloodborne", "2015-03-24", null],
+    ["bloodborne-the-old-hunters", "Bloodborne: The Old Hunters", "2015-11-24", null],
+    ["shadows-die-twice", "Sekiro: Shadows Die Twice", "2019-03-22", null],
+    ["demons-souls", "Demon's Souls", "2009-02-05", null],
+    ["dark-souls-artorias-of-the-abyss", "Dark Souls: Artorias of the Abyss", "2012-08-24", null],
+  ],
+  "tomb-raider": [
+    ["tomb-raider-3-adventures-of-lara-croft", "Tomb Raider 3", "1998-11-21", "main"],
+    ["tomb-raider-legend", "Tomb Raider: Legend", "2006-04-07", "main"],
+    ["lara-croft-tomb-raider-legend", "Lara Croft Tomb Raider: Legend", "2006-04-06", null],
+    ["tomb-raider-3-the-lost-artifact", "Tomb Raider 3: The Lost Artifact", "2000-03-01", null],
+  ],
+  battlefield: [
+    ["battlefield-6", "Battlefield 2042", "2021-11-19", "main"],
+    ["battlefield-6-2", "Battlefield 6", "2025-10-10", "main"],
+    ["battlefield-2-mc", "Battlefield 2: Modern Combat", "2005-10-24", "spinoffs"],
+    ["battlefield-2-special-forces", "Battlefield 2: Special Forces", "2005-11-18", null],
+    ["battlefield", "Battlefield", "1991-01-01", null],
+  ],
+  "the-witcher": [
+    ["the-witcher", "The Witcher", "2007-10-24", "main"],
+    ["the-witcher-4", "The Witcher (A New Saga Begins)", null, "main"],
+    ["the-witcher-remake", "The Witcher: Remake", null, "remakes"],
+    ["gwent-thronebreaker", "Thronebreaker: The Witcher Tales", "2018-10-23", "spinoffs"],
+    ["the-witcher-rise-of-the-white-wolf", "The Witcher: Rise of the White Wolf", null, null],
+  ],
+  "grand-theft-auto": [
+    ["grand-theft-auto-1998", "Grand Theft Auto", "1997-10-21", "main"],
+    ["grand-theft-aito-vi", "Grand Theft Auto VI", "2026-11-19", "main"],
+    ["gta-chinatown-wars", "Grand Theft Auto: Chinatown Wars", "2009-03-17", "spinoffs"],
+    ["san-andreas-multiplayer-sa-mp", "San Andreas Multiplayer (SA-MP)", "2006-05-09", null],
+  ],
+  "assassins-creed": [
+    ["assassins-creed-rogue-2", "Assassin's Creed Rogue", "2014-11-11", "main"],
+    ["assassins-creed-rogue-remastered-2", "Rogue Remastered", "2018-03-20", "remakes"],
+    ["assassins-creed-pirates", "Assassin's Creed Pirates", "2013-12-05", "spinoffs"],
+  ],
+  "god-of-war": [
+    ["god-of-war-collection", "God of War Collection", "2009-11-17", "remakes"],
+    ["god-of-war-saga", "God of War Saga", "2012-08-28", "editions"],
+    ["god-of-war-ragnarok-valhalla", "God of War Ragnarok: Valhalla", "2023-12-12", null],
+  ],
+  "far-cry": [["far-cry-2-fortunes-edition", "Far Cry 2", "2008-10-21", "main"]],
+  "red-dead": [["red-dead-online", "Red Dead Online", "2018-10-26", "spinoffs"]],
+};
+
+test("the catalog classifies RAWG's series members, keeping same-titled games apart", () => {
+  for (const [id, cases] of Object.entries(CATALOG_CASES)) {
+    const def = FRANCHISES.find((f) => f.id === id);
+    const games = cases.map(([slug, name, released], i) => game(i + 1, slug, name, released));
+    const { groups } = resolveFranchise(def, games);
+    const placed = new Map();
+    for (const [group, list] of Object.entries(groups)) {
+      for (const g of list) placed.set(g.slug, group);
+    }
+    for (const [slug, , , expected] of cases) {
+      assert.equal(placed.get(slug) ?? null, expected, `${id}: ${slug}`);
+    }
+    assert.equal(groups.other.length, 0, `${id}: nothing should stay unclassified`);
+  }
+});
+
+test("unreleased games sort after released ones in their group", () => {
+  const def = FRANCHISES.find((f) => f.id === "the-witcher");
+  const { groups, firstYear, lastYear } = resolveFranchise(def, [
+    game(1, "the-witcher-4", "The Witcher (A New Saga Begins)", null),
+    game(2, "the-witcher-3-wild-hunt", "The Witcher 3", "2015-05-18"),
+    game(3, "the-witcher", "The Witcher", "2007-10-24"),
+  ]);
+  assert.deepEqual(
+    groups.main.map((g) => g.slug),
+    ["the-witcher", "the-witcher-3-wild-hunt", "the-witcher-4"],
+  );
+  assert.equal(firstYear, 2007);
+  assert.equal(lastYear, 2015);
 });
 
 test("slugs the RAWG check showed to be wrong are no longer curated", () => {
@@ -253,6 +384,27 @@ test("slugs the RAWG check showed to be wrong are no longer curated", () => {
     "grand-theft-auto-the-trilogy-the-definitive-edition", // 404
     "resident-evil-revelations-2", // resolves to Resident Evil (2002)
     "tomb-raider-iii-adventures-of-lara-croft", // 404
+    // Stale slugs that only redirect: each would cost an extra request.
+    "assassins-creed-brotherhood",
+    "assassins-creed-iii",
+    "assassins-creed-unity",
+    "assassins-creed-syndicate",
+    "assassins-creed-rogue",
+    "far-cry-2",
+    "far-cry-3-blood-dragon",
+    "grand-theft-auto",
+    "grand-theft-auto-2",
+    "grand-theft-auto-liberty-city-stories",
+    "grand-theft-auto-chinatown-wars",
+    "thronebreaker-the-witcher-tales",
+    "resident-evil-5",
+    "resident-evil-revelations",
+    "lara-croft-and-the-guardian-of-light",
+    "battlefield-bad-company",
+    "call-of-duty-4-modern-warfare",
+    "call-of-duty-modern-warfare-2",
+    "call-of-duty-black-ops-ii",
+    "call-of-duty-black-ops-iii",
   ]) {
     assert.ok(!all.includes(bad), bad);
   }
