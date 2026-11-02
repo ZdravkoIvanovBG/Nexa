@@ -24,7 +24,11 @@ export function FloatingBack({
     topKind === "award" ||
     topKind === "service" ||
     topKind === "addon-detail" ||
-    topKind === "queue";
+    topKind === "queue" ||
+    topKind === "library" ||
+    topKind === "game" ||
+    topKind === "game-franchise" ||
+    topKind === "game-browse";
 
   if (!deep) return null;
 
