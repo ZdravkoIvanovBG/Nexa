@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { wipePortableLocalData } from "@/lib/backup";
+import { flushGames, gamesBackedUp } from "@/lib/game-library/backup-state";
 import { readCachedSupabaseUserId, supabase, supabaseConfigured } from "@/lib/supabase";
 import { profilesSyncedFor } from "./hydrate";
 import { flush, pendingCount } from "./queue";
@@ -191,12 +192,13 @@ export function CloudSessionProvider({ children }: { children: ReactNode }) {
     // wipe + reload below would strand it there until the next sign-in, by
     // which point hydrate has already pulled the stale server copy over it.
     await flush().catch(() => {});
+    await flushGames().catch(() => {});
     // Only clear what the cloud is known to have a copy of. If the roster
     // never synced -- missing table, RLS, a first run that failed offline --
     // wiping would destroy the only copy of the user's profiles. Account
     // isolation does not depend on this: claimLocalData() clears the slate
     // anyway the moment a different account signs in on this device.
-    const backedUp = pendingCount() === 0 && !!uid && profilesSyncedFor(uid);
+    const backedUp = pendingCount() === 0 && !!uid && profilesSyncedFor(uid) && gamesBackedUp(uid);
     await supabase.auth.signOut().catch(() => {});
     if (backedUp) {
       // Profiles, addons, and watch data are plain `harbor.*` keys with no

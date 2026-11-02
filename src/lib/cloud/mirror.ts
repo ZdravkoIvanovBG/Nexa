@@ -275,6 +275,8 @@ export async function purgeProfileFromCloud(profileId: string): Promise<void> {
     TABLE.tiers,
     TABLE.addons,
     TABLE.settings,
+    "game_library",
+    "game_queue",
   ]) {
     const { error } = await supabase
       .from(table)

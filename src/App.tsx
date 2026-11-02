@@ -55,6 +55,8 @@ import { TopRankModal } from "@/components/top-rank-modal";
 import { CloudSessionProvider } from "@/lib/cloud/session";
 import { CloudSync } from "@/lib/cloud/sync-mount";
 import { SettingsCloudSync } from "@/lib/cloud/settings-sync";
+import { flushGames } from "@/lib/game-library/backup-state";
+import { GameLibrarySync } from "@/lib/game-library/cloud/sync";
 import { CloudAuthGate } from "@/components/cloud-auth/cloud-auth-gate";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
@@ -305,6 +307,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                               <WatchlistSync />
                                               <CloudSync />
                                               <SettingsCloudSync />
+                                              <GameLibrarySync />
                                               <Shell onReady={onReady} />
                                               <Suspense fallback={null}>
                                                 <OnboardingModal />
@@ -785,7 +788,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
       listen("harbor://app-closing", async () => {
-        await flushCloud().catch(() => {});
+        // Side by side: closing allows about a second, and neither may wait on the other.
+        await Promise.allSettled([flushCloud(), flushGames()]);
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("harbor_flush_done").catch(() => {});
       }).then((rawUnlisten) => {

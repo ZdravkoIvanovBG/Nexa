@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { applyRemote, mirrorProfiles, purgeProfileFromCloud } from "./cloud/mirror";
+import { forgetGameProfile } from "./game-library/backup-state";
 import { readCachedSupabaseUserId } from "./supabase";
 import type { HiddenTabs } from "./lockable-tabs";
 import type { ContentFilters } from "./settings";
@@ -526,6 +527,8 @@ function deleteProfileRecord(id: string): void {
   } catch {
     /* ignore */
   }
+  // Before the purge, so a queued game write can't recreate what it removes.
+  forgetGameProfile(id);
   // Everything this profile owned in the cloud goes with it. Best-effort: the
   // row itself is removed through the durable queue by the mirror below.
   void purgeProfileFromCloud(id);
