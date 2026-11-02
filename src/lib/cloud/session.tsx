@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { wipePortableLocalData } from "@/lib/backup";
-import { flushGames, gamesBackedUp } from "@/lib/game-library/backup-state";
+import { flushGames, gamesBackedUp, restoreHeldGames } from "@/lib/game-library/backup-state";
 import { readCachedSupabaseUserId, supabase, supabaseConfigured } from "@/lib/supabase";
 import { profilesSyncedFor } from "./hydrate";
 import { flush, pendingCount } from "./queue";
@@ -58,14 +58,15 @@ function writeLocalOwner(userId: string): void {
  * previous account left behind (addons especially: hydrateFromCloud always
  * merges them local-first). Must run, and win, before anything else reads or
  * hydrates that data, so every call site that learns of a concrete signed-in
- * user id checks in here first.
+ * user id checks in here first. Returns whether the caller has to reload.
  */
 function claimLocalData(userId: string): boolean {
   const owner = readLocalOwner();
   const mismatch = !!owner && owner !== userId;
   if (mismatch) wipePortableLocalData();
   writeLocalOwner(userId);
-  return mismatch;
+  const restoredGames = restoreHeldGames(userId);
+  return mismatch || restoredGames;
 }
 
 function isNetworkError(err: unknown): boolean {

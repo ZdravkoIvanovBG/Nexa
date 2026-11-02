@@ -65,23 +65,20 @@ export async function pullLibrary(
 }
 
 /**
- * Decides when a library may be recorded as safely in the cloud. Sign-out reads
- * that record before it wipes anything, so this errs towards "not yet". An empty
+ * Decides when a library may be marked as safely in the cloud. Anything that
+ * wipes local data reads that mark, so this errs towards "not yet". An empty
  * queue alone proves nothing, because a change made while the cloud was
  * unavailable was never queued. Only after a hydrate has compared both sides
  * does an empty queue mean the cloud has everything.
  */
-export function createSyncTracker(
-  latestStamp: (owner: GameOwner) => number,
-  markSynced: (owner: GameOwner, stamp: number) => void,
-) {
+export function createSyncTracker(markSynced: (owner: GameOwner) => void) {
   const reconciled = new Map<string, GameOwner>();
   return {
     reconciled(owner: GameOwner): void {
       reconciled.set(`${owner.userId}|${owner.profileId}`, owner);
     },
     drained(): void {
-      for (const owner of reconciled.values()) markSynced(owner, latestStamp(owner));
+      for (const owner of reconciled.values()) markSynced(owner);
     },
     forget(profileId: string): void {
       for (const [key, owner] of reconciled) {

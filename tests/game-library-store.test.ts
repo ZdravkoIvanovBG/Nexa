@@ -173,6 +173,58 @@ test("a merge that changes nothing doesn't rewrite the blob", () => {
   assert.equal(writes, 0);
 });
 
+test("a change marks the library unsynced in the same write that saves it", () => {
+  const { store, run, disk } = device();
+  assert.equal(store.isUnsynced("p1"), false);
+  run("p1", saveGame, ref(1));
+  assert.equal(store.isUnsynced("p1"), true);
+  assert.equal(JSON.parse(disk.get(libraryKey("p1"))).unsynced, true);
+  assert.equal(device({ disk }).store.isUnsynced("p1"), true, "and a restart still knows");
+});
+
+test("a change that writes nothing doesn't mark the library unsynced", () => {
+  const { store, run } = device();
+  run("p1", saveGame, ref(1));
+  store.markSynced("p1");
+  run("p1", saveGame, ref(1));
+  assert.equal(store.isUnsynced("p1"), false);
+});
+
+test("marking a library synced is saved, and the next change marks it unsynced again", () => {
+  const { store, run, disk } = device();
+  run("p1", saveGame, ref(1));
+  store.markSynced("p1");
+  assert.equal(device({ disk }).store.isUnsynced("p1"), false);
+  run("p1", setNotes, "rawg:1", "again");
+  assert.equal(store.isUnsynced("p1"), true);
+});
+
+test("adopting rows from the cloud doesn't count as an unsynced change", () => {
+  const { store, run } = device();
+  run("p1", saveGame, ref(1));
+  const pulled = structuredClone(store.snapshot("p1"));
+  const other = device();
+  other.store.merge("p1", pulled);
+  assert.equal(other.store.isUnsynced("p1"), false);
+  assert.ok(other.store.snapshot("p1").records["rawg:1"]);
+});
+
+test("a merge that leaves rows to upload marks the library unsynced", () => {
+  const { store, run } = device();
+  run("p1", saveGame, ref(1));
+  store.markSynced("p1");
+  const uploads = store.merge("p1", { records: {}, queue: {} });
+  assert.equal(uploads.records.length, 1);
+  assert.equal(store.isUnsynced("p1"), true);
+});
+
+test("a merge never clears unsynced on its own", () => {
+  const { store, run } = device();
+  run("p1", saveGame, ref(1));
+  store.merge("p1", structuredClone(store.snapshot("p1")));
+  assert.equal(store.isUnsynced("p1"), true);
+});
+
 test("a replaced placeholder profile's games move across and upload", () => {
   const placeholder = (id) => id === "temp";
   const { store, run, disk } = device({ placeholder });

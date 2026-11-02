@@ -1,10 +1,14 @@
--- Verifies the Game Library migration: RLS, merge triggers and constraints.
--- Run it AFTER the migration. The result is one table: the total first, then
--- any FAIL rows, then the passes.
+-- Exercises the Game Library migration on a BLANK TEST PROJECT: it really tries
+-- to break RLS, the merge triggers and the constraints. Run it after the migration.
+-- The result is one table: the total first, then any FAIL rows, then the passes.
 --
--- It leaves nothing behind. All of its work, including two throwaway auth users,
--- happens inside a block that always aborts itself at the end, and only the
--- results survive that. A temporary function disappears when the session ends.
+-- NOT FOR PRODUCTION. It needs two throwaway rows in auth.users, because the game
+-- tables require a real user. It refuses to run if any account already exists.
+-- Use game_library_verify.sql on production: it only reads.
+--
+-- It leaves nothing behind. All of its work happens inside a block that always
+-- aborts itself at the end, and only the results survive that. A temporary
+-- function disappears when the session ends.
 
 create or replace function pg_temp.game_library_checks()
 returns table (seq int, check_name text, outcome text)
@@ -25,19 +29,147 @@ declare
     "records": [
       {
         "name": "a newer state group replaces an older one",
-        "stored": { "status": "paused", "progress": 20, "state_at": 100 },
-        "incoming": { "status": "playing", "progress": 35, "state_at": 200 },
-        "expected": { "status": "playing", "progress": 35, "state_at": 200 }
+        "stored": {
+          "status": "paused",
+          "state_at": 100
+        },
+        "incoming": {
+          "status": "playing",
+          "state_at": 200
+        },
+        "expected": {
+          "status": "playing",
+          "state_at": 200
+        }
       },
       {
         "name": "an older state group is ignored",
-        "stored": { "status": "completed", "completed_at": 150, "state_at": 200 },
-        "incoming": { "status": "playing", "completed_at": null, "state_at": 100 },
-        "expected": { "status": "completed", "completed_at": 150, "state_at": 200 }
+        "stored": {
+          "status": "completed",
+          "completed_at": 150,
+          "state_at": 200
+        },
+        "incoming": {
+          "status": "playing",
+          "completed_at": null,
+          "state_at": 100
+        },
+        "expected": {
+          "status": "completed",
+          "completed_at": 150,
+          "state_at": 200
+        }
+      },
+      {
+        "name": "a newer progress group replaces an older one",
+        "stored": {
+          "progress_enabled": false,
+          "progress": 20,
+          "progress_at": 100
+        },
+        "incoming": {
+          "progress_enabled": true,
+          "progress": 35,
+          "progress_at": 200
+        },
+        "expected": {
+          "progress_enabled": true,
+          "progress": 35,
+          "progress_at": 200
+        }
+      },
+      {
+        "name": "a status change on one device cannot overwrite newer progress from another",
+        "stored": {
+          "status": "playing",
+          "state_at": 100,
+          "progress": 50,
+          "progress_at": 300
+        },
+        "incoming": {
+          "status": "paused",
+          "state_at": 400,
+          "progress": 10,
+          "progress_at": 100
+        },
+        "expected": {
+          "status": "paused",
+          "state_at": 400,
+          "progress": 50,
+          "progress_at": 300
+        }
+      },
+      {
+        "name": "a brand new record cannot blank progress stored by another device",
+        "stored": {
+          "progress_enabled": true,
+          "progress": 35,
+          "progress_at": 300
+        },
+        "incoming": {
+          "status": "playing",
+          "state_at": 400,
+          "progress_enabled": false,
+          "progress_at": 0
+        },
+        "expected": {
+          "status": "playing",
+          "state_at": 400,
+          "progress_enabled": true,
+          "progress": 35,
+          "progress_at": 300
+        }
+      },
+      {
+        "name": "a newer snapshot replaces an older one",
+        "stored": {
+          "name": "Old",
+          "image": "old.jpg",
+          "meta_at": 100
+        },
+        "incoming": {
+          "name": "New",
+          "image": "new.jpg",
+          "meta_at": 200
+        },
+        "expected": {
+          "name": "New",
+          "image": "new.jpg",
+          "meta_at": 200
+        }
+      },
+      {
+        "name": "an edit from a stale device cannot restore an older snapshot",
+        "stored": {
+          "name": "New",
+          "image": "new.jpg",
+          "meta_at": 200,
+          "notes": "",
+          "notes_at": 0
+        },
+        "incoming": {
+          "name": "Old",
+          "image": "old.jpg",
+          "meta_at": 100,
+          "notes": "x",
+          "notes_at": 300
+        },
+        "expected": {
+          "name": "New",
+          "image": "new.jpg",
+          "meta_at": 200,
+          "notes": "x",
+          "notes_at": 300
+        }
       },
       {
         "name": "a newer note survives alongside a newer stored status",
-        "stored": { "status": "completed", "state_at": 300, "notes": "old", "notes_at": 100 },
+        "stored": {
+          "status": "completed",
+          "state_at": 300,
+          "notes": "old",
+          "notes_at": 100
+        },
         "incoming": {
           "status": "playing",
           "state_at": 100,
@@ -53,9 +185,24 @@ declare
       },
       {
         "name": "a newer stored note survives a newer incoming status",
-        "stored": { "status": "paused", "state_at": 100, "notes": "Sequence 4", "notes_at": 300 },
-        "incoming": { "status": "playing", "state_at": 200, "notes": "", "notes_at": 100 },
-        "expected": { "status": "playing", "state_at": 200, "notes": "Sequence 4", "notes_at": 300 }
+        "stored": {
+          "status": "paused",
+          "state_at": 100,
+          "notes": "Sequence 4",
+          "notes_at": 300
+        },
+        "incoming": {
+          "status": "playing",
+          "state_at": 200,
+          "notes": "",
+          "notes_at": 100
+        },
+        "expected": {
+          "status": "playing",
+          "state_at": 200,
+          "notes": "Sequence 4",
+          "notes_at": 300
+        }
       },
       {
         "name": "a status change on one device cannot overwrite a rank from another",
@@ -83,15 +230,31 @@ declare
       },
       {
         "name": "removing a tile beats an older rank",
-        "stored": { "tier": "A", "tier_position": "U1", "tier_at": 100 },
-        "incoming": { "tier": "hidden", "tier_position": null, "tier_at": 200 },
-        "expected": { "tier": "hidden", "tier_position": null, "tier_at": 200 }
+        "stored": {
+          "tier": "A",
+          "tier_position": "U1",
+          "tier_at": 100
+        },
+        "incoming": {
+          "tier": "hidden",
+          "tier_position": null,
+          "tier_at": 200
+        },
+        "expected": {
+          "tier": "hidden",
+          "tier_position": null,
+          "tier_at": 200
+        }
       },
       {
-        "name": "all three groups can come from different sides",
+        "name": "every group can come from a different side",
         "stored": {
+          "name": "New",
+          "meta_at": 300,
           "status": "dropped",
           "state_at": 100,
+          "progress": 80,
+          "progress_at": 300,
           "notes": "kept",
           "notes_at": 300,
           "tier": "F",
@@ -99,8 +262,12 @@ declare
           "tier_at": 100
         },
         "incoming": {
+          "name": "Old",
+          "meta_at": 100,
           "status": "playing",
           "state_at": 200,
+          "progress": 10,
+          "progress_at": 200,
           "notes": "older",
           "notes_at": 200,
           "tier": "S",
@@ -108,8 +275,12 @@ declare
           "tier_at": 200
         },
         "expected": {
+          "name": "New",
+          "meta_at": 300,
           "status": "playing",
           "state_at": 200,
+          "progress": 80,
+          "progress_at": 300,
           "notes": "kept",
           "notes_at": 300,
           "tier": "S",
@@ -121,33 +292,120 @@ declare
     "queue": [
       {
         "name": "a newer move replaces an older one",
-        "stored": { "position": "U1", "updated_at": 100 },
-        "incoming": { "position": "V1", "updated_at": 200 },
-        "expected": { "position": "V1", "updated_at": 200 }
+        "stored": {
+          "position": "U1",
+          "updated_at": 100
+        },
+        "incoming": {
+          "position": "V1",
+          "updated_at": 200
+        },
+        "expected": {
+          "position": "V1",
+          "updated_at": 200
+        }
       },
       {
-        "name": "an older move is skipped",
-        "stored": { "position": "V1", "updated_at": 200 },
-        "incoming": { "position": "U1", "updated_at": 100 },
-        "expected": { "position": "V1", "updated_at": 200 }
+        "name": "an older move is ignored",
+        "stored": {
+          "position": "V1",
+          "updated_at": 200
+        },
+        "incoming": {
+          "position": "U1",
+          "updated_at": 100
+        },
+        "expected": {
+          "position": "V1",
+          "updated_at": 200
+        }
       },
       {
         "name": "a newer tombstone removes the row",
-        "stored": { "deleted_at": null, "updated_at": 100 },
-        "incoming": { "deleted_at": 200, "updated_at": 200 },
-        "expected": { "deleted_at": 200, "updated_at": 200 }
+        "stored": {
+          "deleted_at": null,
+          "live_at": 100
+        },
+        "incoming": {
+          "deleted_at": 200,
+          "live_at": 200
+        },
+        "expected": {
+          "deleted_at": 200,
+          "live_at": 200
+        }
       },
       {
-        "name": "an older edit cannot resurrect a tombstone",
-        "stored": { "deleted_at": 200, "updated_at": 200 },
-        "incoming": { "deleted_at": null, "updated_at": 100 },
-        "expected": { "deleted_at": 200, "updated_at": 200 }
+        "name": "an older add cannot resurrect a tombstone",
+        "stored": {
+          "deleted_at": 200,
+          "live_at": 200
+        },
+        "incoming": {
+          "deleted_at": null,
+          "live_at": 100
+        },
+        "expected": {
+          "deleted_at": 200,
+          "live_at": 200
+        }
+      },
+      {
+        "name": "a reorder made after a removal cannot bring the row back",
+        "stored": {
+          "deleted_at": 200,
+          "live_at": 200,
+          "position": "U1",
+          "updated_at": 100
+        },
+        "incoming": {
+          "deleted_at": null,
+          "live_at": 100,
+          "position": "V1",
+          "updated_at": 300
+        },
+        "expected": {
+          "deleted_at": 200,
+          "live_at": 200,
+          "position": "V1",
+          "updated_at": 300
+        }
+      },
+      {
+        "name": "a removal keeps a newer position, so undo restores it",
+        "stored": {
+          "deleted_at": null,
+          "live_at": 100,
+          "position": "V1",
+          "updated_at": 300
+        },
+        "incoming": {
+          "deleted_at": 200,
+          "live_at": 200,
+          "position": "U1",
+          "updated_at": 100
+        },
+        "expected": {
+          "deleted_at": 200,
+          "live_at": 200,
+          "position": "V1",
+          "updated_at": 300
+        }
       },
       {
         "name": "undo beats the tombstone it restores",
-        "stored": { "deleted_at": 200, "updated_at": 200 },
-        "incoming": { "deleted_at": null, "updated_at": 201 },
-        "expected": { "deleted_at": null, "updated_at": 201 }
+        "stored": {
+          "deleted_at": 200,
+          "live_at": 200
+        },
+        "incoming": {
+          "deleted_at": null,
+          "live_at": 201
+        },
+        "expected": {
+          "deleted_at": null,
+          "live_at": 201
+        }
       }
     ]
   }
@@ -162,6 +420,11 @@ declare
   affected int;
   i int;
 begin
+  if exists (select 1 from auth.users) then
+    raise exception 'game_library_checks.sql is for a blank test project, and this one has accounts.'
+      using hint = 'Nothing was changed. On production, run game_library_verify.sql instead.';
+  end if;
+
   begin
     -- ── structure ───────────────────────────────────────────────────────────
     names := names || 'RLS is enabled on both tables'::text;
@@ -182,7 +445,7 @@ begin
     names := names || 'both merge triggers are installed and enabled'::text;
     passed := passed || (
       select count(*) = 2 from pg_trigger
-      where tgname in ('game_library_merge', 'game_queue_keep_newest')
+      where tgname in ('game_library_merge', 'game_queue_merge')
         and tgenabled = 'O'
     );
 
@@ -195,7 +458,7 @@ begin
     names := names || 'the trigger functions cannot be called by users'::text;
     passed := passed || (
       not has_function_privilege('authenticated', 'public.game_library_merge()', 'execute')
-      and not has_function_privilege('authenticated', 'public.game_queue_keep_newest()', 'execute')
+      and not has_function_privilege('authenticated', 'public.game_queue_merge()', 'execute')
       and not has_function_privilege('anon', 'public.game_library_merge()', 'execute')
     );
 
@@ -304,8 +567,8 @@ begin
       i := i + 1;
       base := jsonb_build_object(
         'user_id', alice, 'profile_id', 'merge-cases', 'game_id', 'rawg:' || i,
-        'slug', '', 'name', 'Check', 'progress_enabled', false, 'state_at', 0,
-        'notes', '', 'notes_at', 0, 'tier_at', 0, 'created_at', 0
+        'slug', '', 'name', 'Check', 'meta_at', 0, 'state_at', 0, 'progress_enabled', false,
+        'progress_at', 0, 'notes', '', 'notes_at', 0, 'tier_at', 0, 'created_at', 0
       );
       insert into public.game_library
       select * from jsonb_populate_record(null::public.game_library, base || (merge_case -> 'stored'));
@@ -313,9 +576,10 @@ begin
       select * from jsonb_populate_record(null::public.game_library, base || (merge_case -> 'incoming'))
       on conflict (user_id, profile_id, game_id) do update set
         slug = excluded.slug, name = excluded.name, released = excluded.released,
-        image = excluded.image, status = excluded.status, started_at = excluded.started_at,
-        completed_at = excluded.completed_at, progress_enabled = excluded.progress_enabled,
-        progress = excluded.progress, state_at = excluded.state_at, notes = excluded.notes,
+        image = excluded.image, meta_at = excluded.meta_at, status = excluded.status,
+        started_at = excluded.started_at, completed_at = excluded.completed_at,
+        state_at = excluded.state_at, progress_enabled = excluded.progress_enabled,
+        progress = excluded.progress, progress_at = excluded.progress_at, notes = excluded.notes,
         notes_at = excluded.notes_at, tier = excluded.tier,
         tier_position = excluded.tier_position, tier_at = excluded.tier_at,
         created_at = excluded.created_at;
@@ -331,7 +595,8 @@ begin
       base := jsonb_build_object(
         'user_id', alice, 'profile_id', 'merge-cases', 'entry_id', 'entry-' || i,
         'parent_id', '', 'kind', 'game', 'game_id', 'rawg:1', 'title', '',
-        'catalog_seen', '[]'::jsonb, 'position', 'U1', 'added_at', 0, 'updated_at', 0
+        'catalog_seen', '[]'::jsonb, 'position', 'U1', 'added_at', 0, 'updated_at', 0,
+        'live_at', 0
       );
       insert into public.game_queue
       select * from jsonb_populate_record(null::public.game_queue, base || (merge_case -> 'stored'));
@@ -342,7 +607,7 @@ begin
         franchise_id = excluded.franchise_id, title = excluded.title, image = excluded.image,
         catalog_seen = excluded.catalog_seen, position = excluded.position,
         added_at = excluded.added_at, updated_at = excluded.updated_at,
-        deleted_at = excluded.deleted_at;
+        deleted_at = excluded.deleted_at, live_at = excluded.live_at;
       select to_jsonb(q) into stored from public.game_queue q
       where q.profile_id = 'merge-cases' and q.entry_id = 'entry-' || i;
       names := names || ('queue: ' || (merge_case ->> 'name'));

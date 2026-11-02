@@ -16,20 +16,25 @@ export type GameStatus = "playing" | "paused" | "completed" | "dropped";
 export type GameTier = RankedTier | "unranked" | "hidden";
 
 /**
- * The one personal record for a game, whichever stage it is in. Its fields are
- * split into groups, each with its own stamp, so editing notes on one device
- * cannot overwrite a status changed on another. See merge.ts.
+ * The one personal record for a game, whichever stage it is in. Each group of
+ * fields has its own stamp, so a change to one can't overwrite another changed
+ * on a different device: a status can't cost progress, and an edit from a device
+ * with an old snapshot can't restore that snapshot. See merge.ts.
  */
 export type GameRecord = GameRef & {
   gameId: GameId;
+  /** Covers the snapshot fields from GameRef. */
+  metaAt: number;
 
   status: GameStatus | null;
   startedAt: number | null;
   completedAt: number | null;
+  stateAt: number;
+
   progressEnabled: boolean;
   /** 0–100, kept while tracking is switched off. */
   progress: number | null;
-  stateAt: number;
+  progressAt: number;
 
   notes: string;
   notesAt: number;
@@ -46,6 +51,9 @@ export type QueueKind = "game" | "collection";
 /**
  * A row in the play queue: a root entry, or a member of a collection. Ids are
  * deterministic, so the same game saved on two offline devices lands on one row.
+ * Whether a row exists has its own stamp, separate from where it sits, so that
+ * reordering on one device can't undo a removal made on another. Only adding,
+ * removing and restoring change `liveAt`.
  */
 export type QueueEntry = {
   entryId: string;
@@ -63,6 +71,7 @@ export type QueueEntry = {
   addedAt: number;
   updatedAt: number;
   deletedAt: number | null;
+  liveAt: number;
 };
 
 export type GameLibraryData = {

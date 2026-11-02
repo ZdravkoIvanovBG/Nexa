@@ -3,28 +3,28 @@
 // by an older snapshot. A tie adopts the cloud copy and uploads nothing, which
 // stops two devices re-uploading the same rows at each other.
 //
-// `game_library_merge` in the Supabase migration applies the same groups on the
-// server. tests/fixtures/game-merge-cases.json is the shared table of cases.
+// `game_library_merge` and `game_queue_merge` in the Supabase migration apply the
+// same groups on the server. tests/fixtures/game-merge-cases.json is the shared
+// table of cases.
 import { ROOT_PARENT, nextStamp } from "./types.ts";
 import type { GameLibraryData, GameRecord, LibraryPatch, QueueEntry } from "./types.ts";
 
-const STATE_FIELDS = [
-  "status",
-  "startedAt",
-  "completedAt",
-  "progressEnabled",
-  "progress",
-  "stateAt",
-] as const;
-const NOTES_FIELDS = ["notes", "notesAt"] as const;
-const TIER_FIELDS = ["tier", "tierPosition", "tierAt"] as const;
+type RecordStamp = "metaAt" | "stateAt" | "progressAt" | "notesAt" | "tierAt";
 
-function copyFields<K extends keyof GameRecord>(
+const RECORD_GROUPS: readonly { stamp: RecordStamp; fields: readonly (keyof GameRecord)[] }[] = [
+  { stamp: "metaAt", fields: ["slug", "name", "released", "image", "metaAt"] },
+  { stamp: "stateAt", fields: ["status", "startedAt", "completedAt", "stateAt"] },
+  { stamp: "progressAt", fields: ["progressEnabled", "progress", "progressAt"] },
+  { stamp: "notesAt", fields: ["notes", "notesAt"] },
+  { stamp: "tierAt", fields: ["tier", "tierPosition", "tierAt"] },
+];
+
+function copyField<K extends keyof GameRecord>(
   target: GameRecord,
   source: GameRecord,
-  fields: readonly K[],
+  field: K,
 ): void {
-  for (const field of fields) target[field] = source[field];
+  target[field] = source[field];
 }
 
 function earliest(a: number, b: number): number {
@@ -38,29 +38,32 @@ export function mergeRecord(
 ): { merged: GameRecord; upload: boolean } {
   const merged: GameRecord = { ...remote };
   let upload = false;
-  if (local.stateAt > remote.stateAt) {
-    copyFields(merged, local, STATE_FIELDS);
-    upload = true;
-  }
-  if (local.notesAt > remote.notesAt) {
-    copyFields(merged, local, NOTES_FIELDS);
-    upload = true;
-  }
-  if (local.tierAt > remote.tierAt) {
-    copyFields(merged, local, TIER_FIELDS);
+  for (const { stamp, fields } of RECORD_GROUPS) {
+    if (local[stamp] <= remote[stamp]) continue;
+    for (const field of fields) copyField(merged, local, field);
     upload = true;
   }
   merged.createdAt = earliest(local.createdAt, remote.createdAt);
   return { merged, upload };
 }
 
+/** Where a row sits and whether it exists resolve separately, as in `game_queue_merge`. */
 export function mergeEntry(
   local: QueueEntry,
   remote: QueueEntry,
 ): { merged: QueueEntry; upload: boolean } {
-  return local.updatedAt > remote.updatedAt
-    ? { merged: local, upload: true }
-    : { merged: remote, upload: false };
+  const merged: QueueEntry = { ...remote };
+  let upload = false;
+  if (local.updatedAt > remote.updatedAt) {
+    Object.assign(merged, local, { deletedAt: remote.deletedAt, liveAt: remote.liveAt });
+    upload = true;
+  }
+  if (local.liveAt > remote.liveAt) {
+    merged.deletedAt = local.deletedAt;
+    merged.liveAt = local.liveAt;
+    upload = true;
+  }
+  return { merged, upload };
 }
 
 function sameRow<T extends object>(a: T, b: T): boolean {
@@ -120,15 +123,16 @@ export function mergeLibrary(
   }
 
   // A game added on one device after another removed its collection would
-  // otherwise sit live under a dead parent, where nothing can show it.
+  // otherwise sit live under a dead parent, where nothing can show it. Only a
+  // real addition counts: reordering a member doesn't bring a collection back.
   for (const entry of Object.values(queue)) {
     if (entry.parentId === ROOT_PARENT || entry.deletedAt !== null) continue;
     const parent = queue[entry.parentId];
-    if (!parent || parent.deletedAt === null || entry.updatedAt <= parent.updatedAt) continue;
+    if (!parent || parent.deletedAt === null || entry.liveAt <= parent.liveAt) continue;
     const revived = {
       ...parent,
       deletedAt: null,
-      updatedAt: nextStamp(parent.updatedAt, now),
+      liveAt: nextStamp(parent.liveAt, now),
     };
     queue[parent.entryId] = revived;
     uploadQueue.set(parent.entryId, revived);

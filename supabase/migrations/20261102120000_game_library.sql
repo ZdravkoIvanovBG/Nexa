@@ -11,8 +11,9 @@
 begin;
 
 -- One row per game per profile: the single personal record for that game. Its
--- fields form three groups, each with its own stamp (epoch milliseconds), so
--- two devices can change different things without overwriting each other.
+-- fields form groups, each with its own stamp (epoch milliseconds), so devices
+-- can change different things without overwriting each other. A stamp of 0 means
+-- "never changed here", so a brand new record can't overwrite an existing one.
 create table public.game_library (
   user_id uuid not null references auth.users (id) on delete cascade,
   profile_id text not null,
@@ -23,14 +24,18 @@ create table public.game_library (
   name text not null default '',
   released text,
   image text,
+  meta_at bigint not null default 0,
 
   -- State group.
   status text check (status in ('playing', 'paused', 'completed', 'dropped')),
   started_at bigint,
   completed_at bigint,
+  state_at bigint not null default 0,
+
+  -- Progress group.
   progress_enabled boolean not null default false,
   progress smallint check (progress between 0 and 100),
-  state_at bigint not null default 0,
+  progress_at bigint not null default 0,
 
   -- Notes group.
   notes text not null default '',
@@ -48,7 +53,9 @@ create table public.game_library (
 
 -- One row per Wishlist entry or collection member. parent_id is '' for a root
 -- entry, or the owning collection's entry_id. Deleted rows are kept with
--- deleted_at set, so other devices learn about the deletion.
+-- deleted_at set, so other devices learn about the deletion. Where a row sits
+-- (updated_at) and whether it exists (live_at) have separate stamps, so a
+-- reorder on one device can't undo a removal made on another.
 create table public.game_queue (
   user_id uuid not null references auth.users (id) on delete cascade,
   profile_id text not null,
@@ -65,7 +72,9 @@ create table public.game_queue (
 
   added_at bigint not null default 0,
   updated_at bigint not null default 0,
+
   deleted_at bigint,
+  live_at bigint not null default 0,
 
   primary key (user_id, profile_id, entry_id)
 );
@@ -81,13 +90,25 @@ security invoker
 set search_path = ''
 as $$
 begin
+  if new.meta_at < old.meta_at then
+    new.slug := old.slug;
+    new.name := old.name;
+    new.released := old.released;
+    new.image := old.image;
+    new.meta_at := old.meta_at;
+  end if;
+
   if new.state_at < old.state_at then
     new.status := old.status;
     new.started_at := old.started_at;
     new.completed_at := old.completed_at;
+    new.state_at := old.state_at;
+  end if;
+
+  if new.progress_at < old.progress_at then
     new.progress_enabled := old.progress_enabled;
     new.progress := old.progress;
-    new.state_at := old.state_at;
+    new.progress_at := old.progress_at;
   end if;
 
   if new.notes_at < old.notes_at then
@@ -105,9 +126,9 @@ begin
 end;
 $$;
 
--- Skips a write older than the stored row. Must match mergeEntry in
+-- The same rule for queue rows. Must match mergeEntry in
 -- src/lib/game-library/merge.ts.
-create function public.game_queue_keep_newest()
+create function public.game_queue_merge()
 returns trigger
 language plpgsql
 security invoker
@@ -115,23 +136,38 @@ set search_path = ''
 as $$
 begin
   if new.updated_at < old.updated_at then
-    return null;
+    new.parent_id := old.parent_id;
+    new.kind := old.kind;
+    new.game_id := old.game_id;
+    new.franchise_id := old.franchise_id;
+    new.title := old.title;
+    new.image := old.image;
+    new.catalog_seen := old.catalog_seen;
+    new.position := old.position;
+    new.added_at := old.added_at;
+    new.updated_at := old.updated_at;
   end if;
+
+  if new.live_at < old.live_at then
+    new.deleted_at := old.deleted_at;
+    new.live_at := old.live_at;
+  end if;
+
   return new;
 end;
 $$;
 
 -- Only triggers need these. Nothing should be able to call them directly.
 revoke all on function public.game_library_merge() from public, anon, authenticated;
-revoke all on function public.game_queue_keep_newest() from public, anon, authenticated;
+revoke all on function public.game_queue_merge() from public, anon, authenticated;
 
 create trigger game_library_merge
   before update on public.game_library
   for each row execute function public.game_library_merge();
 
-create trigger game_queue_keep_newest
+create trigger game_queue_merge
   before update on public.game_queue
-  for each row execute function public.game_queue_keep_newest();
+  for each row execute function public.game_queue_merge();
 
 alter table public.game_library enable row level security;
 alter table public.game_queue enable row level security;

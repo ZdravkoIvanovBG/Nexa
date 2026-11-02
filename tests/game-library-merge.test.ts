@@ -35,6 +35,7 @@ const entry = (fields = {}) => ({
   addedAt: 1,
   updatedAt: 1,
   deletedAt: null,
+  liveAt: 1,
   ...fields,
 });
 
@@ -122,10 +123,35 @@ test("an identical pull changes nothing, so the store can skip a write", () => {
 });
 
 test("a tombstone reaches a device that still has the row", () => {
-  const local = library([], [entry({ updatedAt: 1 })]);
-  const remote = library([], [entry({ updatedAt: 5, deletedAt: 5 })]);
+  const local = library([], [entry({ liveAt: 1 })]);
+  const remote = library([], [entry({ liveAt: 5, deletedAt: 5 })]);
   const result = mergeLibrary(local, remote, 100);
   assert.equal(result.data.queue["g:rawg:1"].deletedAt, 5);
+});
+
+test("a later reorder neither revives a removed row nor is lost", () => {
+  const local = entry({ position: "V1", updatedAt: 9, liveAt: 1 });
+  const remote = entry({ position: "U1", updatedAt: 1, liveAt: 5, deletedAt: 5 });
+  const { merged, upload } = mergeEntry(local, remote);
+  assert.equal(merged.deletedAt, 5);
+  assert.equal(merged.position, "V1");
+  assert.equal(upload, true);
+});
+
+test("a queue row uploads when either of its stamps is ahead", () => {
+  const remote = entry({ updatedAt: 5, liveAt: 5 });
+  assert.equal(mergeEntry(entry({ updatedAt: 5, liveAt: 5 }), remote).upload, false);
+  assert.equal(mergeEntry(entry({ updatedAt: 6, liveAt: 1 }), remote).upload, true);
+  assert.equal(mergeEntry(entry({ updatedAt: 1, liveAt: 6 }), remote).upload, true);
+  assert.equal(mergeEntry(entry({ updatedAt: 1, liveAt: 1 }), remote).upload, false);
+});
+
+test("a stale snapshot doesn't win, and a newer one uploads", () => {
+  const remote = record({ name: "New", metaAt: 20 });
+  assert.equal(mergeRecord(record({ name: "Old", metaAt: 10 }), remote).merged.name, "New");
+  const newer = mergeRecord(record({ name: "Newest", metaAt: 30 }), remote);
+  assert.equal(newer.merged.name, "Newest");
+  assert.equal(newer.upload, true);
 });
 
 test("an edit made during a pull is not lost", () => {
@@ -144,19 +170,32 @@ test("a member added after its collection was removed revives the collection", (
     kind: "collection",
     gameId: null,
     franchiseId: "ac",
-    updatedAt: 50,
+    liveAt: 50,
     deletedAt: 50,
   });
   const member = entry({
     entryId: "c:ac|rawg:1",
     parentId: "c:ac",
-    updatedAt: 60,
+    liveAt: 60,
   });
   const result = mergeLibrary(library([], [member]), library([], [parent]), 100);
   const revived = result.data.queue["c:ac"];
   assert.equal(revived.deletedAt, null);
-  assert.ok(revived.updatedAt > parent.updatedAt);
+  assert.ok(revived.liveAt > parent.liveAt);
   assert.ok(result.uploads.queue.some((e) => e.entryId === "c:ac"));
+});
+
+test("reordering a member doesn't bring back a removed collection", () => {
+  const parent = entry({
+    entryId: "c:ac",
+    kind: "collection",
+    gameId: null,
+    liveAt: 50,
+    deletedAt: 50,
+  });
+  const member = entry({ entryId: "c:ac|rawg:1", parentId: "c:ac", updatedAt: 60, liveAt: 40 });
+  const result = mergeLibrary(library([], [member]), library([], [parent]), 100);
+  assert.equal(result.data.queue["c:ac"].deletedAt, 50);
 });
 
 test("a member older than the removal stays hidden with its collection", () => {
@@ -164,10 +203,10 @@ test("a member older than the removal stays hidden with its collection", () => {
     entryId: "c:ac",
     kind: "collection",
     gameId: null,
-    updatedAt: 50,
+    liveAt: 50,
     deletedAt: 50,
   });
-  const member = entry({ entryId: "c:ac|rawg:1", parentId: "c:ac", updatedAt: 40 });
+  const member = entry({ entryId: "c:ac|rawg:1", parentId: "c:ac", liveAt: 40 });
   const result = mergeLibrary(library([], [member]), library([], [parent]), 100);
   assert.equal(result.data.queue["c:ac"].deletedAt, 50);
 });

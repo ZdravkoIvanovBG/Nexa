@@ -38,12 +38,14 @@ export type GameLibraryRow = {
   name: string;
   released: string | null;
   image: string | null;
+  meta_at: number;
   status: GameStatus | null;
   started_at: number | null;
   completed_at: number | null;
+  state_at: number;
   progress_enabled: boolean;
   progress: number | null;
-  state_at: number;
+  progress_at: number;
   notes: string;
   notes_at: number;
   tier: GameTier | null;
@@ -67,6 +69,7 @@ export type GameQueueRow = {
   added_at: number;
   updated_at: number;
   deleted_at: number | null;
+  live_at: number;
 };
 
 export type GameRow = GameLibraryRow | GameQueueRow;
@@ -80,12 +83,14 @@ export function recordToRow(o: GameOwner, r: GameRecord): GameLibraryRow {
     name: r.name,
     released: r.released,
     image: r.image,
+    meta_at: r.metaAt,
     status: r.status,
     started_at: r.startedAt,
     completed_at: r.completedAt,
+    state_at: r.stateAt,
     progress_enabled: r.progressEnabled,
     progress: r.progress,
-    state_at: r.stateAt,
+    progress_at: r.progressAt,
     notes: r.notes,
     notes_at: r.notesAt,
     tier: r.tier,
@@ -102,12 +107,14 @@ export function rowToRecord(row: GameLibraryRow): GameRecord | null {
     name: row.name,
     released: row.released,
     image: row.image,
+    metaAt: row.meta_at,
     status: row.status,
     startedAt: row.started_at,
     completedAt: row.completed_at,
+    stateAt: row.state_at,
     progressEnabled: row.progress_enabled,
     progress: row.progress,
-    stateAt: row.state_at,
+    progressAt: row.progress_at,
     notes: row.notes,
     notesAt: row.notes_at,
     tier: row.tier,
@@ -133,6 +140,7 @@ export function entryToRow(o: GameOwner, e: QueueEntry): GameQueueRow {
     added_at: e.addedAt,
     updated_at: e.updatedAt,
     deleted_at: e.deletedAt,
+    live_at: e.liveAt,
   };
 }
 
@@ -150,6 +158,7 @@ export function rowToEntry(row: GameQueueRow): QueueEntry | null {
     addedAt: row.added_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
+    liveAt: row.live_at,
   });
 }
 

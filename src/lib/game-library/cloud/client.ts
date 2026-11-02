@@ -1,17 +1,11 @@
-// Binds the queue and hydrate to Supabase and localStorage. Those modules take
-// their dependencies as arguments so they can be tested; this is the only file
-// here that talks to the real backend.
+// Binds the store, queue and hydrate to Supabase and localStorage. Those modules
+// take their dependencies as arguments so they can be tested; this is the only
+// file here that talks to the real backend.
 import { loadProfiles } from "@/lib/profiles";
-import { setItemWithRecovery } from "@/lib/storage-recovery";
+import { freeStorageSpace, setItemWithRecovery } from "@/lib/storage-recovery";
 import { readCachedSupabaseUserId, supabase } from "@/lib/supabase";
-import {
-  GAME_QUEUE_KEY,
-  libraryProfiles,
-  markGamesSynced,
-  onGameProfileForgotten,
-} from "../backup-state.ts";
-import { maxStamp } from "../sanitize.ts";
-import { gameStore } from "../store.ts";
+import { GAME_QUEUE_KEY, libraryProfiles, onGameProfileForgotten } from "../backup-state.ts";
+import { createGameStore } from "../store-core.ts";
 import type { LibraryPatch } from "../types.ts";
 import { createSyncTracker, hydrateGameLibrary, type PullPage } from "./hydrate.ts";
 import { createGameQueue, type CloudError } from "./queue.ts";
@@ -52,10 +46,39 @@ const pull: PullPage = async (table, owner, from, to) => {
   return { rows: data ?? [], error: asCloudError(error, status) };
 };
 
-const tracker = createSyncTracker(
-  (owner) => maxStamp(gameStore.snapshot(owner.profileId)),
-  (owner, stamp) => markGamesSynced(owner.userId, owner.profileId, stamp),
-);
+function persist(key: string, value: string): boolean {
+  try {
+    if (setItemWithRecovery(key, value)) return true;
+    freeStorageSpace();
+    return setItemWithRecovery(key, value);
+  } catch {
+    return false;
+  }
+}
+
+export const gameStore = createGameStore({
+  read: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  write: persist,
+  remove: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* a stranded blob is inert once its profile is gone */
+    }
+  },
+  now: Date.now,
+  random: Math.random,
+  isPlaceholderProfile: (profileId) =>
+    loadProfiles().find((p) => p.id === profileId)?.autoCreated === true,
+});
+
+const tracker = createSyncTracker((owner) => gameStore.markSynced(owner.profileId));
 
 export const gameQueue = createGameQueue({
   load: () => localStorage.getItem(GAME_QUEUE_KEY),
@@ -77,11 +100,12 @@ export const gameQueue = createGameQueue({
 
 export function queueLibraryChange(profileId: string, patch: LibraryPatch): void {
   const userId = readCachedSupabaseUserId();
-  // With no session the rows stay ahead by stamp, and the next hydrate sends them.
+  // With no session the rows stay marked unsynced, and the next hydrate sends them.
   if (userId) gameQueue.enqueue(patchToOps({ userId, profileId }, patch));
 }
 
 onGameProfileForgotten((profileId) => {
+  gameStore.evict(profileId);
   gameQueue.dropProfile(profileId);
   tracker.forget(profileId);
 });

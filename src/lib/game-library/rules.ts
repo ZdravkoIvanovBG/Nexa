@@ -61,12 +61,14 @@ export function newRecord(ref: GameRef, now: number): GameRecord {
   return {
     ...ref,
     gameId: gameIdFor(ref.rawgId),
+    metaAt: now,
     status: null,
     startedAt: null,
     completedAt: null,
+    stateAt: 0,
     progressEnabled: false,
     progress: null,
-    stateAt: 0,
+    progressAt: 0,
     notes: "",
     notesAt: 0,
     tier: null,
@@ -128,12 +130,13 @@ function liveEntry(
     addedAt: ctx.now,
     updatedAt: nextStamp(previous?.updatedAt ?? 0, ctx.now),
     deletedAt: null,
+    liveAt: nextStamp(previous?.liveAt ?? 0, ctx.now),
   };
 }
 
 function tombstone(entry: QueueEntry, ctx: ChangeContext): QueueEntry {
-  const updatedAt = nextStamp(entry.updatedAt, ctx.now);
-  return { ...entry, updatedAt, deletedAt: updatedAt };
+  const liveAt = nextStamp(entry.liveAt, ctx.now);
+  return { ...entry, liveAt, deletedAt: liveAt };
 }
 
 function withRecord(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
@@ -284,11 +287,7 @@ export function restoreEntries(
   for (const id of entryIds) {
     const entry = data.queue[id];
     if (!entry || entry.deletedAt === null) continue;
-    patch.queue.push({
-      ...entry,
-      deletedAt: null,
-      updatedAt: nextStamp(entry.updatedAt, ctx.now),
-    });
+    patch.queue.push({ ...entry, deletedAt: null, liveAt: nextStamp(entry.liveAt, ctx.now) });
   }
   return patch;
 }
@@ -354,7 +353,10 @@ export function catalogAdditions(entry: QueueEntry, catalogSlugs: readonly strin
   return catalogSlugs.filter((slug) => !seen.has(slug));
 }
 
-/** Only on a user action: an automatic write could revive a deletion from another device. */
+/**
+ * Only on a user action. This shares a stamp with the row's position, so a
+ * review and a reorder of the same collection on two devices keep the later one.
+ */
 export function markCatalogSeen(
   data: GameLibraryData,
   collectionId: string,
@@ -384,7 +386,24 @@ function changeState(
   return patch;
 }
 
-/** Never touches notes, progress or the tier group: a status change must not cost any of them. */
+function changeProgress(
+  record: GameRecord,
+  fields: Pick<Partial<GameRecord>, "progressEnabled" | "progress">,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const patch = emptyPatch();
+  patch.records.push({
+    ...record,
+    ...fields,
+    progressAt: nextStamp(record.progressAt, ctx.now),
+  });
+  return patch;
+}
+
+/**
+ * Writes only the state group. Notes, progress and rank have their own stamps,
+ * so a status change can't cost any of them, even one synced from another device.
+ */
 export function setStatus(
   data: GameLibraryData,
   gameId: GameId,
@@ -448,7 +467,7 @@ export function setProgressEnabled(
 ): LibraryPatch {
   const record = data.records[gameId];
   if (!record || record.progressEnabled === enabled) return emptyPatch();
-  return changeState(record, { progressEnabled: enabled }, ctx);
+  return changeProgress(record, { progressEnabled: enabled }, ctx);
 }
 
 export function setProgress(
@@ -461,7 +480,7 @@ export function setProgress(
   if (!record || !Number.isFinite(value)) return emptyPatch();
   const progress = Math.max(0, Math.min(100, Math.round(value)));
   if (record.progress === progress) return emptyPatch();
-  return changeState(record, { progress }, ctx);
+  return changeProgress(record, { progress }, ctx);
 }
 
 export function setNotes(
@@ -488,8 +507,12 @@ export function notesPreview(notes: string): string {
   );
 }
 
-/** Keeps a fresher image and name from Discovery. No stamp: a stale snapshot is harmless. */
-export function refreshSnapshot(data: GameLibraryData, ref: GameRef): LibraryPatch {
+/** Keeps a fresher image and name from Discovery. */
+export function refreshSnapshot(
+  data: GameLibraryData,
+  ref: GameRef,
+  ctx: ChangeContext,
+): LibraryPatch {
   const patch = emptyPatch();
   const record = data.records[gameIdFor(ref.rawgId)];
   if (!record) return patch;
@@ -508,6 +531,7 @@ export function refreshSnapshot(data: GameLibraryData, ref: GameRef): LibraryPat
     name: ref.name,
     released: ref.released,
     image,
+    metaAt: nextStamp(record.metaAt, ctx.now),
   });
   return patch;
 }

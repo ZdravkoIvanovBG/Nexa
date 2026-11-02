@@ -63,12 +63,14 @@ export function sanitizeRecord(value: unknown): GameRecord | null {
     released: optionalText(raw.released),
     image: optionalText(raw.image),
     gameId: id,
+    metaAt: stamp(raw.metaAt),
     status: STATUSES.includes(raw.status as string) ? (raw.status as GameStatus) : null,
     startedAt: optionalStamp(raw.startedAt),
     completedAt: optionalStamp(raw.completedAt),
+    stateAt: stamp(raw.stateAt),
     progressEnabled: raw.progressEnabled === true,
     progress: progress(raw.progress),
-    stateAt: stamp(raw.stateAt),
+    progressAt: stamp(raw.progressAt),
     notes: text(raw.notes).slice(0, MAX_NOTES_LENGTH),
     notesAt: stamp(raw.notesAt),
     tier,
@@ -99,6 +101,7 @@ export function sanitizeEntry(value: unknown): QueueEntry | null {
     addedAt: stamp(raw.addedAt),
     updatedAt: stamp(raw.updatedAt),
     deletedAt: optionalStamp(raw.deletedAt),
+    liveAt: stamp(raw.liveAt),
   };
 }
 
@@ -118,14 +121,4 @@ export function sanitizeLibrary(value: unknown): GameLibraryData {
     if (entry) data.queue[entry.entryId] = entry;
   }
   return data;
-}
-
-/** The latest local change anywhere in the library, or 0 for an empty one. */
-export function maxStamp(data: GameLibraryData): number {
-  let latest = 0;
-  for (const r of Object.values(data.records)) {
-    latest = Math.max(latest, r.createdAt, r.stateAt, r.notesAt, r.tierAt);
-  }
-  for (const e of Object.values(data.queue)) latest = Math.max(latest, e.updatedAt);
-  return latest;
 }

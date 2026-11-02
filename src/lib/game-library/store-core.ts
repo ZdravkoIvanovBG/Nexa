@@ -3,12 +3,15 @@
 // and this store has no shared "current" library for that to happen to.
 //
 // Storage and the clock are injected so this runs under `node --test`.
-import { libraryKey, parseLibraryBlob, type LibraryBlob } from "./backup-state.ts";
+import {
+  libraryKey,
+  parseLibraryBlob,
+  serializeLibraryBlob,
+  type LibraryBlob,
+} from "./backup-state.ts";
 import { mergeLibrary } from "./merge.ts";
 import { applyPatch, isEmptyPatch, type ChangeContext } from "./rules.ts";
 import type { GameLibraryData, LibraryPatch } from "./types.ts";
-
-const BLOB_VERSION = 1;
 
 export type GameStoreDeps = {
   read: (key: string) => string | null;
@@ -50,13 +53,14 @@ export function createGameStore(deps: GameStoreDeps) {
     return blob;
   }
 
-  function commit(profileId: string, data: GameLibraryData): void {
+  function commit(profileId: string, data: GameLibraryData, unsynced: boolean): void {
     const blob: LibraryBlob = {
       ...data,
       autoCreated: load(profileId).autoCreated || deps.isPlaceholderProfile(profileId),
+      unsynced,
     };
     loaded.set(profileId, blob);
-    const ok = deps.write(libraryKey(profileId), JSON.stringify({ v: BLOB_VERSION, ...blob }));
+    const ok = deps.write(libraryKey(profileId), serializeLibraryBlob(blob));
     if (!ok) console.warn("[game-library] out of storage, holding changes in memory only");
     notify();
   }
@@ -71,6 +75,16 @@ export function createGameStore(deps: GameStoreDeps) {
       return load(profileId).autoCreated;
     },
 
+    isUnsynced(profileId: string): boolean {
+      return load(profileId).unsynced;
+    },
+
+    /** Only for when a hydrate and a drained queue prove the cloud has everything. */
+    markSynced(profileId: string): void {
+      const blob = load(profileId);
+      if (blob.unsynced) commit(profileId, blob, false);
+    },
+
     subscribe(listener: () => void): () => void {
       subscribers.add(listener);
       return () => {
@@ -82,7 +96,7 @@ export function createGameStore(deps: GameStoreDeps) {
     apply(profileId: string, change: LibraryChange): LibraryPatch {
       const data = load(profileId);
       const patch = change(data, { now: deps.now(), random: deps.random });
-      if (!isEmptyPatch(patch)) commit(profileId, applyPatch(data, patch));
+      if (!isEmptyPatch(patch)) commit(profileId, applyPatch(data, patch), true);
       return patch;
     },
 
@@ -92,8 +106,12 @@ export function createGameStore(deps: GameStoreDeps) {
      * flight is part of the merge.
      */
     merge(profileId: string, remote: GameLibraryData): LibraryPatch {
-      const result = mergeLibrary(load(profileId), remote, deps.now());
-      if (result.changed) commit(profileId, result.data);
+      const current = load(profileId);
+      const result = mergeLibrary(current, remote, deps.now());
+      const unsynced = current.unsynced || !isEmptyPatch(result.uploads);
+      if (result.changed || unsynced !== current.unsynced) {
+        commit(profileId, result.data, unsynced);
+      }
       return result.uploads;
     },
 
@@ -103,7 +121,7 @@ export function createGameStore(deps: GameStoreDeps) {
      */
     adopt(fromProfileId: string, toProfileId: string): LibraryPatch {
       const result = mergeLibrary(load(fromProfileId), load(toProfileId), deps.now());
-      commit(toProfileId, result.data);
+      commit(toProfileId, result.data, true);
       forget(fromProfileId);
       return result.uploads;
     },

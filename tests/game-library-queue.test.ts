@@ -320,6 +320,24 @@ test("errors are sorted into what can and can't be retried", () => {
   assert.equal(classifyCloudError({ message: "Failed to fetch" }), "transient");
 });
 
+test("every cloud query is scoped to the profile, since RLS can't do that", () => {
+  const client = readFileSync(
+    new URL("../src/lib/game-library/cloud/client.ts", import.meta.url),
+    "utf8",
+  );
+  assert.equal((client.match(/\.select\(/g) ?? []).length, 1, "one read path");
+  assert.match(
+    client,
+    /\.select\("\*"\)\s+\.eq\("user_id", owner\.userId\)\s+\.eq\("profile_id", owner\.profileId\)/,
+  );
+  const rows = readFileSync(
+    new URL("../src/lib/game-library/cloud/rows.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(rows, /"user_id,profile_id,game_id"/);
+  assert.match(rows, /"user_id,profile_id,entry_id"/);
+});
+
 test("the movie sync queue is not used by the Game Library", () => {
   for (const file of ["cloud/queue.ts", "cloud/hydrate.ts", "cloud/client.ts", "store.ts"]) {
     const url = new URL(`../src/lib/game-library/${file}`, import.meta.url);

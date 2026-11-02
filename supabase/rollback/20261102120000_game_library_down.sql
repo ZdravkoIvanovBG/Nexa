@@ -14,7 +14,7 @@ begin;
 drop table if exists public.game_queue;
 drop table if exists public.game_library;
 
-drop function if exists public.game_queue_keep_newest();
+drop function if exists public.game_queue_merge();
 drop function if exists public.game_library_merge();
 
 commit;

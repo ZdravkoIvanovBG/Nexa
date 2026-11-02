@@ -2,15 +2,62 @@
   "records": [
     {
       "name": "a newer state group replaces an older one",
-      "stored": { "status": "paused", "progress": 20, "stateAt": 100 },
-      "incoming": { "status": "playing", "progress": 35, "stateAt": 200 },
-      "expected": { "status": "playing", "progress": 35, "stateAt": 200 }
+      "stored": { "status": "paused", "stateAt": 100 },
+      "incoming": { "status": "playing", "stateAt": 200 },
+      "expected": { "status": "playing", "stateAt": 200 }
     },
     {
       "name": "an older state group is ignored",
       "stored": { "status": "completed", "completedAt": 150, "stateAt": 200 },
       "incoming": { "status": "playing", "completedAt": null, "stateAt": 100 },
       "expected": { "status": "completed", "completedAt": 150, "stateAt": 200 }
+    },
+    {
+      "name": "a newer progress group replaces an older one",
+      "stored": { "progressEnabled": false, "progress": 20, "progressAt": 100 },
+      "incoming": { "progressEnabled": true, "progress": 35, "progressAt": 200 },
+      "expected": { "progressEnabled": true, "progress": 35, "progressAt": 200 }
+    },
+    {
+      "name": "a status change on one device cannot overwrite newer progress from another",
+      "stored": { "status": "playing", "stateAt": 100, "progress": 50, "progressAt": 300 },
+      "incoming": { "status": "paused", "stateAt": 400, "progress": 10, "progressAt": 100 },
+      "expected": { "status": "paused", "stateAt": 400, "progress": 50, "progressAt": 300 }
+    },
+    {
+      "name": "a brand new record cannot blank progress stored by another device",
+      "stored": { "progressEnabled": true, "progress": 35, "progressAt": 300 },
+      "incoming": {
+        "status": "playing",
+        "stateAt": 400,
+        "progressEnabled": false,
+        "progressAt": 0
+      },
+      "expected": {
+        "status": "playing",
+        "stateAt": 400,
+        "progressEnabled": true,
+        "progress": 35,
+        "progressAt": 300
+      }
+    },
+    {
+      "name": "a newer snapshot replaces an older one",
+      "stored": { "name": "Old", "image": "old.jpg", "metaAt": 100 },
+      "incoming": { "name": "New", "image": "new.jpg", "metaAt": 200 },
+      "expected": { "name": "New", "image": "new.jpg", "metaAt": 200 }
+    },
+    {
+      "name": "an edit from a stale device cannot restore an older snapshot",
+      "stored": { "name": "New", "image": "new.jpg", "metaAt": 200, "notes": "", "notesAt": 0 },
+      "incoming": {
+        "name": "Old",
+        "image": "old.jpg",
+        "metaAt": 100,
+        "notes": "x",
+        "notesAt": 300
+      },
+      "expected": { "name": "New", "image": "new.jpg", "metaAt": 200, "notes": "x", "notesAt": 300 }
     },
     {
       "name": "a newer note survives alongside a newer stored status",
@@ -65,10 +112,14 @@
       "expected": { "tier": "hidden", "tierPosition": null, "tierAt": 200 }
     },
     {
-      "name": "all three groups can come from different sides",
+      "name": "every group can come from a different side",
       "stored": {
+        "name": "New",
+        "metaAt": 300,
         "status": "dropped",
         "stateAt": 100,
+        "progress": 80,
+        "progressAt": 300,
         "notes": "kept",
         "notesAt": 300,
         "tier": "F",
@@ -76,8 +127,12 @@
         "tierAt": 100
       },
       "incoming": {
+        "name": "Old",
+        "metaAt": 100,
         "status": "playing",
         "stateAt": 200,
+        "progress": 10,
+        "progressAt": 200,
         "notes": "older",
         "notesAt": 200,
         "tier": "S",
@@ -85,8 +140,12 @@
         "tierAt": 200
       },
       "expected": {
+        "name": "New",
+        "metaAt": 300,
         "status": "playing",
         "stateAt": 200,
+        "progress": 80,
+        "progressAt": 300,
         "notes": "kept",
         "notesAt": 300,
         "tier": "S",
@@ -103,28 +162,40 @@
       "expected": { "position": "V1", "updatedAt": 200 }
     },
     {
-      "name": "an older move is skipped",
+      "name": "an older move is ignored",
       "stored": { "position": "V1", "updatedAt": 200 },
       "incoming": { "position": "U1", "updatedAt": 100 },
       "expected": { "position": "V1", "updatedAt": 200 }
     },
     {
       "name": "a newer tombstone removes the row",
-      "stored": { "deletedAt": null, "updatedAt": 100 },
-      "incoming": { "deletedAt": 200, "updatedAt": 200 },
-      "expected": { "deletedAt": 200, "updatedAt": 200 }
+      "stored": { "deletedAt": null, "liveAt": 100 },
+      "incoming": { "deletedAt": 200, "liveAt": 200 },
+      "expected": { "deletedAt": 200, "liveAt": 200 }
     },
     {
-      "name": "an older edit cannot resurrect a tombstone",
-      "stored": { "deletedAt": 200, "updatedAt": 200 },
-      "incoming": { "deletedAt": null, "updatedAt": 100 },
-      "expected": { "deletedAt": 200, "updatedAt": 200 }
+      "name": "an older add cannot resurrect a tombstone",
+      "stored": { "deletedAt": 200, "liveAt": 200 },
+      "incoming": { "deletedAt": null, "liveAt": 100 },
+      "expected": { "deletedAt": 200, "liveAt": 200 }
+    },
+    {
+      "name": "a reorder made after a removal cannot bring the row back",
+      "stored": { "deletedAt": 200, "liveAt": 200, "position": "U1", "updatedAt": 100 },
+      "incoming": { "deletedAt": null, "liveAt": 100, "position": "V1", "updatedAt": 300 },
+      "expected": { "deletedAt": 200, "liveAt": 200, "position": "V1", "updatedAt": 300 }
+    },
+    {
+      "name": "a removal keeps a newer position, so undo restores it",
+      "stored": { "deletedAt": null, "liveAt": 100, "position": "V1", "updatedAt": 300 },
+      "incoming": { "deletedAt": 200, "liveAt": 200, "position": "U1", "updatedAt": 100 },
+      "expected": { "deletedAt": 200, "liveAt": 200, "position": "V1", "updatedAt": 300 }
     },
     {
       "name": "undo beats the tombstone it restores",
-      "stored": { "deletedAt": 200, "updatedAt": 200 },
-      "incoming": { "deletedAt": null, "updatedAt": 201 },
-      "expected": { "deletedAt": null, "updatedAt": 201 }
+      "stored": { "deletedAt": 200, "liveAt": 200 },
+      "incoming": { "deletedAt": null, "liveAt": 201 },
+      "expected": { "deletedAt": null, "liveAt": 201 }
     }
   ]
 }

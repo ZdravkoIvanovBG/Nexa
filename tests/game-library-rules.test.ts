@@ -155,8 +155,20 @@ test("undo is a forward write, so it beats the tombstone everywhere", () => {
   seededQueue(lib, 1);
   const removed = lib.run(removeEntry, "g:rawg:1").queue[0];
   const restored = lib.run(restoreEntries, ["g:rawg:1"]).queue[0];
-  assert.ok(restored.updatedAt > removed.updatedAt);
+  assert.ok(restored.liveAt > removed.liveAt);
   assert.equal(restored.deletedAt, null);
+});
+
+test("moving a row changes where it sits, and removing it changes only whether it exists", () => {
+  const lib = library();
+  seededQueue(lib, 1, 2);
+  const start = lib.data.queue["g:rawg:2"];
+  const moved = lib.run(moveEntry, "g:rawg:2", 0).queue[0];
+  assert.ok(moved.updatedAt > start.updatedAt);
+  assert.equal(moved.liveAt, start.liveAt);
+  const removed = lib.run(removeEntry, "g:rawg:2").queue[0];
+  assert.ok(removed.liveAt > moved.liveAt);
+  assert.equal(removed.updatedAt, moved.updatedAt);
 });
 
 test("saving a removed game revives its row at the end", () => {
@@ -439,6 +451,16 @@ test("each edit advances only its own group's stamp", () => {
   const c = lib.data.records["rawg:1"];
   assert.ok(c.stateAt > b.stateAt);
   assert.equal(c.notesAt, b.notesAt);
+  assert.equal(c.progressAt, b.progressAt);
+  lib.run(setProgress, "rawg:1", 40);
+  const d = lib.data.records["rawg:1"];
+  assert.ok(d.progressAt > c.progressAt);
+  assert.equal(d.stateAt, c.stateAt);
+  lib.run(setProgressEnabled, "rawg:1", true);
+  const e = lib.data.records["rawg:1"];
+  assert.ok(e.progressAt > d.progressAt);
+  assert.equal(e.stateAt, d.stateAt);
+  assert.equal(e.metaAt, a.metaAt);
 });
 
 test("stamps beat a stamp from a device whose clock runs ahead", () => {
@@ -504,8 +526,12 @@ test("a snapshot refresh updates identity only and keeps a known image", () => {
   assert.equal(after.name, "Renamed");
   assert.equal(after.image, before.image);
   assert.equal(after.stateAt, before.stateAt);
-  assert.ok(isEmptyPatch(refreshSnapshot(lib.data, { ...ref(1, "Renamed"), image: after.image })));
-  assert.ok(isEmptyPatch(refreshSnapshot(lib.data, ref(99))));
+  assert.ok(after.metaAt > before.metaAt);
+  const ctx = { now: 1 };
+  assert.ok(
+    isEmptyPatch(refreshSnapshot(lib.data, { ...ref(1, "Renamed"), image: after.image }, ctx)),
+  );
+  assert.ok(isEmptyPatch(refreshSnapshot(lib.data, ref(99), ctx)));
 });
 
 // ── tier list ───────────────────────────────────────────────────────────────

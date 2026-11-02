@@ -1,10 +1,12 @@
 import { downloadText } from "@/lib/download-text";
+import { prepareGameHold } from "@/lib/game-library/backup-state";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 
 declare const __APP_VERSION__: string;
 
 const FORMAT = "harbor-backup";
 const VERSION = 1;
+const LOCAL_OWNER_KEY = "harbor.local.ownerUserId";
 
 export type Backup = {
   format: string;
@@ -29,7 +31,7 @@ function isPortable(key: string): boolean {
   if (key.startsWith("harbor.cloud.")) return false;
   // Tracks which account this device's local data currently belongs to. Never
   // part of a backup, and never wiped by wipePortableLocalData itself.
-  if (key === "harbor.local.ownerUserId") return false;
+  if (key === LOCAL_OWNER_KEY) return false;
   // "Has this installation introduced itself yet?" is a property of the
   // device, not of the account: wiping it on sign-out meant the first-run
   // wizard greeted a returning user every time they signed back in. The
@@ -48,12 +50,16 @@ function isPortable(key: string): boolean {
  * and every other setting a user would expect to move with their account.
  */
 export function wipePortableLocalData(): void {
+  // Game data the cloud doesn't have yet would otherwise be gone for good. Read
+  // before the wipe and stored after it, when there is room.
+  const holdGames = prepareGameHold(localStorage.getItem(LOCAL_OWNER_KEY));
   const stale: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && isPortable(key)) stale.push(key);
   }
   for (const key of stale) localStorage.removeItem(key);
+  holdGames();
 }
 
 export async function buildBackup(): Promise<Backup> {
