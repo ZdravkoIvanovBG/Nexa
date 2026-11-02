@@ -20,7 +20,9 @@ import { AiSearchSection } from "./ai-search-section";
 import { AiModeButton } from "./ai-mode-button";
 import { AiExampleHint, SEARCH_EXAMPLES } from "@/components/ai-example-hint";
 import { useSettings } from "@/lib/settings";
+import { gamesSearchAvailable } from "@/lib/game-discovery/gates";
 import { useRawgGate } from "@/lib/game-discovery/use-rawg";
+import { useActiveKid } from "@/lib/profiles";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { getSearchDisplayState } from "@/lib/search-display-state";
 
@@ -29,6 +31,7 @@ export function SearchOverlay() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { openFilter, openMeta, openGameBrowse } = useView();
   const rawgGate = useRawgGate();
+  const kid = useActiveKid();
   const t = useT();
   const [guideOpen, setGuideOpen] = useState(false);
   const [aiActive, setAiActive] = useState(false);
@@ -255,7 +258,7 @@ export function SearchOverlay() {
           )}
 
           {/* Games shortcut: opens Games search; costs no RAWG request here. */}
-          {trimmed.length >= 2 && !directInput && rawgGate.featureEnabled && rawgGate.ready && (
+          {trimmed.length >= 2 && !directInput && gamesSearchAvailable(rawgGate, !!kid) && (
             <button
               onClick={() => {
                 close();

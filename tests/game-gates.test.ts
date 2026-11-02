@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   canToggleGames,
   gamesFeatureEnabled,
+  gamesSearchAvailable,
   keyFingerprint,
   rawgConfigState,
   rawgReady,
@@ -93,4 +94,23 @@ test("enabling requires a ready key", () => {
     ),
     false,
   );
+});
+
+test("the global search shortcut needs usable Games and a non-kid profile", () => {
+  const usable = { featureEnabled: true, ready: true };
+  assert.equal(gamesSearchAvailable(usable, false), true);
+  assert.equal(gamesSearchAvailable(usable, true), false, "kid profiles can't open Games");
+  assert.equal(gamesSearchAvailable({ featureEnabled: false, ready: true }, false), false);
+  assert.equal(gamesSearchAvailable({ featureEnabled: true, ready: false }, false), false);
+  assert.equal(gamesSearchAvailable({ featureEnabled: false, ready: false }, true), false);
+});
+
+test("global search takes the kid check from the active profile", () => {
+  const overlay = readFileSync(
+    new URL("../src/components/search/search-overlay.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(overlay, /const kid = useActiveKid\(\);/);
+  assert.match(overlay, /gamesSearchAvailable\(rawgGate, !!kid\)/);
+  assert.doesNotMatch(overlay, /rawgGate\.featureEnabled/);
 });

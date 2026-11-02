@@ -56,6 +56,14 @@ export function rawgReady(
   return rawgConfigState(settings, isRejected) === "ready";
 }
 
+/** Global search offers Games only when it's usable; kid profiles can't open Games at all. */
+export function gamesSearchAvailable(
+  gate: { featureEnabled: boolean; ready: boolean },
+  isKid: boolean,
+): boolean {
+  return gate.featureEnabled && gate.ready && !isKid;
+}
+
 /** The enable toggle needs a ready key to turn on; turning off is always allowed. */
 export function canToggleGames(
   settings: FeatureFields & KeyFields,

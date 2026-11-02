@@ -20,6 +20,22 @@ function str(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * A parsed http(s) URL, or null. RAWG's website field is third-party data and
+ * openUrl falls back to an in-app browser with no scheme check, so nothing else
+ * may reach it. Returns the parsed form: what gets opened is what was checked.
+ */
+export function webUrl(value: unknown): string | null {
+  const text = str(value);
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function num(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -131,7 +147,7 @@ export function normalizeGameDetail(raw: RawgGameDetail | null | undefined): Gam
     ...summary,
     description: description || null,
     imageAlt: str(raw.background_image_additional),
-    website: str(raw.website),
+    website: webUrl(raw.website),
     developers: named(raw.developers),
     publishers: named(raw.publishers),
     platforms,
