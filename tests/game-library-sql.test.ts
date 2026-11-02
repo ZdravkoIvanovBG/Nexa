@@ -149,8 +149,15 @@ test("the validation script runs the same merge cases as the unit tests", () => 
 test("the validation script can't leave anything behind", () => {
   assert.match(CHECKS, /raise exception using errcode = 'GL000'/);
   assert.match(CHECKS, /exception when sqlstate 'GL000' then/);
-  assert.match(CHECKS, /create function pg_temp\.game_library_checks\(\)/);
+  assert.match(CHECKS, /create or replace function pg_temp\.game_library_checks\(\)/);
   assert.doesNotMatch(withoutComments(CHECKS), /\bcommit\b/i);
+});
+
+test("each script ends in a single result, the only one the SQL Editor shows", () => {
+  assert.match(withoutComments(CHECKS).trim(), /select \* from pg_temp\.game_library_checks\(\);$/);
+  const preflight = withoutComments(PREFLIGHT).trim();
+  assert.equal((preflight.match(/;/g) ?? []).length, 1, "one statement");
+  assert.match(preflight, /select item, found, verdict from checks order by sort, item;$/);
 });
 
 test("the pre-flight script only reads", () => {

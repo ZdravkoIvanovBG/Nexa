@@ -1,5 +1,5 @@
 -- Read-only checks to run BEFORE the Game Library migration. Changes nothing.
--- The result is one table, with a verdict on each row.
+-- One statement on purpose: the SQL Editor only shows the last result it gets.
 
 with checks as (
   select 1 as sort, 'postgres version' as item,
@@ -47,13 +47,15 @@ with checks as (
   where schemaname = 'public'
     and tablename in ('watchlist', 'currently_watching', 'tier_list', 'user_addons',
                       'profiles', 'user_settings')
-)
-select item, found, verdict from checks order by sort;
 
--- For comparison with the new policies: how the existing tables scope rows.
-select tablename, policyname, cmd, roles, qual, with_check
-from pg_policies
-where schemaname = 'public'
-  and tablename in ('watchlist', 'currently_watching', 'tier_list', 'user_addons',
-                    'profiles', 'user_settings')
-order by tablename, cmd, policyname;
+  -- How the existing tables scope rows, to compare with the new policies.
+  union all
+  select 7, 'policy on ' || tablename || ': ' || policyname,
+    cmd || ' using ' || coalesce(qual, '(none)') || ' check ' || coalesce(with_check, '(none)'),
+    'for comparison'
+  from pg_policies
+  where schemaname = 'public'
+    and tablename in ('watchlist', 'currently_watching', 'tier_list', 'user_addons',
+                      'profiles', 'user_settings')
+)
+select item, found, verdict from checks order by sort, item;

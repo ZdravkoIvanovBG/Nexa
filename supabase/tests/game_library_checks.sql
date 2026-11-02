@@ -1,11 +1,12 @@
 -- Verifies the Game Library migration: RLS, merge triggers and constraints.
--- Run it AFTER the migration. The result is one table of pass/FAIL rows.
+-- Run it AFTER the migration. The result is one table: the total first, then
+-- any FAIL rows, then the passes.
 --
 -- It leaves nothing behind. All of its work, including two throwaway auth users,
 -- happens inside a block that always aborts itself at the end, and only the
 -- results survive that. A temporary function disappears when the session ends.
 
-create function pg_temp.game_library_checks()
+create or replace function pg_temp.game_library_checks()
 returns table (seq int, check_name text, outcome text)
 language plpgsql
 as $checks$
@@ -412,4 +413,4 @@ begin
 end;
 $checks$;
 
-select * from pg_temp.game_library_checks() order by seq = 0 desc;
+select * from pg_temp.game_library_checks();
