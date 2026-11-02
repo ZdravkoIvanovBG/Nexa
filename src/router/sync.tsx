@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
+import { withoutGameFrames } from "@/lib/library-frames";
 import { useSettings } from "@/lib/settings";
 import { useView, type View } from "@/lib/view";
 import { metaPath, pathFromView, viewFromPath } from "./paths";
@@ -12,7 +13,8 @@ import { metaPath, pathFromView, viewFromPath } from "./paths";
 export function ViewRouterSync() {
   const router = useRouter();
   const { settings } = useSettings();
-  const { view, setView, topKind, meta, stackKinds } = useView();
+  const { view, setView, topKind, meta, stackKinds, hasLibrarySectionFrames, setNavStack } =
+    useView();
   const downloadsEnabled = settings.showDownloadsNav;
   const gamesEnabled = gamesFeatureEnabled(settings);
   const onGamesFrame =
@@ -70,10 +72,17 @@ export function ViewRouterSync() {
     if (view === "downloads" && !downloadsEnabled) setView("home");
   }, [view, downloadsEnabled, setView]);
 
-  // Games is opt-in too: leave any Games view or frame as soon as it is turned off.
+  // Games is opt-in too: leave any Games view or frame as soon as it is turned
+  // off. From inside My Library that means staying in the library, which is the
+  // Movie Library again with Games off, rather than going Home.
   useEffect(() => {
-    if (onGamesFrame && !gamesEnabled) setView("home");
-  }, [onGamesFrame, gamesEnabled, setView]);
+    if (gamesEnabled) return;
+    if (hasLibrarySectionFrames) {
+      setNavStack((stack) => withoutGameFrames(stack, { kind: "library" }));
+    } else if (onGamesFrame) {
+      setView("home");
+    }
+  }, [hasLibrarySectionFrames, onGamesFrame, gamesEnabled, setView, setNavStack]);
 
   return null;
 }

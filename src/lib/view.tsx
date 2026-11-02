@@ -13,6 +13,7 @@ import {
 import type { Meta } from "./cinemeta";
 import { profileFromMeta, trackEvent } from "./discover";
 import type { GameBrowseSpec, GameSummary } from "./game-discovery/types";
+import { currentLibrarySection, hasLibrarySection, type LibrarySection } from "./library-frames";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
 import { beginMarathonAdvance } from "./fullscreen-state";
@@ -111,7 +112,7 @@ export type Frame =
   | { kind: "movies" }
   | { kind: "shows" }
   | { kind: "kids" }
-  | { kind: "library" }
+  | { kind: "library"; section?: LibrarySection }
   | { kind: "vod" }
   | { kind: "downloads" }
   | { kind: "service"; service: StreamingService }
@@ -258,6 +259,10 @@ type ViewValue = {
   openGameFranchise: (id: string) => void;
   gameBrowse: GameBrowseSpec | null;
   openGameBrowse: (spec: GameBrowseSpec) => void;
+  librarySection: LibrarySection | null;
+  /** True while a library section is in the stack or reachable with Forward. */
+  hasLibrarySectionFrames: boolean;
+  openLibrarySection: (section: LibrarySection) => void;
   stackKinds: Frame["kind"][];
   awardType: import("./providers/wikidata").AwardType | null;
   openAward: (t: import("./providers/wikidata").AwardType) => void;
@@ -340,7 +345,7 @@ function frameKey(f: Frame): string {
     case "kids":
       return "kids";
     case "library":
-      return "library";
+      return f.section ? `library:${f.section}` : "library";
     case "vod":
       return "vod";
     case "downloads":
@@ -494,6 +499,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const gameFranchiseId = gameFranchiseFrame ? gameFranchiseFrame.id : null;
   const gameBrowseFrame = lastOfKind(stack, "game-browse");
   const gameBrowse = gameBrowseFrame ? gameBrowseFrame.spec : null;
+  const librarySection = currentLibrarySection(stack);
+  const hasLibrarySectionFrames = hasLibrarySection(stack) || hasLibrarySection(forwardStack);
   const awardType = top.kind === "award" ? top.awardType : null;
   const picker =
     top.kind === "picker"
@@ -877,6 +884,17 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     [setNavStack],
   );
 
+  const openLibrarySection = useCallback(
+    (section: LibrarySection) => {
+      setNavStack((cur) => {
+        const t = cur[cur.length - 1];
+        if (t.kind === "library" && t.section === section) return cur;
+        return pushFrame(cur, { kind: "library", section });
+      });
+    },
+    [setNavStack],
+  );
+
   const openPicker = useCallback(
     (
       m: Meta,
@@ -1010,6 +1028,9 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openGameFranchise,
       gameBrowse,
       openGameBrowse,
+      librarySection,
+      hasLibrarySectionFrames,
+      openLibrarySection,
       stackKinds,
       awardType,
       openAward,
@@ -1079,6 +1100,9 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       openGameFranchise,
       gameBrowse,
       openGameBrowse,
+      librarySection,
+      hasLibrarySectionFrames,
+      openLibrarySection,
       openAward,
       openPicker,
       openPlayer,

@@ -196,7 +196,9 @@ export function RawgSection() {
       <Section title={t("Games")}>
         <ToggleRow
           label={t("Enable Games")}
-          sub={t("Adds Games to the sidebar. Turning it off keeps your RAWG key.")}
+          sub={t(
+            "Adds Games to the sidebar and a Game Library to My Library. Turning it off hides them and keeps your RAWG key and saved games.",
+          )}
           value={settings.gamesEnabled}
           onChange={(v) => update({ gamesEnabled: v })}
           lockReason={toggleLocked ? t("Verify a RAWG API key first") : undefined}

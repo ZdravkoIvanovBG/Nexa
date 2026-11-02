@@ -156,6 +156,9 @@ const ServiceView = lazy(() => importService().then((m) => ({ default: m.Service
 const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings })));
 const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
+const LibraryGate = lazy(() =>
+  import("@/views/library-gate").then((m) => ({ default: m.LibraryGate })),
+);
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const GamesView = lazy(() => importGameDiscovery().then((m) => ({ default: m.GamesView })));
@@ -1075,7 +1078,16 @@ function Shell({ onReady }: { onReady?: () => void }) {
         {libraryAlive && (
           <div className={layer(libraryTop)}>
             <Suspense fallback={null}>
-              <LibraryView active={libraryTop} />
+              {gamesOn ? (
+                <LibraryGate
+                  active={libraryTop}
+                  backFloatsOverPage={
+                    layout === "topdock" || layout === "cinematic" || layout === "royal"
+                  }
+                />
+              ) : (
+                <LibraryView active={libraryTop} />
+              )}
             </Suspense>
           </div>
         )}

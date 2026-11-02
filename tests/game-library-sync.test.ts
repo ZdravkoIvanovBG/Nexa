@@ -567,6 +567,29 @@ test("a device with a fast clock can't make later edits lose", async () => {
   assert.equal(normal.data.records["rawg:1"].progress, 80);
 });
 
+test("a first sync with nothing on either side only reads", async () => {
+  const cloud = fakeCloud();
+  const storage = fakeStorage();
+  const writes = [];
+  const setItem = storage.setItem;
+  storage.setItem = (key, value) => {
+    writes.push(key);
+    return setItem(key, value);
+  };
+  let sends = 0;
+  const send = cloud.send;
+  cloud.send = (...args) => (sends++, send(...args));
+
+  const a = device(cloud, { storage });
+  assert.equal(await a.sync(), "synced");
+
+  assert.equal(sends, 0, "nothing uploaded");
+  assert.deepEqual(writes, [], "nothing written on this device");
+  assert.equal(cloud.tables[GAME_TABLE.library].size, 0);
+  assert.equal(cloud.tables[GAME_TABLE.queue].size, 0);
+  assert.equal(cloud.pulls, 2, "one request per table, no more");
+});
+
 test("converged devices stop uploading", async () => {
   const cloud = fakeCloud();
   const a = device(cloud);
