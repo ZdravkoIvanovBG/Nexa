@@ -24,6 +24,7 @@ import { Synopsis } from "../detail/synopsis";
 import { TitlePlate } from "../detail/title-plate";
 import { formatReleaseDate, releaseYear } from "./format";
 import { MetacriticBadge } from "./game-card";
+import { SaveGameButton, useRefreshSavedGame } from "./save-controls";
 import { GameRail, GameRowSkeleton } from "./game-row";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
@@ -62,6 +63,7 @@ function GameDetailBody({
   const detail = query.data ?? null;
   // The card's summary paints immediately while the detail request runs.
   const game: GameSummary | null = detail ?? seed ?? null;
+  useRefreshSavedGame(detail);
 
   if (query.isSuccess && !detail) {
     return (
@@ -129,6 +131,7 @@ function GameDetailBody({
             </div>
             <Scores game={game} />
             <div className="mt-8 flex flex-wrap items-center gap-3">
+              <SaveGameButton game={game} franchise={franchise} />
               <button
                 onClick={() => openUrl(`https://rawg.io/games/${game.slug}`)}
                 className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"

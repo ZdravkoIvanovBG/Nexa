@@ -15,6 +15,7 @@ import { GameCard, GameCardSkeleton } from "./game-card";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
 import { PillToggle } from "./pill-toggle";
+import { SaveCollectionButton } from "./save-controls";
 
 const GRID = "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
 
@@ -49,6 +50,16 @@ function FranchiseBody({
   const resolved = useMemo(
     () => (query.data ? resolveFranchiseData(query.data, sort) : null),
     [query.data, sort],
+  );
+  // A saved collection starts in release order, whatever the page is sorted by.
+  const releaseOrder = useMemo(
+    () => (query.data ? resolveFranchiseData(query.data, "release").groups.main : null),
+    [query.data],
+  );
+  const aliases = query.data?.aliases;
+  const slugOf = useMemo(
+    () => (game: GameSummary) => aliases?.get(game.rawgId) ?? game.slug,
+    [aliases],
   );
 
   if (!def) {
@@ -117,6 +128,16 @@ function FranchiseBody({
               <p className="mt-4 line-clamp-3 text-[15px] leading-relaxed text-ink-muted">
                 {def.description}
               </p>
+            )}
+            {releaseOrder && releaseOrder.length > 0 && (
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <SaveCollectionButton
+                  def={def}
+                  games={releaseOrder}
+                  slugOf={slugOf}
+                  image={art.image}
+                />
+              </div>
             )}
           </div>
         </div>
