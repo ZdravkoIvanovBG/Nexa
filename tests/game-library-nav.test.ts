@@ -120,19 +120,30 @@ const NEW_SCREENS = [
 test("the new screens send RAWG no requests and need no key", () => {
   assert.ok(NEW_SCREENS.length >= 6);
   for (const file of NEW_SCREENS) {
+    // rawg/image only rewrites saved image URLs; it sends nothing.
     assert.doesNotMatch(
       source(file),
-      /providers\/rawg|game-discovery\/(queries|use-rawg|status|gates)|games-frame|useQuery/,
+      /providers\/rawg(?!\/image)|game-discovery\/(queries|use-rawg|status|gates)|games-frame|useQuery/,
       file,
     );
   }
 });
 
-test("the new screens can't write game data, so opening them changes nothing", () => {
+test("the chooser can't touch game data, so choosing a library changes nothing", () => {
+  for (const file of [
+    ...sourcesUnder("views/library-chooser"),
+    "views/library-chooser.tsx",
+    "views/library-gate.tsx",
+  ]) {
+    assert.doesNotMatch(source(file), /game-library\/|changeGameLibrary|supabase/, file);
+  }
+});
+
+test("the Game Library changes data only through changeGameLibrary", () => {
   for (const file of NEW_SCREENS) {
     assert.doesNotMatch(
       source(file),
-      /game-library\/(store|cloud|rules|merge)|changeGameLibrary|supabase/,
+      /store-core|cloud\/(client|queue|hydrate|rows)|gameStore|gameQueue|lib\/supabase|localStorage\.setItem\("harbor\.games\./,
       file,
     );
   }

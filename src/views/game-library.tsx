@@ -1,23 +1,15 @@
-import { Gamepad2, ListOrdered, Trophy } from "lucide-react";
+import { Gamepad2, ListOrdered, TriangleAlert, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
+import { requestGameLibrarySync } from "@/lib/game-library/cloud/sync";
+import { useGameLibraryUnsaved } from "@/lib/game-library/store";
 import { useT } from "@/lib/i18n";
 import { useScrollMemory, useView } from "@/lib/view";
 import { RawgAttribution } from "./game-discovery/rawg-attribution";
-import { PlayingEmpty, TierListEmpty, WishlistEmpty } from "./game-library/empty-states";
+import { PlayingEmpty, TierListEmpty } from "./game-library/empty-states";
+import { onTabRequest, readSavedTab, saveTab, type GameLibraryTab } from "./game-library/tab";
+import { WishlistTab } from "./game-library/wishlist-tab";
 import { TabBtn } from "./library/shared";
-
-type GameLibraryTab = "wishlist" | "playing" | "tiers";
-
-const TAB_KEY = "harbor.gamelibrary.tab";
-
-function readSavedTab(): GameLibraryTab {
-  try {
-    const saved = localStorage.getItem(TAB_KEY);
-    if (saved === "wishlist" || saved === "playing" || saved === "tiers") return saved;
-  } catch {}
-  return "wishlist";
-}
 
 const ACTIVITY: Record<GameLibraryTab, string> = {
   wishlist: "Planning what to play next",
@@ -29,6 +21,8 @@ const ACTIVITY: Record<GameLibraryTab, string> = {
  * The Game Library. Unlike the Discovery pages this isn't wrapped in GamesFrame,
  * which hides its content until a RAWG key checks out: this page belongs to the
  * user, so it opens whatever state RAWG is in, and it sends RAWG no requests.
+ * Saved art loads from RAWG's image host like any other picture, and falls
+ * back to a plain plate when it can't.
  */
 export function GameLibraryView({
   active,
@@ -43,11 +37,16 @@ export function GameLibraryView({
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("game-library", scrollRef, active);
 
+  useEffect(() => saveTab(tab), [tab]);
+  useEffect(() => onTabRequest(setTab), []);
+
+  // Picks up edits from other devices. Throttled, and never a timer.
   useEffect(() => {
-    try {
-      localStorage.setItem(TAB_KEY, tab);
-    } catch {}
-  }, [tab]);
+    if (!active) return;
+    requestGameLibrarySync();
+    window.addEventListener("focus", requestGameLibrarySync);
+    return () => window.removeEventListener("focus", requestGameLibrarySync);
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -104,7 +103,8 @@ export function GameLibraryView({
             </TabBtn>
           </div>
         </header>
-        {tab === "wishlist" && <WishlistEmpty />}
+        <UnsavedWarning />
+        {tab === "wishlist" && <WishlistTab active={active} />}
         {tab === "playing" && <PlayingEmpty />}
         {tab === "tiers" && <TierListEmpty />}
         <footer className="mt-auto pt-6">
@@ -112,5 +112,28 @@ export function GameLibraryView({
         </footer>
       </div>
     </main>
+  );
+}
+
+/** Shown while the disk refuses to save the library, so nothing is lost silently. */
+function UnsavedWarning() {
+  const t = useT();
+  const unsaved = useGameLibraryUnsaved();
+  if (!unsaved) return null;
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-3 rounded-2xl bg-amber-400/[0.08] px-4 py-3.5 text-[13px] leading-relaxed text-ink ring-1 ring-amber-400/25"
+    >
+      <TriangleAlert size={17} strokeWidth={2.2} className="mt-0.5 shrink-0 text-amber-300" />
+      <p>
+        <span className="font-semibold">
+          {t("Your latest Game Library changes aren't saved on this device.")}
+        </span>{" "}
+        {t(
+          "This device's storage is full. While you're signed in and online they still upload to your account, but anything that hasn't uploaded is lost when Nexa closes. Free up space, then make any change to save again.",
+        )}
+      </p>
+    </div>
   );
 }
