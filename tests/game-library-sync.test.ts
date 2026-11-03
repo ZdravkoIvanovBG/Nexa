@@ -21,7 +21,9 @@ import {
 import { createGameQueue } from "../src/lib/game-library/cloud/queue.ts";
 import { GAME_TABLE, patchToOps } from "../src/lib/game-library/cloud/rows.ts";
 import {
+  addCatalogGames,
   addMember,
+  catalogAdditions,
   collectionSummary,
   moveEntry,
   refreshSnapshot,
@@ -1233,4 +1235,93 @@ test("every library change goes through one path, which queues it synchronously"
     store,
     /const patch = gameStore\.apply\(activeId, change\);\s+if \(!isEmptyPatch\(patch\)\) queueLibraryChange\(activeId, patch\);/,
   );
+});
+
+// ── Wishlist actions from Stage 4 ───────────────────────────────────────────
+
+test("new catalog games added on one device and a reorder on another both land", async () => {
+  const cloud = fakeCloud();
+  const a = device(cloud);
+  const b = device(cloud);
+  a.change(saveCollection, AC, [ref(10), ref(11)], ["s10", "s11"]);
+  await settle(a, b);
+
+  a.change(addCatalogGames, "c:ac", [ref(12)], ["s12"]);
+  b.change(moveEntry, "c:ac|rawg:11", 0);
+  await settle(a, b);
+
+  assert.deepEqual(members(a, "c:ac"), ["rawg:11", "rawg:10", "rawg:12"]);
+  assert.deepEqual(members(b, "c:ac"), members(a, "c:ac"));
+  assert.deepEqual(catalogAdditions(b.data.queue["c:ac"], ["s10", "s11", "s12"]), []);
+});
+
+test("catalog games added while the collection moves elsewhere are never duplicated", async () => {
+  const cloud = fakeCloud();
+  const a = device(cloud);
+  const b = device(cloud);
+  a.change(saveGame, ref(1));
+  a.change(saveCollection, AC, [ref(10)], ["s10"]);
+  await settle(a, b);
+
+  // Both write the collection row: the later one wins it whole.
+  a.change(addCatalogGames, "c:ac", [ref(12)], ["s12"]);
+  b.change(moveEntry, "c:ac", 0);
+  await settle(a, b);
+  a.change(addCatalogGames, "c:ac", [ref(12)], ["s12"]);
+  await settle(a, b);
+
+  assert.deepEqual(members(a, "c:ac"), ["rawg:10", "rawg:12"]);
+  assert.deepEqual(members(b, "c:ac"), ["rawg:10", "rawg:12"]);
+  assert.deepEqual(order(a), order(b));
+});
+
+test("the same franchise saved on two offline devices is one collection", async () => {
+  const cloud = fakeCloud();
+  const a = device(cloud);
+  const b = device(cloud);
+  a.change(saveCollection, AC, [ref(10), ref(11)], []);
+  b.change(saveCollection, AC, [ref(10), ref(11)], []);
+  await settle(a, b);
+
+  assert.deepEqual(order(a), ["c:ac"]);
+  assert.deepEqual(order(b), ["c:ac"]);
+  assert.equal(members(a, "c:ac").length, 2);
+  assert.deepEqual(members(a, "c:ac"), members(b, "c:ac"));
+});
+
+test("a game removed from a collection stays out while another device reorders it", async () => {
+  const cloud = fakeCloud();
+  const a = device(cloud);
+  const b = device(cloud);
+  a.change(saveCollection, AC, [ref(10), ref(11), ref(12)], []);
+  await settle(a, b);
+
+  a.change(removeEntry, "c:ac|rawg:11");
+  b.change(moveEntry, "c:ac|rawg:11", 0);
+  b.change(moveEntry, "c:ac|rawg:12", 0);
+  await settle(a, b);
+
+  assert.deepEqual(members(a, "c:ac"), ["rawg:12", "rawg:10"]);
+  assert.deepEqual(members(b, "c:ac"), ["rawg:12", "rawg:10"]);
+});
+
+test("undoing a collection's removal brings back its games on every device", async () => {
+  const cloud = fakeCloud();
+  const a = device(cloud);
+  const b = device(cloud);
+  a.change(saveCollection, AC, [ref(10), ref(11), ref(12)], []);
+  a.change(moveEntry, "c:ac|rawg:12", 0);
+  await settle(a, b);
+
+  const removal = a.change(removeEntry, "c:ac");
+  await settle(a, b);
+  assert.deepEqual(order(b), []);
+
+  a.change(
+    restoreEntries,
+    removal.queue.map((e) => e.entryId),
+  );
+  await settle(a, b);
+  assert.deepEqual(order(b), ["c:ac"]);
+  assert.deepEqual(members(b, "c:ac"), ["rawg:12", "rawg:10", "rawg:11"]);
 });

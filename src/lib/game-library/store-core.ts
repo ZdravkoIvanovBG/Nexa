@@ -29,6 +29,8 @@ export type LibraryChange = (data: GameLibraryData, ctx: ChangeContext) => Libra
 export function createGameStore(deps: GameStoreDeps) {
   const loaded = new Map<string, LibraryBlob>();
   const subscribers = new Set<() => void>();
+  /** Profiles whose latest change exists only in memory, because the disk refused it. */
+  const unsaved = new Set<string>();
 
   function notify(): void {
     for (const subscriber of subscribers) subscriber();
@@ -36,6 +38,7 @@ export function createGameStore(deps: GameStoreDeps) {
 
   function evict(profileId: string): void {
     loaded.delete(profileId);
+    unsaved.delete(profileId);
     notify();
   }
 
@@ -61,7 +64,12 @@ export function createGameStore(deps: GameStoreDeps) {
     };
     loaded.set(profileId, blob);
     const ok = deps.write(libraryKey(profileId), serializeLibraryBlob(blob));
-    if (!ok) console.warn("[game-library] out of storage, holding changes in memory only");
+    if (ok) {
+      unsaved.delete(profileId);
+    } else {
+      unsaved.add(profileId);
+      console.warn("[game-library] out of storage, holding changes in memory only");
+    }
     notify();
   }
 
@@ -73,6 +81,14 @@ export function createGameStore(deps: GameStoreDeps) {
 
     isPlaceholderBlob(profileId: string): boolean {
       return load(profileId).autoCreated;
+    },
+
+    /**
+     * The disk refused the last write, so recent changes would be lost on close
+     * unless they reach the cloud first. Clears with the next successful write.
+     */
+    isUnsaved(profileId: string): boolean {
+      return unsaved.has(profileId);
     },
 
     isUnsynced(profileId: string): boolean {

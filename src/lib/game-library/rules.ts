@@ -374,6 +374,58 @@ export function markCatalogSeen(
   return patch;
 }
 
+/**
+ * Several changes as one write. Each step sees the rows the previous ones wrote,
+ * so positions stack up correctly, and a row touched twice is sent once.
+ */
+export function chainChanges(
+  data: GameLibraryData,
+  ctx: ChangeContext,
+  steps: readonly ((data: GameLibraryData, ctx: ChangeContext) => LibraryPatch)[],
+): LibraryPatch {
+  let working = data;
+  const records = new Map<string, GameRecord>();
+  const queue = new Map<string, QueueEntry>();
+  for (const step of steps) {
+    const patch = step(working, ctx);
+    working = applyPatch(working, patch);
+    for (const record of patch.records) records.set(record.gameId, record);
+    for (const entry of patch.queue) queue.set(entry.entryId, entry);
+  }
+  return { records: [...records.values()], queue: [...queue.values()] };
+}
+
+/**
+ * Adds catalog games the user chose to bring into a saved collection, at the end
+ * in the order given, and records every offered slug as seen so the same games
+ * aren't offered again. Members the user removed stay removed unless listed here.
+ */
+export function addCatalogGames(
+  data: GameLibraryData,
+  collectionId: string,
+  refs: readonly GameRef[],
+  offeredSlugs: readonly string[],
+  ctx: ChangeContext,
+): LibraryPatch {
+  if (!liveCollection(data, collectionId)) return emptyPatch();
+  return chainChanges(data, ctx, [
+    ...refs.map(
+      (ref) => (d: GameLibraryData, c: ChangeContext) => addMember(d, collectionId, ref, c),
+    ),
+    (d, c) => markCatalogSeen(d, collectionId, offeredSlugs, c),
+  ]);
+}
+
+/** Saved collections, in queue order, for "Add to collection". */
+export function liveCollections(data: GameLibraryData): QueueEntry[] {
+  return childrenOf(data, ROOT_PARENT).filter((entry) => entry.kind === "collection");
+}
+
+/** The collection saved for a franchise, if there is one. */
+export function savedCollection(data: GameLibraryData, franchiseId: string): QueueEntry | null {
+  return liveCollection(data, collectionEntryId(franchiseId));
+}
+
 // ── play state ──────────────────────────────────────────────────────────────
 
 function changeState(

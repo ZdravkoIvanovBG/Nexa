@@ -9,6 +9,17 @@ import { flushGames } from "../backup-state.ts";
 // Long enough to stay clear of startup, short enough to catch up quickly.
 const IDLE_TIMEOUT_MS = 4000;
 
+const SYNC_REQUEST = "harbor:game-library-sync";
+
+/**
+ * Asks for a pull, for when the Game Library opens or regains focus, so edits
+ * from another device show up. Throttled by syncGameLibrary, so asking often
+ * costs nothing, and ignored whenever sync wouldn't run anyway.
+ */
+export function requestGameLibrarySync(): void {
+  window.dispatchEvent(new Event(SYNC_REQUEST));
+}
+
 function whenIdle(run: () => void): () => void {
   const win = window as Window & {
     requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
@@ -26,7 +37,8 @@ function whenIdle(run: () => void): () => void {
  * Keeps the Game Library in step with the cloud. Renders nothing, and imports
  * the sync code only for people using Games, so it adds nothing to startup for
  * anyone else. There is no polling and no realtime channel: a device pulls when
- * it starts, changes profile, or reconnects.
+ * it starts, changes profile or reconnects, and when the Game Library is opened
+ * or focused.
  */
 export function GameLibrarySync() {
   const { userId, status, offline } = useCloudSession();
@@ -60,12 +72,14 @@ export function GameLibrarySync() {
         .catch(() => {});
     };
     const cancelIdle = whenIdle(() => sync(true));
-    const onOnline = () => sync(false);
-    window.addEventListener("online", onOnline);
+    const onRequest = () => sync(false);
+    window.addEventListener("online", onRequest);
+    window.addEventListener(SYNC_REQUEST, onRequest);
     return () => {
       current = false;
       cancelIdle();
-      window.removeEventListener("online", onOnline);
+      window.removeEventListener("online", onRequest);
+      window.removeEventListener(SYNC_REQUEST, onRequest);
     };
   }, [signedIn, userId, activeId, awaitingRoster, gamesOn, isKid]);
 
