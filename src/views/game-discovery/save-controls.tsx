@@ -1,6 +1,7 @@
 import {
   Check,
-  Clock,
+  CircleHelp,
+  ExternalLink,
   FolderPlus,
   Layers,
   ListOrdered,
@@ -11,10 +12,16 @@ import {
 import { useEffect, useMemo } from "react";
 import { emitListToast } from "@/components/lists/list-toast";
 import type { FranchiseDef } from "@/lib/game-discovery/franchises";
-import { providerOf } from "@/lib/game-discovery/game-id";
+import { providerOf, type GameProvider } from "@/lib/game-discovery/game-id";
 import { providerFeatures } from "@/lib/game-discovery/provider";
 import type { GameRef, GameSummary } from "@/lib/game-discovery/types";
 import { toGameRef } from "@/lib/game-discovery/types";
+import {
+  libraryRef,
+  libraryRefs,
+  possibleMatches,
+  savedEquivalent,
+} from "@/lib/game-library/identity";
 import {
   addCatalogGames,
   addMember,
@@ -27,8 +34,9 @@ import {
   saveGame,
   savedCollection,
 } from "@/lib/game-library/rules";
+import { snapshotSummary } from "@/lib/game-library/snapshot";
 import { changeGameLibrary, useGameLibrary } from "@/lib/game-library/store";
-import { memberEntryId, rootEntryId } from "@/lib/game-library/types";
+import { memberEntryId, rootEntryId, type GameRecord } from "@/lib/game-library/types";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -39,15 +47,20 @@ import { removeWithUndo } from "../game-library/wishlist-actions";
 // Saving from Discovery. Everything saved is what's already on screen, so these
 // controls cost no provider request of their own.
 //
-// Stage 4 boundary: only games from a provider whose library saves are enabled
-// (RAWG) can be written. An IGDB game is never saved, under its own id or any
-// other, until Stage 6 adds IGDB identities to the Game Library. Every write
-// below takes its ref from `savableRef`, the one place that check lives.
+// Every game is saved under its own provider's id (rawg:N or igdb:N), from the
+// ref `savableRef` builds, the one place a ref is made. Before it is written,
+// each ref goes through libraryRef / libraryRefs, inside the change itself, so
+// it is checked against the library as it is at that moment: when the curated
+// catalog says the game is already saved under another provider's id, that
+// record is used instead, and no second record for the same game is created.
+// Nothing here rewrites, merges or deletes an existing record.
 
-/** The ref to save for a game, or null when its provider can't be saved yet. */
+/** The ref to save for a game, or null when its provider can't save to the library. */
 export function savableRef(game: GameSummary): GameRef | null {
   return providerFeatures(providerOf(game.id)).librarySaves ? toGameRef(game) : null;
 }
+
+const PROVIDER_NAME: Record<GameProvider, string> = { rawg: "RAWG", igdb: "IGDB" };
 
 const ICON = { size: 14, strokeWidth: 2 } as const;
 
@@ -56,6 +69,7 @@ const BUTTON =
 const PRIMARY = `${BUTTON} bg-ink text-canvas hover:opacity-90`;
 const SAVED = `${BUTTON} border border-accent/40 bg-accent/12 text-ink hover:bg-accent/20`;
 const SECONDARY = `${BUTTON} border border-edge bg-canvas/50 text-ink hover:bg-canvas/70`;
+const NOTE = "flex items-center gap-1.5 text-[12.5px] text-ink-muted";
 
 /** Kid profiles can't open the library, so they get nothing to save into it. */
 function useCanSave(): boolean {
@@ -72,7 +86,11 @@ function useOpenWishlist(): () => void {
   };
 }
 
-/** Keeps a saved game's name and art current while its page is open anyway. */
+/**
+ * Keeps a saved game's name and art current while its page is open anyway.
+ * Only the record saved under this exact id: a record from another provider
+ * keeps its own snapshot, whatever the catalog says it is.
+ */
 export function useRefreshSavedGame(game: GameSummary | null): void {
   const { data, ready } = useGameLibrary();
   const saved = game ? !!data.records[game.id] : false;
@@ -84,18 +102,8 @@ export function useRefreshSavedGame(game: GameSummary | null): void {
   }, [ready, saved, game]);
 }
 
-/** In place of the save controls for a game that can't be saved yet (IGDB, Stage 4). */
-function NotSavableYet() {
-  const t = useT();
-  return (
-    <span
-      title={t("Saving IGDB games to your Game Library comes in a later update.")}
-      className={`${BUTTON} cursor-default border border-edge bg-canvas/50 text-ink-muted`}
-    >
-      <Clock size={16} strokeWidth={2.2} />
-      {t("Wishlist coming soon for IGDB games")}
-    </span>
-  );
+function yearOf(record: Pick<GameRecord, "released">): string {
+  return record.released ? record.released.slice(0, 4) : "";
 }
 
 export function SaveGameButton({
@@ -108,20 +116,37 @@ export function SaveGameButton({
 }) {
   const t = useT();
   const { data } = useGameLibrary();
+  const { openGame } = useView();
   const canSave = useCanSave();
   const menu = useActionMenu();
   const openWishlist = useOpenWishlist();
-  const gameId = game.id;
+  const own = useMemo(() => savableRef(game), [game]);
+  // The same game already saved from another provider, by the curated catalog.
+  const equivalent = own ? savedEquivalent(data, { gameId: game.id, slug: own.slug }) : null;
+  const gameId = equivalent?.gameId ?? game.id;
+  const name = equivalent?.name ?? game.name;
   const stage = gameStage(data, gameId);
   const placed = useMemo(() => placementsOf(data, gameId), [data, gameId]);
-  if (!canSave) return null;
-  const ref = savableRef(game);
-  if (!ref) return <NotSavableYet />;
+  if (!canSave || !own) return null;
 
   const view = { label: t("View in Wishlist"), run: openWishlist };
+  const savedFrom = equivalent && (
+    <span
+      className={NOTE}
+      title={t("The same game, saved earlier from {provider}.", {
+        provider: PROVIDER_NAME[equivalent.provider],
+      })}
+    >
+      {t("Saved from {provider}", { provider: PROVIDER_NAME[equivalent.provider] })}
+    </span>
+  );
+  const save = () => {
+    changeGameLibrary((d, ctx) => saveGame(d, libraryRef(d, own), ctx));
+    emitListToast(t("Added {name} to your Wishlist", { name }), view);
+  };
   const addToCollection = (collectionId: string, title: string) => {
-    changeGameLibrary((d, ctx) => addMember(d, collectionId, ref, ctx));
-    emitListToast(t("Added {name} to {collection}", { name: game.name, collection: title }), view);
+    changeGameLibrary((d, ctx) => addMember(d, collectionId, libraryRef(d, own), ctx));
+    emitListToast(t("Added {name} to {collection}", { name, collection: title }), view);
   };
   const collectionItems: MenuItem[] = liveCollections(data)
     .filter((c) => !placed.collections.some((p) => p.entryId === c.entryId))
@@ -137,14 +162,43 @@ export function SaveGameButton({
     }));
 
   if (stage === "none") {
-    const save = () => {
-      changeGameLibrary((d, ctx) => saveGame(d, ref, ctx));
-      emitListToast(t("Added {name} to your Wishlist", { name: game.name }), view);
-    };
     const ownCollection = franchise ? savedCollection(data, franchise.id) : null;
+    // Same title and year from another provider, outside the catalog: maybe the
+    // same game, maybe not, so the user decides. Nothing is linked either way.
+    const maybe = possibleMatches(data, {
+      gameId: game.id,
+      slug: own.slug,
+      name: game.name,
+      released: game.released,
+    });
+    const match = maybe[0] ?? null;
+    const onAdd = (button: HTMLElement) => {
+      if (!match) return save();
+      menu.openFromButton(button, [
+        {
+          id: "save-anyway",
+          label: t("Add this version anyway"),
+          icon: <Plus {...ICON} />,
+          run: save,
+        },
+        {
+          id: "open-match",
+          label: t("Open the saved {provider} game", {
+            provider: PROVIDER_NAME[match.provider],
+          }),
+          icon: <ExternalLink {...ICON} />,
+          run: () => openGame(snapshotSummary(match)),
+        },
+      ]);
+    };
     return (
       <>
-        <button type="button" onClick={save} className={PRIMARY}>
+        <button
+          type="button"
+          aria-haspopup={match ? "menu" : undefined}
+          onClick={(e) => onAdd(e.currentTarget)}
+          className={PRIMARY}
+        >
           <Plus size={17} strokeWidth={2.4} />
           {t("Add to Wishlist")}
         </button>
@@ -158,6 +212,17 @@ export function SaveGameButton({
             {t("Add to {name}", { name: ownCollection.title })}
           </button>
         )}
+        {match && (
+          <span className={NOTE}>
+            <CircleHelp size={14} strokeWidth={2.2} />
+            {t("You may already have {name} ({year}) from {provider}.", {
+              name: match.name,
+              year: yearOf(match),
+              provider: PROVIDER_NAME[match.provider],
+            })}
+          </span>
+        )}
+        {menu.element}
       </>
     );
   }
@@ -165,10 +230,13 @@ export function SaveGameButton({
   if (stage !== "wishlist" && stage !== "collection") {
     // Started from Currently Playing, which arrives in a later stage.
     return (
-      <span className={`${BUTTON} border border-edge bg-canvas/50 text-ink-muted`}>
-        <Check size={16} strokeWidth={2.4} />
-        {t("In your Game Library")}
-      </span>
+      <>
+        <span className={`${BUTTON} border border-edge bg-canvas/50 text-ink-muted`}>
+          <Check size={16} strokeWidth={2.4} />
+          {t("In your Game Library")}
+        </span>
+        {savedFrom}
+      </>
     );
   }
 
@@ -190,10 +258,7 @@ export function SaveGameButton({
       id: "standalone",
       label: t("Also add on its own"),
       icon: <Plus {...ICON} />,
-      run: () => {
-        changeGameLibrary((d, ctx) => saveGame(d, ref, ctx));
-        emitListToast(t("Added {name} to your Wishlist", { name: game.name }), view);
-      },
+      run: save,
     });
   }
   if (collectionItems.length > 0) {
@@ -208,11 +273,7 @@ export function SaveGameButton({
         icon: <Trash2 {...ICON} />,
         danger: true,
         run: () =>
-          removeWithUndo(
-            rootEntryId(gameId),
-            t("Removed {name} from your Wishlist", { name: game.name }),
-            t,
-          ),
+          removeWithUndo(rootEntryId(gameId), t("Removed {name} from your Wishlist", { name }), t),
       },
     );
   } else if (inCollection) {
@@ -227,7 +288,7 @@ export function SaveGameButton({
           removeWithUndo(
             memberEntryId(inCollection.entryId, gameId),
             t("Removed {name} from {collection}", {
-              name: game.name,
+              name,
               collection: inCollection.title,
             }),
             t,
@@ -247,6 +308,7 @@ export function SaveGameButton({
         <Check size={17} strokeWidth={2.4} className="text-accent" />
         {label}
       </button>
+      {savedFrom}
       {menu.element}
     </>
   );
@@ -261,7 +323,7 @@ export function SaveCollectionButton({
   def: FranchiseDef;
   /** The franchise's main series as resolved, in release order. */
   games: GameSummary[] | null;
-  /** The catalog slug for a game, which survives RAWG slug redirects. */
+  /** The catalog slug for a game, which survives provider slug differences. */
   slugOf: (game: GameSummary) => string;
   image: string | null;
 }) {
@@ -276,6 +338,9 @@ export function SaveCollectionButton({
   if (refs.some((r) => r === null)) return null;
   const memberRefs = refs as GameRef[];
 
+  // One collection per franchise, whichever provider saved it: a collection
+  // saved from RAWG is this franchise's collection on an IGDB page too. Its
+  // members are never replaced; new catalog games are offered, by catalog slug.
   const saved = savedCollection(data, def.id);
   const view = { label: t("View in Wishlist"), run: openWishlist };
 
@@ -285,7 +350,7 @@ export function SaveCollectionButton({
         saveCollection(
           d,
           { franchiseId: def.id, title: def.name, image: image ?? games[0].image },
-          memberRefs,
+          libraryRefs(d, memberRefs),
           def.mainline,
           ctx,
         ),
@@ -321,7 +386,7 @@ export function SaveCollectionButton({
       icon: <Sparkles {...ICON} />,
       run: () => {
         changeGameLibrary((d, ctx) =>
-          addCatalogGames(d, saved.entryId, newRefs, newGames.map(slugOf), ctx),
+          addCatalogGames(d, saved.entryId, libraryRefs(d, newRefs), newGames.map(slugOf), ctx),
         );
         emitListToast(
           newGames.length === 1

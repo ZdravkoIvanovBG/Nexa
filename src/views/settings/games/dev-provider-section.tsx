@@ -35,7 +35,7 @@ export function DevProviderSection() {
       <p className="text-[12.5px] leading-relaxed text-ink-muted">
         {provider === "igdb"
           ? t(
-              "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in, franchise collections stay hidden and IGDB games can't be added to the Wishlist yet. Your saved RAWG games are unchanged.",
+              "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in. Games you save from IGDB are added to your Wishlist under their IGDB ids, and your saved RAWG games are unchanged.",
             )
           : t("Games uses RAWG, exactly as in production builds.")}
       </p>

@@ -416,14 +416,14 @@ test("franchise art is provider-scoped and RAWG's device cache is RAWG-only", ()
   assert.match(queries, /enabled: enabled && gate\.ready && batched && def !== null,/);
 });
 
-test("no IGDB Wishlist writes: collection saving stays behind savableRef", () => {
+test("collection saving stays behind savableRef; the catalog itself writes nothing", () => {
   const save = src("views/game-discovery/save-controls.tsx");
   assert.match(
     save,
     /const refs = games\.map\(savableRef\);\s*if \(refs\.some\(\(r\) => r === null\)\) return null;/,
   );
   const igdb = src("lib/game-discovery/provider.ts");
-  assert.match(igdb, /igdb: \{ franchises: true, librarySaves: false, cards: "cover" \}/);
+  assert.match(igdb, /igdb: \{ franchises: true, librarySaves: true, cards: "cover" \}/);
   for (const path of [
     "lib/game-discovery/franchises-igdb.ts",
     "lib/game-discovery/franchise-of.ts",

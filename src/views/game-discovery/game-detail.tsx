@@ -19,6 +19,7 @@ import {
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
 import type { GameDetail, GameId, GameProvider, GameSummary } from "@/lib/game-discovery/types";
 import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
+import { catalogKey } from "@/lib/game-library/identity";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { openUrl } from "@/lib/window";
@@ -53,12 +54,19 @@ export function GameDetailView({
   active: boolean;
 }) {
   return (
-    <GamesFrame scrollKey={`game-${gameId}`} active={active}>
+    <GamesFrame
+      scrollKey={`game-${gameId}`}
+      active={active}
+      // A saved game opened while its provider isn't set up on this device
+      // (IGDB credentials stay on the device that entered them) still shows
+      // its snapshot, and its library actions, above the setup notice.
+      closed={seed ? <OtherProviderGame gameId={gameId} seed={seed} reason="not-set-up" /> : null}
+    >
       {(gate) =>
         providerOf(gameId) === gate.provider ? (
           <GameDetailBody gameId={gameId} seed={seed} gate={gate} active={active} />
         ) : (
-          <OtherProviderGame gameId={gameId} seed={seed} />
+          <OtherProviderGame gameId={gameId} seed={seed} active={gate.provider} />
         )
       }
     </GamesFrame>
@@ -71,17 +79,36 @@ const PROVIDER_NAME: Record<GameProvider, string> = { rawg: "RAWG", igdb: "IGDB"
  * A game from another provider (a saved RAWG record opened while IGDB is
  * active, or the reverse). Its id means nothing to the active provider, so no
  * request is made: the saved snapshot is shown as is and the library entry
- * keeps working. Matching it to the active provider is Stage 6.
+ * keeps working. When the curated catalog says a saved RAWG game is a known
+ * IGDB game, its IGDB page is one click away; the record itself is unchanged.
  */
-function OtherProviderGame({ gameId, seed }: { gameId: GameId; seed?: GameSummary }) {
+function OtherProviderGame({
+  gameId,
+  seed,
+  active,
+  reason = "other-provider",
+}: {
+  gameId: GameId;
+  seed?: GameSummary;
+  /** The active provider, when its gate is open. */
+  active?: GameProvider;
+  /** "not-set-up": the game's own provider is active but not set up here. */
+  reason?: "other-provider" | "not-set-up";
+}) {
   const t = useT();
-  const { goBack, canGoBack } = useView();
+  const { goBack, canGoBack, openGame } = useView();
   const source = providerOf(gameId);
   const link = seed ? providerPageUrl(source, seed.slug) : null;
-  const note = t(
-    "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider; matching saved games across providers comes in a later update.",
-    { provider: PROVIDER_NAME[source] },
-  );
+  const key =
+    seed && source === "rawg" && active === "igdb" ? catalogKey({ gameId, slug: seed.slug }) : null;
+  const linked: GameId | null = key === null ? null : `igdb:${key}`;
+  const note =
+    reason === "not-set-up"
+      ? null
+      : t(
+          "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider.",
+          { provider: PROVIDER_NAME[source] },
+        );
   if (!seed) {
     return (
       <div className="px-5 pt-28 sm:px-8 lg:px-12">
@@ -106,7 +133,12 @@ function OtherProviderGame({ gameId, seed }: { gameId: GameId; seed?: GameSummar
     <>
       <section className="relative">
         <div className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden bg-canvas">
-          {seed.image && <HeroBackdrop url={seed.image} />}
+          {seed.image &&
+            (seed.imageKind === "portrait" ? (
+              <PortraitFill src={seed.image} lazy={false} />
+            ) : (
+              <HeroBackdrop url={seed.image} />
+            ))}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-canvas/85 via-canvas/35 to-transparent rtl:bg-gradient-to-l" />
           <div className="absolute inset-x-0 bottom-0 px-5 pb-14 sm:px-8 lg:px-12">
@@ -117,10 +149,21 @@ function OtherProviderGame({ gameId, seed }: { gameId: GameId; seed?: GameSummar
                   ? (formatReleaseDate(seed.released) ?? releaseYear(seed))
                   : t("Release date unknown")}
               </Pill>
-              <Pill>{t("Saved from {provider}", { provider: PROVIDER_NAME[source] })}</Pill>
+              {reason === "other-provider" && (
+                <Pill>{t("Saved from {provider}", { provider: PROVIDER_NAME[source] })}</Pill>
+              )}
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <SaveGameButton game={seed} franchise={null} />
+              {linked && (
+                <button
+                  onClick={() => openGame(linked)}
+                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
+                >
+                  <Layers size={16} strokeWidth={2} />
+                  {t("Open IGDB details")}
+                </button>
+              )}
               {link && (
                 <button
                   onClick={() => openUrl(link)}
@@ -134,9 +177,11 @@ function OtherProviderGame({ gameId, seed }: { gameId: GameId; seed?: GameSummar
           </div>
         </div>
       </section>
-      <div className="px-5 pb-12 pt-14 sm:px-8 lg:px-12">
-        <GamesNotice>{note}</GamesNotice>
-      </div>
+      {note && (
+        <div className="px-5 pb-12 pt-14 sm:px-8 lg:px-12">
+          <GamesNotice>{note}</GamesNotice>
+        </div>
+      )}
     </>
   );
 }

@@ -318,7 +318,7 @@ test("both providers get curated franchises; RAWG keeps its slug path and device
   });
   assert.deepEqual(providerFeatures("igdb"), {
     franchises: true,
-    librarySaves: false,
+    librarySaves: true,
     cards: "cover",
   });
   const discovery = src("views/game-discovery.tsx");
@@ -339,25 +339,28 @@ test("both providers get curated franchises; RAWG keeps its slug path and device
 });
 
 // ---------------------------------------------------------------------------
-// Stage 6 boundary: the Game Library
+// Stage 6: the Game Library
 
-test("Discovery can't save an IGDB game: every write takes its ref from savableRef", () => {
+test("every Discovery write takes its ref from savableRef, resolved at write time", () => {
   const save = code(src("views/game-discovery/save-controls.tsx"));
   assert.match(
     save,
     /export function savableRef\(game: GameSummary\): GameRef \| null \{\s*return providerFeatures\(providerOf\(game\.id\)\)\.librarySaves \? toGameRef\(game\) : null;\s*\}/,
   );
   assert.equal((save.match(/toGameRef\(/g) ?? []).length, 1, "toGameRef only inside savableRef");
-  // Every library change passes a ref that came from savableRef.
+  // Every library change passes a ref that came from savableRef, and every
+  // save checks it against the library as it is when the change runs.
   const writes = save
     .split("changeGameLibrary((d, ctx) =>")
     .slice(1)
     .map((rest) => rest.slice(0, rest.indexOf(");")));
-  assert.equal(writes.length, 6, `found ${writes.length} writes`);
+  assert.equal(writes.length, 5, `found ${writes.length} writes`);
   for (const w of writes) {
     assert.doesNotMatch(w, /toGameRef|game\)|games\.map/, w);
+    assert.match(w, /libraryRefs?\(d, (own|memberRefs|newRefs)\)|refreshSnapshot\(d, ref, ctx/, w);
   }
-  assert.match(save, /const ref = savableRef\(game\);\s*if \(!ref\) return <NotSavableYet \/>;/);
+  assert.match(save, /const own = useMemo\(\(\) => savableRef\(game\), \[game\]\);/);
+  assert.match(save, /if \(!canSave \|\| !own\) return null;/);
   assert.match(
     save,
     /const refs = games\.map\(savableRef\);\s*if \(refs\.some\(\(r\) => r === null\)\) return null;/,
@@ -384,7 +387,7 @@ test("a saved RAWG game opened under IGDB shows its snapshot and makes no reques
   const detail = src("views/game-discovery/game-detail.tsx");
   assert.match(
     detail,
-    /providerOf\(gameId\) === gate\.provider \? \(\s*<GameDetailBody[\s\S]*?\) : \(\s*<OtherProviderGame gameId=\{gameId\} seed=\{seed\} \/>/,
+    /providerOf\(gameId\) === gate\.provider \? \(\s*<GameDetailBody[\s\S]*?\) : \(\s*<OtherProviderGame gameId=\{gameId\} seed=\{seed\} active=\{gate\.provider\} \/>/,
   );
   const other = detail.slice(
     detail.indexOf("function OtherProviderGame"),

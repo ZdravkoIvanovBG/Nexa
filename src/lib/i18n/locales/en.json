@@ -4680,7 +4680,6 @@
   "Type at least two characters to search IGDB's game catalog.": "Type at least two characters to search IGDB's game catalog.",
   "{n} games on IGDB": "{n} games on IGDB",
   "Franchise collections aren't available with IGDB yet. They're coming in a later update.": "Franchise collections aren't available with IGDB yet. They're coming in a later update.",
-  "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider; matching saved games across providers comes in a later update.": "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider; matching saved games across providers comes in a later update.",
   "Saved from {provider}": "Saved from {provider}",
   "View on {provider}": "View on {provider}",
   "This game isn't available on IGDB.": "This game isn't available on IGDB.",
@@ -4706,11 +4705,9 @@
   "IGDB is limiting requests for a moment. Try again in a few seconds.": "IGDB is limiting requests for a moment. Try again in a few seconds.",
   "IGDB is unavailable": "IGDB is unavailable",
   "IGDB didn't respond as expected. Try again in a moment.": "IGDB didn't respond as expected. Try again in a moment.",
-  "Saving IGDB games to your Game Library comes in a later update.": "Saving IGDB games to your Game Library comes in a later update.",
-  "Wishlist coming soon for IGDB games": "Wishlist coming soon for IGDB games",
   "Games data provider (development)": "Games data provider (development)",
   "Development builds only. Chooses where Games Discovery gets its data on this device. Production builds always use RAWG.": "Development builds only. Chooses where Games Discovery gets its data on this device. Production builds always use RAWG.",
-  "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in, franchise collections stay hidden and IGDB games can't be added to the Wishlist yet. Your saved RAWG games are unchanged.": "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in, franchise collections stay hidden and IGDB games can't be added to the Wishlist yet. Your saved RAWG games are unchanged.",
+  "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in. Games you save from IGDB are added to your Wishlist under their IGDB ids, and your saved RAWG games are unchanged.": "Games uses IGDB with the credentials saved below. RAWG lists aren't mixed in. Games you save from IGDB are added to your Wishlist under their IGDB ids, and your saved RAWG games are unchanged.",
   "Games uses RAWG, exactly as in production builds.": "Games uses RAWG, exactly as in production builds.",
   "Connect your own Twitch developer application for IGDB game data. Games on this device is using IGDB (development builds only).": "Connect your own Twitch developer application for IGDB game data. Games on this device is using IGDB (development builds only).",
   "Verify your IGDB credentials first": "Verify your IGDB credentials first",
@@ -4731,5 +4728,11 @@
   "Pack": "Pack",
   "Edition": "Edition",
   "Franchise collections aren't available with this game data provider.": "Franchise collections aren't available with this game data provider.",
-  "IGDB returned no games for this franchise.": "IGDB returned no games for this franchise."
+  "IGDB returned no games for this franchise.": "IGDB returned no games for this franchise.",
+  "The same game, saved earlier from {provider}.": "The same game, saved earlier from {provider}.",
+  "Add this version anyway": "Add this version anyway",
+  "Open the saved {provider} game": "Open the saved {provider} game",
+  "You may already have {name} ({year}) from {provider}.": "You may already have {name} ({year}) from {provider}.",
+  "Open IGDB details": "Open IGDB details",
+  "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider.": "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider."
 }

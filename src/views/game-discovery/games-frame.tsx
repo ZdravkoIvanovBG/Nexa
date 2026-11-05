@@ -17,10 +17,16 @@ import { GamesAttribution } from "./rawg-attribution";
 export function GamesFrame({
   scrollKey,
   active,
+  closed,
   children,
 }: {
   scrollKey: string;
   active: boolean;
+  /**
+   * Shown above the configuration state while the gate is closed: saved data
+   * only (a game's library snapshot), never anything that sends a request.
+   */
+  closed?: ReactNode;
   children: (gate: GamesGate) => ReactNode;
 }) {
   const gate = useGamesGate();
@@ -53,9 +59,12 @@ export function GamesFrame({
           // remounts the page, so no view state from the old one carries over.
           <Fragment key={`${gate.provider}:${gate.scope}`}>{children(gate)}</Fragment>
         ) : (
-          <div className="px-5 pb-10 pt-28 sm:px-8 lg:px-12">
-            <GamesConfigState state={gate.config === "ready" ? "unverified" : gate.config} />
-          </div>
+          <>
+            {closed}
+            <div className={`px-5 pb-10 sm:px-8 lg:px-12 ${closed ? "pt-10" : "pt-28"}`}>
+              <GamesConfigState state={gate.config === "ready" ? "unverified" : gate.config} />
+            </div>
+          </>
         )}
         <footer className="px-5 pb-24 pt-6 sm:px-8 lg:px-12">
           <GamesAttribution provider={gate.provider} />

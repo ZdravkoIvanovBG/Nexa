@@ -50,7 +50,7 @@ export type FranchiseData = {
 export type ProviderFeatures = {
   /** Curated franchise pages (RAWG by catalog slug, IGDB by the reviewed id mapping). */
   franchises: boolean;
-  /** Saving to the Game Library from Discovery (IGDB saves arrive in Stage 6). */
+  /** Saving to the Game Library from Discovery, under the provider's own ids. */
   librarySaves: boolean;
   /**
    * How game cards are drawn: RAWG has only landscape art; IGDB has box art
@@ -61,7 +61,7 @@ export type ProviderFeatures = {
 
 const FEATURES: Record<GameProvider, ProviderFeatures> = {
   rawg: { franchises: true, librarySaves: true, cards: "landscape" },
-  igdb: { franchises: true, librarySaves: false, cards: "cover" },
+  igdb: { franchises: true, librarySaves: true, cards: "cover" },
 };
 
 export function providerFeatures(provider: GameProvider): ProviderFeatures {
