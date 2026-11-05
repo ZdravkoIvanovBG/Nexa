@@ -1,0 +1,151 @@
+{
+  "_note": "Hand-written, trimmed records shaped like IGDB v4 /games responses. Not captured API data; ids, image ids and values are illustrative. Used only by tests/igdb-*.test.ts.",
+  "list": [
+    {
+      "id": 1942,
+      "name": "The Witcher 3: Wild Hunt",
+      "slug": "the-witcher-3-wild-hunt",
+      "first_release_date": 1431993600,
+      "game_type": 0,
+      "aggregated_rating": 92.6111,
+      "aggregated_rating_count": 31,
+      "rating": 93.4,
+      "rating_count": 4120,
+      "hypes": 40,
+      "cover": { "id": 89386, "image_id": "coaarl" },
+      "artworks": [
+        { "id": 4, "image_id": "ar5ap" },
+        { "id": 5, "image_id": "ar5aq" }
+      ],
+      "screenshots": [
+        { "id": 7, "image_id": "em1y2ugcwy2myuhvb9db" },
+        { "id": 8, "image_id": "em1y2ugcwy2myuhvb9dc" }
+      ],
+      "genres": [
+        { "id": 12, "name": "Role-playing (RPG)", "slug": "role-playing-rpg" },
+        { "id": 31, "name": "Adventure", "slug": "adventure" }
+      ],
+      "themes": [
+        { "id": 1, "name": "Action", "slug": "action" },
+        { "id": 17, "name": "Fantasy", "slug": "fantasy" }
+      ],
+      "platforms": [
+        { "id": 6, "name": "PC (Microsoft Windows)", "platform_family": null },
+        { "id": 48, "name": "PlayStation 4", "platform_family": 1 },
+        { "id": 49, "name": "Xbox One", "platform_family": 2 },
+        { "id": 130, "name": "Nintendo Switch", "platform_family": 5 },
+        { "id": 167, "name": "PlayStation 5", "platform_family": 1 }
+      ],
+      "age_ratings": [
+        { "id": 1, "organization": 2, "rating_category": { "id": 11, "rating": "18" } },
+        { "id": 2, "organization": 1, "rating_category": { "id": 5, "rating": "M" } }
+      ]
+    },
+    {
+      "id": 7346,
+      "name": "The Legend of Zelda: Breath of the Wild",
+      "slug": "the-legend-of-zelda-breath-of-the-wild",
+      "first_release_date": 1488499200,
+      "game_type": 0,
+      "aggregated_rating": 97.4,
+      "aggregated_rating_count": 28,
+      "rating": 0,
+      "cover": { "id": 1, "image_id": "co3p2d" },
+      "screenshots": [{ "id": 9, "image_id": "scbv2a" }],
+      "platforms": [{ "id": 130, "name": "Nintendo Switch", "platform_family": 5 }]
+    },
+    {
+      "id": 99001,
+      "name": "Cover Only Game",
+      "slug": "cover-only-game",
+      "game_type": 0,
+      "cover": { "id": 2, "image_id": "co0001" },
+      "platforms": [
+        { "id": 39, "name": "iOS" },
+        { "id": 34, "name": "Android" },
+        { "id": 999, "name": "Some Console" }
+      ]
+    },
+    {
+      "id": 99002,
+      "name": "Adult Title",
+      "slug": "adult-title",
+      "game_type": 0,
+      "themes": [{ "id": 42, "name": "Erotic", "slug": "erotic" }]
+    },
+    {
+      "id": 1942,
+      "name": "The Witcher 3: Wild Hunt (duplicate)",
+      "slug": "the-witcher-3-wild-hunt"
+    },
+    { "id": 0, "name": "Bad id", "slug": "bad-id" },
+    { "id": 99003, "slug": "no-name" },
+    { "id": 99004, "name": "No Slug" },
+    null,
+    "not an object"
+  ],
+  "detail": {
+    "id": 1942,
+    "name": "The Witcher 3: Wild Hunt",
+    "slug": "the-witcher-3-wild-hunt",
+    "url": "https://www.igdb.com/games/the-witcher-3-wild-hunt",
+    "summary": "  RPG and sequel to the 2011 game The Witcher 2.  ",
+    "storyline": "Geralt searches for Ciri.",
+    "first_release_date": 1431993600,
+    "game_type": 0,
+    "game_status": 0,
+    "aggregated_rating": 92.6,
+    "aggregated_rating_count": 31,
+    "rating": 93.4,
+    "rating_count": 4120,
+    "cover": { "id": 89386, "image_id": "coaarl" },
+    "involved_companies": [
+      {
+        "id": 1,
+        "company": { "id": 908, "name": "CD Projekt RED", "slug": "cd-projekt-red" },
+        "developer": true,
+        "publisher": false
+      },
+      {
+        "id": 2,
+        "company": { "id": 1633, "name": "CD Projekt", "slug": "cd-projekt" },
+        "developer": false,
+        "publisher": true
+      },
+      {
+        "id": 3,
+        "company": { "id": 1633, "name": "CD Projekt", "slug": "cd-projekt" },
+        "developer": false,
+        "publisher": true
+      },
+      { "id": 4, "company": 77, "developer": true }
+    ],
+    "platforms": [
+      { "id": 6, "name": "PC (Microsoft Windows)" },
+      { "id": 48, "name": "PlayStation 4", "platform_family": 1 }
+    ],
+    "alternative_names": [
+      { "id": 1, "name": "Wiedźmin 3: Dziki Gon" },
+      { "id": 2, "name": "The Witcher 3: Wild Hunt" }
+    ],
+    "videos": [
+      { "id": 1, "name": "Trailer", "video_id": "c0i88t0Kacs" },
+      { "id": 2, "name": "Bad", "video_id": "<script>" }
+    ],
+    "collections": [{ "id": 102, "name": "The Witcher", "slug": "the-witcher" }],
+    "franchises": [{ "id": 452, "name": "The Witcher", "slug": "the-witcher" }],
+    "parent_game": null,
+    "remakes": [],
+    "remasters": [],
+    "dlcs": [12503, 12505],
+    "expansions": [{ "id": 12503 }, { "id": 12505 }],
+    "standalone_expansions": [],
+    "similar_games": [472, 1877, 472]
+  },
+  "detailBadUrl": {
+    "id": 5,
+    "name": "Elsewhere",
+    "slug": "elsewhere",
+    "url": "javascript:alert(1)"
+  }
+}
