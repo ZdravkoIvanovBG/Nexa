@@ -70,6 +70,12 @@ export type IgdbTransportResponse = {
   status: number;
   /** Raw Retry-After header value, when present. */
   retryAfter?: string | null;
+  /**
+   * Final outcome from a transport that authenticates, rate-limits and retries
+   * itself (the Rust transport). The client reports it as-is: retrying here
+   * too would multiply the attempts.
+   */
+  errorKind?: IgdbErrorKind;
   json(): Promise<unknown>;
 };
 
@@ -212,6 +218,7 @@ export function createIgdbClient(options: IgdbClientOptions) {
         }
         throw new IgdbError("network");
       }
+      if (res.errorKind) throw new IgdbError(res.errorKind, res.status || null);
       const status = res.status;
       if (status >= 200 && status < 300) return readJson(res);
       if (status === 401) {

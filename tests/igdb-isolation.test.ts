@@ -1,6 +1,7 @@
 // @ts-nocheck -- Node's test modules are not included in the application tsconfig.
-// Source-shape checks for the Stage 1 IGDB proof of concept: it must stay out
-// of the app, keep credential handling in server/, and never use RAWG ids.
+// Source-shape checks for the IGDB provider: the app reaches it only through
+// the native bridge (Stage 3), credential handling stays in server/ (dev) and
+// Rust (app), and it never uses RAWG ids.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -29,13 +30,21 @@ const importsOf = (source) =>
     ),
   ].map((m) => m[1] ?? m[2]);
 
-test("nothing in the app imports the IGDB proof of concept", () => {
+// Stage 3: the app may use the native bridge (credential commands) and nothing
+// else from the provider. Games Discovery stays on RAWG.
+const APP_IMPORTERS = new Set([
+  "src/lib/game-discovery/igdb-native.ts",
+  "src/views/settings/games/igdb-section.tsx",
+]);
+
+test("the app imports only the IGDB native bridge, from known places", () => {
   const offenders = [];
   for (const file of walk(SRC)) {
     if (file.startsWith(IGDB + sep)) continue;
     for (const spec of importsOf(readFileSync(file, "utf8"))) {
       if (/(^|\/)providers\/igdb(\/|$)/.test(spec) || /(^|\/)igdb\//.test(spec)) {
-        offenders.push(`${rel(file)} -> ${spec}`);
+        const bridge = /(^|\/)providers\/igdb\/native(\.ts)?$/.test(spec);
+        if (!bridge || !APP_IMPORTERS.has(rel(file))) offenders.push(`${rel(file)} -> ${spec}`);
       }
     }
   }
@@ -51,6 +60,8 @@ test("credential-handling modules live in server/ and only server/ imports them"
       if (spec.includes("server/")) offenders.push(`${rel(file)} -> ${spec}`);
     }
     for (const word of ["client_secret", "clientSecret", "Authorization", "Client-ID", "oauth2"]) {
+      // The native bridge forwards the secret to Rust once (checked below).
+      if (word === "clientSecret" && rel(file) === "src/lib/providers/igdb/native.ts") continue;
       if (source.includes(word)) offenders.push(`${rel(file)} mentions ${word}`);
     }
   }
@@ -84,4 +95,18 @@ test("the dev check script never prints credentials or tokens", () => {
     "no file output",
   );
   assert.ok(!/stack|\.cause/.test(source), "never prints raw errors");
+});
+
+test("the native bridge only forwards the secret to igdb_set_credentials", () => {
+  const source = readFileSync(join(IGDB, "native.ts"), "utf8");
+  const lines = source.split(/\r?\n/).filter((line) => /clientSecret/.test(line));
+  assert.deepEqual(
+    lines.map((line) => line.trim()),
+    [
+      "async setCredentials(clientId: string, clientSecret: string): Promise<IgdbNativeStatus> {",
+      'const secret = typeof clientSecret === "string" ? clientSecret.trim() : "";',
+      "await call(invoke, IGDB_COMMANDS.setCredentials, { clientId: id, clientSecret: secret }),",
+    ],
+  );
+  assert.ok(!/localStorage|sessionStorage|indexedDB|console\./.test(source));
 });
