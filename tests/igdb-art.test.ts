@@ -262,3 +262,19 @@ test("RAWG is untouched: its single image still serves hero and cards", () => {
   const artSrc = readFileSync(new URL("../src/lib/providers/igdb/art.ts", import.meta.url), "utf8");
   assert.doesNotMatch(artSrc.replace(/\/\/.*$/gm, ""), /https?:\/\//);
 });
+
+test("the art contact sheet never prints credentials and writes only its HTML file", () => {
+  const source = readFileSync(new URL("../scripts/igdb-art-sheet.mjs", import.meta.url), "utf8");
+  const logLines = source.split("\n").filter((line) => /console\.(log|error|warn|info)/.test(line));
+  assert.ok(logLines.length >= 3);
+  for (const line of logLines) {
+    assert.doesNotMatch(
+      line,
+      /process\.env|clientSecret|getToken|access_token|Authorization|Bearer/i,
+      line,
+    );
+  }
+  assert.equal((source.match(/writeFileSync\(/g) ?? []).length, 1);
+  assert.match(source, /writeFileSync\(out, html\);/);
+  assert.doesNotMatch(source, /stack|\.cause/, "never prints raw errors");
+});
