@@ -1,13 +1,16 @@
 import { ArrowLeft, ExternalLink, Layers, Star } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { gamesErrorKind } from "@/lib/game-discovery/errors";
 import { providerPageUrl, safeExternalUrl } from "@/lib/game-discovery/external-url";
-import { franchiseForSlug } from "@/lib/game-discovery/franchises";
+import { franchiseOfGame } from "@/lib/game-discovery/franchise-of";
+import type { FranchiseDef } from "@/lib/game-discovery/franchises";
 import { providerOf } from "@/lib/game-discovery/game-id";
 import { gameImage } from "@/lib/game-discovery/game-image";
 import { providerFeatures } from "@/lib/game-discovery/provider";
 import {
+  resolveFranchiseData,
   useDeveloperGames,
+  useFranchiseGames,
   useGameDetail,
   useGameRelated,
   useGameScreenshots,
@@ -201,7 +204,8 @@ function GameDetailBody({
   const portrait = game.imageKind === "portrait";
   const backdrop = heroImageOf(game) ?? (portrait ? null : game.image) ?? detail?.imageAlt ?? null;
   // Curated franchises are keyed by RAWG slugs until Stage 5 maps them to IGDB.
-  const franchise = providerFeatures(gate.provider).franchises ? franchiseForSlug(game.slug) : null;
+  // Exact identity only: RAWG by curated slug, IGDB by the reviewed id mapping.
+  const franchise = providerFeatures(gate.provider).franchises ? franchiseOfGame(game) : null;
   const page = providerPageUrl(gate.provider, game.slug, detail?.providerUrl);
 
   return (
@@ -286,6 +290,9 @@ function GameDetailBody({
             gate={gate}
             active={active}
           />
+        )}
+        {gate.provider === "igdb" && franchise && (
+          <FranchiseSeriesRow def={franchise} gameId={game.id} gate={gate} active={active} />
         )}
         {detail && detail.counts.additions > 0 && (
           <RelatedRow
@@ -583,6 +590,71 @@ function RelatedRowBody({
       games={games}
       scrollKey={`game-${gameId}-${kind}`}
       shape={cardShapeOf(gate)}
+    />
+  );
+}
+
+/**
+ * IGDB's "More in this series": the curated franchise's other games, in the
+ * catalog's groups (main series, then remakes and remasters, spin-offs,
+ * editions), each in release order. It shares the franchise page's cached
+ * query, so it costs at most one request per franchise.
+ */
+function FranchiseSeriesRow({
+  def,
+  gameId,
+  gate,
+  active,
+}: {
+  def: FranchiseDef;
+  gameId: GameId;
+  gate: GamesGate;
+  active: boolean;
+}) {
+  const t = useT();
+  const title = t("More in this series");
+  return (
+    <WhenNear
+      minHeight={260}
+      fallback={<GameRowSkeleton title={title} shape={cardShapeOf(gate)} />}
+    >
+      <FranchiseSeriesBody title={title} def={def} gameId={gameId} gate={gate} active={active} />
+    </WhenNear>
+  );
+}
+
+function FranchiseSeriesBody({
+  title,
+  def,
+  gameId,
+  gate,
+  active,
+}: {
+  title: string;
+  def: FranchiseDef;
+  gameId: GameId;
+  gate: GamesGate;
+  active: boolean;
+}) {
+  const { openGameFranchise } = useView();
+  const query = useFranchiseGames(gate, def, active);
+  const games = useMemo(() => {
+    if (!query.data) return null;
+    const { groups } = resolveFranchiseData(query.data, "release");
+    return [...groups.main, ...groups.remakes, ...groups.spinoffs, ...groups.editions].filter(
+      (g) => g.id !== gameId,
+    );
+  }, [query.data, gameId]);
+  if (query.isError) return null;
+  if (!games) return <GameRowSkeleton title={title} shape={cardShapeOf(gate)} />;
+  if (games.length === 0) return null;
+  return (
+    <GameRail
+      title={title}
+      games={games}
+      scrollKey={`series-${def.id}-${gameId}`}
+      shape={cardShapeOf(gate)}
+      onViewAll={() => openGameFranchise(def.id)}
     />
   );
 }

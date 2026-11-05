@@ -21,7 +21,8 @@ import type { ArtRef } from "./art.ts";
 
 export type ArtOverride = { hero?: ArtRef; card?: ArtRef; note: string };
 
-// Reviewed in the contact sheet on 2026-11-05. Games whose automatic picks
+// Reviewed in the contact sheet on 2026-11-05 (Resident Evil Village and Far
+// Cry 5 added in Stage 5 for the franchise banners). Games whose automatic picks
 // looked right (The Witcher 3, Elden Ring, Control Resonant, Roblox) have no
 // entry: they follow the rules.
 export const ART_OVERRIDES: Readonly<Record<`igdb:${number}`, ArtOverride>> = {
@@ -57,6 +58,20 @@ export const ART_OVERRIDES: Readonly<Record<`igdb:${number}`, ArtOverride>> = {
     // cover cropped to 16:9. The cast artwork is the one landscape image.
     card: { kind: "artwork", imageId: "ar4vc" },
     note: "Undertale: the cast artwork on cards",
+  },
+  "igdb:55163": {
+    // The automatic screenshot is a near-black close-up; it also fronts the
+    // Resident Evil franchise banner (Stage 5).
+    hero: { kind: "screenshot", imageId: "sc8zrh" },
+    card: { kind: "screenshot", imageId: "sc8zrh" },
+    note: "Resident Evil Village: Lady Dimitrescu in the castle hall",
+  },
+  "igdb:28552": {
+    // The automatic screenshot is a bull in a farmyard; it also fronts the
+    // Far Cry franchise banner (Stage 5).
+    hero: { kind: "artwork", imageId: "ar7yi" },
+    card: { kind: "artwork", imageId: "ar7yi" },
+    note: 'Far Cry 5: the cult\'s "last supper" key art',
   },
   "igdb:1877": {
     // The automatic screenshot is a dark bar; these logo-free artworks are

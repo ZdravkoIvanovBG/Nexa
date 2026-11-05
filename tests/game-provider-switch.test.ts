@@ -209,7 +209,7 @@ test("query keys lead with the provider and its scope; frames remount on a switc
 test("every Games query waits for the active provider's gate", () => {
   const queries = src("lib/game-discovery/queries.ts");
   const enabled = [...queries.matchAll(/enabled: (enabled [^,\n]+)/g)].map((m) => m[1]);
-  assert.equal(enabled.length, 8);
+  assert.equal(enabled.length, 9);
   for (const e of enabled) assert.match(e, /gate\.ready/, e);
 });
 
@@ -310,14 +310,14 @@ test("outbound links: rawg.io for RAWG, www.igdb.com (https) for IGDB, http(s) w
 // ---------------------------------------------------------------------------
 // Stage 5 boundary: franchises
 
-test("IGDB never gets curated franchises (Stage 5), RAWG keeps them", () => {
+test("both providers get curated franchises; RAWG keeps its slug path and device cache", () => {
   assert.deepEqual(providerFeatures("rawg"), {
     franchises: true,
     librarySaves: true,
     cards: "landscape",
   });
   assert.deepEqual(providerFeatures("igdb"), {
-    franchises: false,
+    franchises: true,
     librarySaves: false,
     cards: "cover",
   });
@@ -327,14 +327,15 @@ test("IGDB never gets curated franchises (Stage 5), RAWG keeps them", () => {
   const detail = src("views/game-discovery/game-detail.tsx");
   assert.match(
     detail,
-    /const franchise = providerFeatures\(gate\.provider\)\.franchises\s*\? franchiseForSlug\(game\.slug\)\s*: null;/,
+    /const franchise = providerFeatures\(gate\.provider\)\.franchises \? franchiseOfGame\(game\) : null;/,
   );
-  const view = src("views/game-discovery/franchise-view.tsx");
-  assert.match(view, /providerFeatures\(gate\.provider\)\.franchises \?/);
   const queries = src("lib/game-discovery/queries.ts");
-  assert.match(queries, /providerFeatures\(provider\.id\)\.franchises/);
-  // RAWG franchise art in the device cache is never shown for another provider.
-  assert.match(queries, /const id = supported \? \(def\?\.id \?\? ""\) : "";/);
+  // RAWG franchise art in the device cache is never read for another provider.
+  assert.match(
+    queries,
+    /const perCard = !batched && providerFeatures\(provider\.id\)\.franchises && provider\.id === "rawg";/,
+  );
+  assert.match(queries, /const id = perCard \? \(def\?\.id \?\? ""\) : "";/);
 });
 
 // ---------------------------------------------------------------------------

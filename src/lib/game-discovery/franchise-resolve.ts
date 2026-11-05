@@ -45,11 +45,15 @@ export function sortGames(
     return [...ranked, ...sortGames(rest, "release")];
   }
   if (sort === "metacritic") {
+    // Metacritic for RAWG; a provider's own critic score (IGDB) otherwise.
+    const score = (g: GameSummary) => g.metacritic ?? g.criticScore ?? null;
     return out.sort((a, b) => {
-      if (a.metacritic === null && b.metacritic === null) return byRelease(a, b);
-      if (a.metacritic === null) return 1;
-      if (b.metacritic === null) return -1;
-      return b.metacritic - a.metacritic || byRelease(a, b);
+      const sa = score(a);
+      const sb = score(b);
+      if (sa === null && sb === null) return byRelease(a, b);
+      if (sa === null) return 1;
+      if (sb === null) return -1;
+      return sb - sa || byRelease(a, b);
     });
   }
   return out.sort(byRelease);
@@ -74,12 +78,17 @@ export function missingCuratedSlugs(def: FranchiseDef, knownSlugs: Iterable<stri
  * @param aliases Game id -> the curated slug that was requested for it, for
  *   games reached through a provider slug redirect (their canonical slug differs
  *   from the catalog's). Matching by id keeps them classified correctly.
+ * @param options.curatedOnly Every game came from a reviewed id mapping and
+ *   its alias is its curated identity (IGDB). The catalog's `exclude` list
+ *   holds RAWG slugs, so it's never compared with another provider's slugs:
+ *   IGDB's slug for Tomb Raider (GBC) equals a RAWG duplicate the list hides.
  */
 export function resolveFranchise(
   def: FranchiseDef,
   games: (GameSummary | null | undefined)[],
   sort: FranchiseSort = "release",
   aliases: ReadonlyMap<GameId, string> = new Map(),
+  options: { curatedOnly?: boolean } = {},
 ): ResolvedFranchise {
   const byId = new Map<GameId, GameSummary>();
   for (const game of games) {
@@ -97,7 +106,8 @@ export function resolveFranchise(
   };
   for (const game of byId.values()) {
     const slug = slugOf(game);
-    if (exclude.has(slug) || exclude.has(game.slug)) continue;
+    if (exclude.has(slug)) continue;
+    if (!options.curatedOnly && exclude.has(game.slug)) continue;
     if (mainline.has(slug)) {
       groups.main.push(game);
       continue;

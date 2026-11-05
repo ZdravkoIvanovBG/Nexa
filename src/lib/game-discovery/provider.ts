@@ -39,11 +39,16 @@ export type FranchiseData = {
   aliases: Map<GameId, string>;
   /** False when the provider can't list series members for this key or plan. */
   seriesAvailable: boolean;
+  /**
+   * Every game comes from the reviewed catalog mapping and `aliases` holds its
+   * curated slug (IGDB): classification never looks at provider slugs.
+   */
+  curatedOnly?: boolean;
 };
 
 /** What a provider can back in the UI. */
 export type ProviderFeatures = {
-  /** Curated franchise pages (the catalog is keyed by RAWG slugs until Stage 5). */
+  /** Curated franchise pages (RAWG by catalog slug, IGDB by the reviewed id mapping). */
   franchises: boolean;
   /** Saving to the Game Library from Discovery (IGDB saves arrive in Stage 6). */
   librarySaves: boolean;
@@ -56,7 +61,7 @@ export type ProviderFeatures = {
 
 const FEATURES: Record<GameProvider, ProviderFeatures> = {
   rawg: { franchises: true, librarySaves: true, cards: "landscape" },
-  igdb: { franchises: false, librarySaves: false, cards: "cover" },
+  igdb: { franchises: true, librarySaves: false, cards: "cover" },
 };
 
 export function providerFeatures(provider: GameProvider): ProviderFeatures {
@@ -95,4 +100,9 @@ export interface GameMetadataProvider {
   ): Promise<GameSummary[]>;
   /** Raw material for a curated franchise page; classification stays in franchise-resolve. */
   franchise(def: FranchiseDef, lookup: DetailLookup, signal?: AbortSignal): Promise<FranchiseData>;
+  /**
+   * Landscape art for every curated franchise in one request (franchise id ->
+   * image URL). Optional: RAWG looks art up per card, with its device cache.
+   */
+  franchiseArt?(signal?: AbortSignal): Promise<Record<string, string | null>>;
 }

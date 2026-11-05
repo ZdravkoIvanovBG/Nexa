@@ -19,6 +19,7 @@ import {
   where,
 } from "../src/lib/providers/igdb/query.ts";
 import { createIgdbProvider } from "../src/lib/providers/igdb/provider.ts";
+import { FRANCHISES } from "../src/lib/game-discovery/franchises.ts";
 
 const FIXTURE = new URL("./fixtures/igdb-query-bodies.json", import.meta.url);
 const NOW = 1_793_836_800; // 2026-11-05T00:00:00Z
@@ -155,6 +156,14 @@ async function providerCases() {
   );
   await step("developer", () => fresh.list({ developers: "908", ordering: "-added" }, 1, 20));
   await step("detail", () => fresh.detail("igdb:1942"));
+  // Stage 5: a franchise page (Call of Duty has the most ids) and all banners.
+  await step("franchise call-of-duty", () =>
+    fresh.franchise(
+      FRANCHISES.find((f) => f.id === "call-of-duty"),
+      async () => null,
+    ),
+  );
+  await step("franchise art", () => fresh.franchiseArt());
   for (const kind of ["additions", "parent-games", "versions", "similar"]) {
     await step(`related ${kind}`, () => fresh.related("igdb:1942", kind));
   }

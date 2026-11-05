@@ -7,9 +7,12 @@
 //   "not found" with no request, so no RAWG identifier ever reaches IGDB.
 // - Every public list excludes the Erotic theme in the query and again when
 //   normalizing; a detail page refuses an Erotic-themed game outright.
-// - Curated franchises are Stage 5: `franchise` answers empty with no request.
+// - Curated franchises (Stage 5) come from the reviewed id mapping
+//   (game-discovery/franchises-igdb.ts): one request per franchise page, one
+//   for all franchise banners, never a title search.
 
-import type { FranchiseDef } from "../../game-discovery/franchises.ts";
+import { FRANCHISES, type FranchiseDef } from "../../game-discovery/franchises.ts";
+import { igdbFranchiseArtwork, igdbFranchiseIds } from "../../game-discovery/franchises-igdb.ts";
 import { parseGameId, type GameId } from "../../game-discovery/game-id.ts";
 import type {
   DetailLookup,
@@ -289,10 +292,65 @@ export function createIgdbProvider(
 
     related,
 
-    async franchise(def: FranchiseDef): Promise<FranchiseData> {
-      // Stage 5 maps the curated catalog to reviewed IGDB ids. Until then no
-      // catalog slug (a RAWG slug) is sent to IGDB.
-      return { def, games: [], aliases: new Map(), seriesAvailable: false };
+    async franchise(def: FranchiseDef, _lookup, signal): Promise<FranchiseData> {
+      // Reviewed ids only: no catalog slug (a RAWG slug) is ever sent to IGDB.
+      const slugs = igdbFranchiseIds(def.id);
+      const empty = {
+        def,
+        games: [],
+        aliases: new Map(),
+        seriesAvailable: false,
+        curatedOnly: true,
+      };
+      if (slugs.size === 0) return empty;
+      const ids = [...slugs.keys()];
+      const data = await client.query(
+        "games",
+        {
+          fields: SUMMARY_FIELDS,
+          // The catalog curates editions, bundles and remasters on purpose, so
+          // only the content filter applies here.
+          where: [where.anyOf("id", ids), where.noneOf("themes", [THEME_EROTIC])],
+          limit: ids.length,
+        },
+        signal,
+      );
+      const games = normalizeIgdbGames(rawList(data)).map(toGameSummary);
+      const aliases = new Map<GameId, string>();
+      for (const game of games) {
+        const slug = slugs.get(igdbNumber(game.id) ?? 0);
+        if (slug) aliases.set(game.id, slug);
+      }
+      return { ...empty, games, aliases };
+    },
+
+    async franchiseArt(signal) {
+      // The 11 banner games in one request; hero art (large, logo-free
+      // landscape) first, then the card's landscape art.
+      const byGame = new Map<number, string>();
+      for (const def of FRANCHISES) {
+        const id = igdbFranchiseArtwork(def.id);
+        if (id !== null) byGame.set(id, def.id);
+      }
+      const out: Record<string, string | null> = {};
+      for (const def of FRANCHISES) out[def.id] = null;
+      if (byGame.size === 0) return out;
+      const data = await client.query(
+        "games",
+        {
+          fields: SUMMARY_FIELDS,
+          where: [where.anyOf("id", [...byGame.keys()]), where.noneOf("themes", [THEME_EROTIC])],
+          limit: byGame.size,
+        },
+        signal,
+      );
+      for (const game of normalizeIgdbGames(rawList(data)).map(toGameSummary)) {
+        const franchiseId = byGame.get(igdbNumber(game.id) ?? 0);
+        if (!franchiseId) continue;
+        out[franchiseId] =
+          game.heroImage ?? (game.imageKind === "portrait" ? null : game.image) ?? null;
+      }
+      return out;
     },
   };
 }

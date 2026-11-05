@@ -143,14 +143,14 @@ test("the cover card falls back cover → landscape art (contained) → titled p
   assert.match(cover, /<div className=\{CARD_LIFT\}>/);
   assert.match(cover, /className=\{CARD_FRAME\}/);
   assert.match(card, /group-focus-visible:\[transform:translate3d\(0,-0\.5rem,0\)\]/);
-  assert.match(cover, /lazy\n/);
+  assert.match(cover, /lazy\r?\n/);
 });
 
 test("every IGDB card surface uses the provider's card shape", () => {
   const row = src("views/game-discovery/game-row.tsx");
   assert.match(row, /return providerFeatures\(gate\.provider\)\.cards;/);
   assert.match(row, /<GameCard key=\{game\.id\} game=\{game\} shape=\{shape\} \/>/);
-  assert.match(row, /shape=\{shape\}\n\s+min=\{CARD_MIN_WIDTH\[shape\]\}/);
+  assert.match(row, /shape=\{shape\}\s+min=\{CARD_MIN_WIDTH\[shape\]\}/);
   assert.match(row, /return <GameRowSkeleton title=\{t\(section\.title\)\} shape=\{shape\} \/>;/);
   // Discovery's lazy rows, the detail page's related and developer rows, Browse and search.
   const discovery = src("views/game-discovery.tsx");
@@ -159,7 +159,8 @@ test("every IGDB card surface uses the provider's card shape", () => {
     2,
   );
   const detail = src("views/game-discovery/game-detail.tsx");
-  assert.equal((detail.match(/shape=\{cardShapeOf\(gate\)\}/g) ?? []).length, 6);
+  // Related, developer and (IGDB) series rows, with their skeletons.
+  assert.equal((detail.match(/shape=\{cardShapeOf\(gate\)\}/g) ?? []).length, 9);
   const browse = src("views/game-discovery/browse-view.tsx");
   assert.match(browse, /minColumnWidth=\{CARD_MIN_WIDTH\[shape\]\}/);
   assert.match(browse, /renderItem=\{\(game\) => <GameCard game=\{game\} shape=\{shape\} \/>\}/);

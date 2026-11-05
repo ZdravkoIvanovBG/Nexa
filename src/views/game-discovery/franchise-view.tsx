@@ -13,13 +13,18 @@ import type { GameSummary } from "@/lib/game-discovery/types";
 import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
-import { GameCard, GameCardSkeleton } from "./game-card";
+import { GameCard, GameCardSkeleton, type GameCardShape } from "./game-card";
+import { cardShapeOf } from "./game-row";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
 import { PillToggle } from "./pill-toggle";
 import { SaveCollectionButton } from "./save-controls";
 
-const GRID = "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
+// Per card shape (Stage 4B): RAWG's landscape cards, IGDB's 3:4 covers.
+const GRID: Record<GameCardShape, string> = {
+  landscape: "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4",
+  cover: "grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8",
+};
 
 export function GameFranchiseView({
   franchiseId,
@@ -41,10 +46,7 @@ export function GameFranchiseView({
   );
 }
 
-/**
- * The curated catalog is keyed by RAWG slugs until Stage 5 maps it to reviewed
- * IGDB ids, so under IGDB a franchise page shows this instead of guessing.
- */
+/** For a provider without curated franchises (none today): a notice, never a guess. */
 function FranchisesComingSoon() {
   const t = useT();
   const { goBack, canGoBack } = useView();
@@ -52,9 +54,7 @@ function FranchisesComingSoon() {
     <div className="px-5 pt-28 sm:px-8 lg:px-12">
       <GamesNotice>
         <div className="flex flex-col items-center gap-4">
-          {t(
-            "Franchise collections aren't available with IGDB yet. They're coming in a later update.",
-          )}
+          {t("Franchise collections aren't available with this game data provider.")}
           {canGoBack && (
             <button
               onClick={goBack}
@@ -81,6 +81,8 @@ function FranchiseBody({
 }) {
   const t = useT();
   const def = franchiseById(franchiseId);
+  const igdb = gate.provider === "igdb";
+  const shape = cardShapeOf(gate);
   const [sort, setSort] = useState<FranchiseSort>("release");
   const query = useFranchiseGames(gate, def, active);
   const art = useFranchiseArt(gate, def, active);
@@ -116,7 +118,7 @@ function FranchiseBody({
   const sortOptions: { value: FranchiseSort; label: string }[] = [
     { value: "release", label: t("Release order") },
     ...(resolved?.hasStoryOrder ? [{ value: "story" as const, label: t("Story order") }] : []),
-    { value: "metacritic", label: t("Metacritic") },
+    { value: "metacritic", label: igdb ? t("Critic score") : t("Metacritic") },
   ];
 
   return (
@@ -188,9 +190,9 @@ function FranchiseBody({
             onRetry={() => void query.refetch()}
           />
         ) : !resolved ? (
-          <div className={GRID}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <GameCardSkeleton key={i} />
+          <div className={GRID[shape]}>
+            {Array.from({ length: shape === "cover" ? 8 : 6 }).map((_, i) => (
+              <GameCardSkeleton key={i} shape={shape} />
             ))}
           </div>
         ) : (
@@ -201,17 +203,33 @@ function FranchiseBody({
             {resolved.mainCount === 0 &&
             resolved.groups.remakes.length === 0 &&
             resolved.groups.spinoffs.length === 0 ? (
-              <GamesNotice>{t("RAWG returned no games for this franchise.")}</GamesNotice>
+              <GamesNotice>
+                {igdb
+                  ? t("IGDB returned no games for this franchise.")
+                  : t("RAWG returned no games for this franchise.")}
+              </GamesNotice>
             ) : null}
-            <Group id="main" title={t("Main series")} games={resolved.groups.main} />
-            <Group id="remakes" title={t("Remakes & remasters")} games={resolved.groups.remakes} />
-            <Group id="spinoffs" title={t("Spin-offs")} games={resolved.groups.spinoffs} />
+            <Group shape={shape} id="main" title={t("Main series")} games={resolved.groups.main} />
             <Group
+              shape={shape}
+              id="remakes"
+              title={t("Remakes & remasters")}
+              games={resolved.groups.remakes}
+            />
+            <Group
+              shape={shape}
+              id="spinoffs"
+              title={t("Spin-offs")}
+              games={resolved.groups.spinoffs}
+            />
+            <Group
+              shape={shape}
               id="editions"
               title={t("Editions & re-releases")}
               games={resolved.groups.editions}
             />
             <Group
+              shape={shape}
               id="other"
               title={t("More in RAWG's series data")}
               note={t(
@@ -228,6 +246,7 @@ function FranchiseBody({
 }
 
 function Group({
+  shape,
   id,
   title,
   note,
@@ -238,6 +257,7 @@ function Group({
   title: string;
   note?: string;
   games: GameSummary[];
+  shape: GameCardShape;
   collapsible?: boolean;
 }) {
   const [open, setOpen] = useState(!collapsible);
@@ -262,9 +282,9 @@ function Group({
         {note && open && <p className="text-[12.5px] text-ink-subtle">{note}</p>}
       </div>
       {open && (
-        <div className={GRID}>
+        <div className={GRID[shape]}>
           {games.map((game) => (
-            <GameCard key={game.id} game={game} />
+            <GameCard key={game.id} game={game} shape={shape} />
           ))}
         </div>
       )}

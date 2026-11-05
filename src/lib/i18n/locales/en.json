@@ -4729,5 +4729,7 @@
   "Expanded edition": "Expanded edition",
   "Fork": "Fork",
   "Pack": "Pack",
-  "Edition": "Edition"
+  "Edition": "Edition",
+  "Franchise collections aren't available with this game data provider.": "Franchise collections aren't available with this game data provider.",
+  "IGDB returned no games for this franchise.": "IGDB returned no games for this franchise."
 }

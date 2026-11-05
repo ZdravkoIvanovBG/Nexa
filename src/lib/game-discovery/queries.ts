@@ -53,6 +53,7 @@ export const gameKeys = {
     [...ROOT, p.id, p.scope, "developer", developerId] as const,
   franchise: (p: Scope, franchiseId: string) =>
     [...ROOT, p.id, p.scope, "franchise", franchiseId] as const,
+  franchiseArt: (p: Scope) => [...ROOT, p.id, p.scope, "franchise-art"] as const,
 };
 
 /**
@@ -205,7 +206,9 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
 }
 
 export function resolveFranchiseData(data: FranchiseData, sort: FranchiseSort): ResolvedFranchise {
-  return resolveFranchise(data.def, data.games, sort, data.aliases);
+  return resolveFranchise(data.def, data.games, sort, data.aliases, {
+    curatedOnly: data.curatedOnly === true,
+  });
 }
 
 /**
@@ -215,11 +218,22 @@ export function resolveFranchiseData(data: FranchiseData, sort: FranchiseSort): 
 export function useFranchiseArt(gate: Gate, def: FranchiseDef | null, enabled: boolean) {
   const qc = useQueryClient();
   const provider = useGameProvider(gate);
-  // Curated franchise art comes from RAWG's catalog (Stage 5 maps it to IGDB);
-  // another provider gets none, cached RAWG art included.
-  const supported = providerFeatures(provider.id).franchises;
-  const id = supported ? (def?.id ?? "") : "";
-  const artwork = supported ? (def?.artwork ?? "") : "";
+  // A provider that lists every franchise's art at once (IGDB) shares one
+  // cached request between all cards and the franchise page header.
+  const batched = typeof provider.franchiseArt === "function";
+  const batch = useQuery({
+    queryKey: gameKeys.franchiseArt(provider),
+    queryFn: ({ signal }) => provider.franchiseArt!(signal),
+    enabled: enabled && gate.ready && batched && def !== null,
+    ...DETAIL,
+    ...NO_RETRY,
+  });
+  // Otherwise (RAWG) the art is looked up per card by the catalog's RAWG slug,
+  // with RAWG's 7-day device cache. That cache holds RAWG art only and is never
+  // read for another provider.
+  const perCard = !batched && providerFeatures(provider.id).franchises && provider.id === "rawg";
+  const id = perCard ? (def?.id ?? "") : "";
+  const artwork = perCard ? (def?.artwork ?? "") : "";
   const cached = useMemo(() => (id ? readFranchiseArt(id) : null), [id]);
   const known = useMemo(
     () =>
@@ -241,6 +255,10 @@ export function useFranchiseArt(gate: Gate, def: FranchiseDef | null, enabled: b
       writeFranchiseArt(id, { rawgId, slug: game.slug, image: game.image });
     }
   }, [game, cached, id]);
+  if (batched) {
+    const image = def ? (batch.data?.[def.id] ?? null) : null;
+    return { image, loading: batch.isLoading };
+  }
   if (game) return { image: game.image, loading: false };
   if (cached) return { image: cached.image, loading: false };
   return { image: null, loading: query.isLoading };
