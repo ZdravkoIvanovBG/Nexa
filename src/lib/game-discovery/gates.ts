@@ -1,4 +1,5 @@
 import type { Settings } from "../settings/types.ts";
+import type { GameProvider } from "./game-id.ts";
 
 // Two independent gates:
 //  - the feature gate is the user's preference and decides visibility;
@@ -70,4 +71,19 @@ export function canToggleGames(
   isRejected: (fingerprint: string) => boolean,
 ): boolean {
   return gamesFeatureEnabled(settings) || rawgReady(settings, isRejected);
+}
+
+/** Per-provider request readiness: RAWG has a verified key, IGDB has verified device credentials. */
+export type GameProviderReadiness = Record<GameProvider, boolean>;
+
+/**
+ * Whether the active provider can serve Discovery requests. Only the active
+ * provider counts, so verified IGDB credentials unlock nothing while RAWG is
+ * active (Stage 3), and a RAWG key stops mattering once IGDB is (Stage 4+).
+ */
+export function activeProviderReady(
+  active: GameProvider,
+  readiness: GameProviderReadiness,
+): boolean {
+  return readiness[active] === true;
 }

@@ -493,7 +493,16 @@ const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
         id: "games",
         label: "Games",
         Icon: IconGamepad,
-        keywords: ["games", "rawg", "gaming", "api key", "discovery", "franchise"],
+        keywords: [
+          "games",
+          "rawg",
+          "igdb",
+          "twitch",
+          "gaming",
+          "api key",
+          "discovery",
+          "franchise",
+        ],
       },
     ],
   },
@@ -4788,6 +4797,12 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     section: "games",
     anchorTitle: "Games",
     keywords: ["games tab", "show games", "games sidebar", "gaming"],
+  },
+  {
+    label: "IGDB credentials",
+    section: "games",
+    anchorTitle: "IGDB",
+    keywords: ["igdb", "twitch", "client id", "client secret", "twitch developer", "game data"],
   },
 ];
 
