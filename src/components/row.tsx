@@ -41,7 +41,8 @@ function columnSpan(value?: string): number {
   return span ? Math.max(1, Number(span)) : 1;
 }
 
-export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile";
+/** "cover": 3:4 game box art. Like "portrait" without the movie-poster hover effects. */
+export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile" | "cover";
 
 const RowTrackContext = createContext<HTMLDivElement | null>(null);
 export const ScrollRootContext = createContext<HTMLElement | null>(null);
@@ -156,7 +157,8 @@ function Skeleton({ shape }: { shape: RowShape }) {
   if (shape === "tile") {
     return <div className="aspect-[5/4] w-full rounded-2xl bg-elevated/30" />;
   }
-  const aspect = shape === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]";
+  const aspect =
+    shape === "landscape" ? "aspect-[16/9]" : shape === "cover" ? "aspect-[3/4]" : "aspect-[2/3]";
   const hideText = shape === "portrait" && settings.hidePosterTitles;
   return (
     <div className="flex w-full min-w-0 flex-col gap-2.5">

@@ -12,7 +12,7 @@ import { shouldLocalizePosters } from "@/lib/providers/tmdb/tmdb-image-lang";
 import { observe } from "@/lib/visibility";
 import { PosterRetryPolicy, POSTER_RETRY_LIMIT } from "./poster-retry";
 
-type Ratio = "portrait" | "landscape" | "wide";
+type Ratio = "portrait" | "landscape" | "wide" | "cover";
 
 const posterRetryPolicy = new PosterRetryPolicy();
 
@@ -127,6 +127,7 @@ const ASPECT_PAD: Record<Ratio, string> = {
   portrait: "150%", // 3 / 2
   landscape: "56.25%", // 9 / 16
   wide: "43.75%", // 7 / 16
+  cover: "133.333%", // 4 / 3: game box art (IGDB covers are 3:4)
 };
 
 export function Poster({
