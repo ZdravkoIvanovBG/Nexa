@@ -15,6 +15,7 @@ mod fonts;
 mod fullscreen;
 mod hdr_overlay;
 mod http_fetch;
+mod igdb;
 mod local_lib;
 mod modal_overlay;
 // libmpv is desktop-only (see Cargo.toml). `mpv_stub` mirrors `mpv`'s command
@@ -518,7 +519,8 @@ pub fn run() {
         .manage(dvr_state)
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
-        .manage(download::DownloadState::new());
+        .manage(download::DownloadState::new())
+        .manage(igdb::production_state());
 
     #[cfg(target_os = "macos")]
     let app_builder = app_builder.register_uri_scheme_protocol("stremio", |ctx, request| {
@@ -791,6 +793,11 @@ pub fn run() {
             dvr::dvr_reveal,
             http_fetch::harbor_fetch,
             http_fetch::harbor_fetch_cancel,
+            igdb::commands::igdb_status,
+            igdb::commands::igdb_set_credentials,
+            igdb::commands::igdb_verify_credentials,
+            igdb::commands::igdb_clear_credentials,
+            igdb::commands::igdb_query,
             discord_rp::discord_set_presence,
             discord_rp::discord_clear,
             discord_rp::discord_set_enabled,

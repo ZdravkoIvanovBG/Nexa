@@ -57,6 +57,7 @@ librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls
 url = "2"
 realfft = "3"
 hickory-resolver = "0.25"
+zeroize = "1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
@@ -86,6 +87,8 @@ windows = { version = "0.61", features = [
   "Win32_Security",
 ] }
 window-vibrancy = "0.6"
+# IGDB credentials live in Windows Credential Manager (see src/igdb/store.rs).
+keyring = { version = "3.6", features = ["windows-native"] }
 wasapi = "0.15"
 webview2-com = "0.38"
 
@@ -115,3 +118,9 @@ objc2-app-kit = { version = "0.3", features = [
 objc2-web-kit = { version = "0.3", features = ["WKWebView"] }
 core-foundation = "0.10"
 core-video = "0.4"
+# IGDB credentials live in the macOS Keychain (see src/igdb/store.rs).
+keyring = { version = "3.6", features = ["apple-native"] }
+
+[dev-dependencies]
+# Paused clock for the IGDB token, retry and rate-limit tests.
+tokio = { version = "1", features = ["full", "test-util"] }
