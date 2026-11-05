@@ -100,7 +100,7 @@ export type IgdbGame = {
   art: IgdbArt | null;
   /** Hero and backdrop art: large landscape only, never a cover; or null. */
   heroArt: IgdbArt | null;
-  /** Portrait cover (cover_big), or null. */
+  /** Portrait cover for cards (cover_big, 264×352), chosen by art.ts; or null. */
   cover: string | null;
   /** IGDB aggregated critic score, 0–100, rounded; null when unrated. */
   criticScore: number | null;

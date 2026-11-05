@@ -35,7 +35,7 @@ import {
 } from "./format";
 import { MetacriticBadge, PortraitFill } from "./game-card";
 import { SaveGameButton, useRefreshSavedGame } from "./save-controls";
-import { GameRail, GameRowSkeleton } from "./game-row";
+import { cardShapeOf, GameRail, GameRowSkeleton } from "./game-row";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
 import { WhenNear } from "./when-near";
@@ -550,7 +550,10 @@ function RelatedRow({
   active: boolean;
 }) {
   return (
-    <WhenNear minHeight={260} fallback={<GameRowSkeleton title={title} />}>
+    <WhenNear
+      minHeight={260}
+      fallback={<GameRowSkeleton title={title} shape={cardShapeOf(gate)} />}
+    >
       <RelatedRowBody title={title} gameId={gameId} kind={kind} gate={gate} active={active} />
     </WhenNear>
   );
@@ -571,10 +574,17 @@ function RelatedRowBody({
 }) {
   const query = useGameRelated(gate, gameId, kind, active);
   if (query.isError) return null;
-  if (!query.data) return <GameRowSkeleton title={title} />;
+  if (!query.data) return <GameRowSkeleton title={title} shape={cardShapeOf(gate)} />;
   const games = query.data.filter((g) => g.id !== gameId);
   if (games.length === 0) return null;
-  return <GameRail title={title} games={games} scrollKey={`game-${gameId}-${kind}`} />;
+  return (
+    <GameRail
+      title={title}
+      games={games}
+      scrollKey={`game-${gameId}-${kind}`}
+      shape={cardShapeOf(gate)}
+    />
+  );
 }
 
 function DeveloperRow({
@@ -593,7 +603,10 @@ function DeveloperRow({
   const t = useT();
   const title = t("More from {name}", { name: developerName });
   return (
-    <WhenNear minHeight={260} fallback={<GameRowSkeleton title={title} />}>
+    <WhenNear
+      minHeight={260}
+      fallback={<GameRowSkeleton title={title} shape={cardShapeOf(gate)} />}
+    >
       <DeveloperRowBody
         title={title}
         developerId={developerId}
@@ -621,7 +634,7 @@ function DeveloperRowBody({
   const { openGameBrowse } = useView();
   const query = useDeveloperGames(gate, developerId, active);
   if (query.isError) return null;
-  if (!query.data) return <GameRowSkeleton title={title} />;
+  if (!query.data) return <GameRowSkeleton title={title} shape={cardShapeOf(gate)} />;
   const games = query.data.filter((g) => g.id !== exclude);
   if (games.length < 2) return null;
   return (
@@ -629,6 +642,7 @@ function DeveloperRowBody({
       title={title}
       games={games}
       scrollKey={`dev-${developerId}`}
+      shape={cardShapeOf(gate)}
       onViewAll={() =>
         openGameBrowse({
           title,

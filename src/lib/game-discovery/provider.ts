@@ -47,11 +47,16 @@ export type ProviderFeatures = {
   franchises: boolean;
   /** Saving to the Game Library from Discovery (IGDB saves arrive in Stage 6). */
   librarySaves: boolean;
+  /**
+   * How game cards are drawn: RAWG has only landscape art; IGDB has box art
+   * for every game, shown as 3:4 cover cards (Stage 4B).
+   */
+  cards: "landscape" | "cover";
 };
 
 const FEATURES: Record<GameProvider, ProviderFeatures> = {
-  rawg: { franchises: true, librarySaves: true },
-  igdb: { franchises: false, librarySaves: false },
+  rawg: { franchises: true, librarySaves: true, cards: "landscape" },
+  igdb: { franchises: false, librarySaves: false, cards: "cover" },
 };
 
 export function providerFeatures(provider: GameProvider): ProviderFeatures {

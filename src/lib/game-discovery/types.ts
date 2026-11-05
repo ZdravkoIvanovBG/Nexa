@@ -51,6 +51,12 @@ export type GameSummary = {
   /** User score on a 0–100 scale (IGDB). RAWG's 0–5 rating stays in `rating`. */
   userScore?: number | null;
   userCount?: number;
+  /**
+   * Portrait box art for cover cards (IGDB). Null: no usable cover, so the card
+   * shows landscape art or a titled placeholder. Undefined (RAWG): RAWG has no
+   * covers and keeps its landscape cards.
+   */
+  cover?: string | null;
   /** "portrait" when `image` is a cover, not landscape art: never crop it to 16:9. */
   imageKind?: "portrait";
   /**

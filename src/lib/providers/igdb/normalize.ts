@@ -2,7 +2,13 @@
 // requests, no app state. Anything malformed is dropped rather than guessed.
 
 import type { NamedRef, PlatformFamily } from "../../game-discovery/types.ts";
-import { artCandidates, selectArt, type ArtCandidate } from "./art.ts";
+import {
+  artCandidates,
+  coverCandidates,
+  selectArt,
+  selectCover,
+  type ArtCandidate,
+} from "./art.ts";
 import { artOverrideFor } from "./art-overrides.ts";
 import { igdbImage, validImageId } from "./image.ts";
 import { AGE_RATING_ORG_ESRB, THEME_EROTIC } from "./query.ts";
@@ -167,8 +173,9 @@ export function normalizeIgdbGame(raw: RawIgdbGame | null | undefined): IgdbGame
   const slug = text(raw.slug);
   if (igdbId === null || !name || !slug) return null;
   const released = isoDate(raw.first_release_date);
-  const cover = raw.cover?.image_id;
   const chosen = chooseArt(raw, igdbGameId(igdbId));
+  // Portrait cards: the best cover (art.ts), never a wrong-shape or animated one.
+  const cover = selectCover(coverCandidates(raw));
   const screenshots: string[] = [];
   for (const shot of raw.screenshots ?? []) {
     const shotId = shot?.image_id;
@@ -184,7 +191,7 @@ export function normalizeIgdbGame(raw: RawIgdbGame | null | undefined): IgdbGame
     tba: released === null,
     art: chosen.card,
     heroArt: chosen.hero,
-    cover: validImageId(cover) ? igdbImage(cover, "cover_big") : null,
+    cover: cover ? igdbImage(cover.imageId, "cover_big") : null,
     criticScore: score(raw.aggregated_rating),
     criticCount: count(raw.aggregated_rating_count),
     userScore: score(raw.rating),

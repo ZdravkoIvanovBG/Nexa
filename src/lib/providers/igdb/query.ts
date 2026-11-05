@@ -306,8 +306,8 @@ export function buildMultiquery(queries: readonly IgdbSubQuery[]): string {
 
 /**
  * Image metadata art selection needs (art.ts): type, size and transparency
- * ride along with every list and detail response, so choosing art costs no
- * extra request.
+ * of artworks and screenshots, and the cover's size, ride along with every
+ * list and detail response, so choosing art costs no extra request.
  */
 export const ART_FIELDS: readonly string[] = [
   "artworks.image_id",
@@ -319,6 +319,9 @@ export const ART_FIELDS: readonly string[] = [
   "screenshots.image_id",
   "screenshots.width",
   "screenshots.height",
+  "cover.width",
+  "cover.height",
+  "cover.animated",
 ];
 
 export const SUMMARY_FIELDS: readonly string[] = [

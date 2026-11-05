@@ -251,3 +251,88 @@ export function artCandidates(raw: {
   add("screenshot", raw.screenshots);
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Portrait covers for cards (Stage 4B)
+//
+// Verified live 2026-11-05 on the 500 most-rated games: every game has a
+// cover, every cover is 3:4 and at least 600 px wide, and the 40 covers IGDB
+// flags with an alpha channel are fully opaque box art (Hollow Knight, Limbo,
+// Celeste…), so the alpha flag is ignored for covers. IGDB's `cover_big` size
+// fits the cover into 264×352 without cropping.
+
+export type CoverCandidate = {
+  source: "cover" | "artwork";
+  imageId: string;
+  width: number | null;
+  height: number | null;
+  animated: boolean;
+  index: number;
+};
+
+export const COVER_RULE = {
+  /** `cover_big` is 264 px wide: anything smaller would be upscaled. */
+  minWidth: 264,
+  /** Box art is 3:4 (0.75); allow DVD-case and slightly tall variants. */
+  minRatio: 0.6,
+  maxRatio: 0.85,
+} as const;
+
+/** Alternative and historical covers can stand in for a missing or poor main cover. */
+const COVER_ARTWORK: ReadonlySet<number> = new Set([
+  ARTWORK_TYPE.alternativeCover,
+  ARTWORK_TYPE.historicalCover,
+]);
+
+/** The main cover, then cover-type artworks, in IGDB's order. */
+export function coverCandidates(raw: {
+  cover?: RawImage | null;
+  artworks?: readonly (RawImage | null | undefined)[];
+}): CoverCandidate[] {
+  const out: CoverCandidate[] = [];
+  const add = (
+    source: CoverCandidate["source"],
+    item: RawImage | null | undefined,
+    index: number,
+  ) => {
+    const imageId = item?.image_id;
+    if (!validImageId(imageId) || out.some((c) => c.imageId === imageId)) return;
+    out.push({
+      source,
+      imageId,
+      width: positive(item?.width),
+      height: positive(item?.height),
+      animated: item?.animated === true,
+      index,
+    });
+  };
+  add("cover", raw.cover, 0);
+  (raw.artworks ?? []).forEach((item, index) => {
+    const type = typeId(item?.artwork_type);
+    if (type !== null && COVER_ARTWORK.has(type)) add("artwork", item, index);
+  });
+  return out;
+}
+
+/** Usable at all: a still, portrait image (when its shape is known). */
+function coverShapeOk(c: CoverCandidate): boolean {
+  if (c.animated) return false;
+  if (!c.width || !c.height) return true;
+  const ratio = c.width / c.height;
+  return ratio >= COVER_RULE.minRatio && ratio <= COVER_RULE.maxRatio;
+}
+
+/** Big enough not to be upscaled; unknown size counts as not proven. */
+const coverSharp = (c: CoverCandidate) => (c.width ?? 0) >= COVER_RULE.minWidth;
+
+/**
+ * The cover for a portrait card, or null (the card then shows landscape art,
+ * or a titled placeholder). Order: a sharp main cover, a sharp alternative
+ * cover, then the soft ones in the same order. Wrong shapes and animated
+ * images are never used.
+ */
+export function selectCover(candidates: readonly CoverCandidate[]): CoverCandidate | null {
+  const usable = candidates.filter(coverShapeOk);
+  const rank = (c: CoverCandidate) => (coverSharp(c) ? 0 : 2) + (c.source === "cover" ? 0 : 1);
+  return [...usable].sort((a, b) => rank(a) - rank(b) || a.index - b.index)[0] ?? null;
+}

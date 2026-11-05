@@ -311,8 +311,16 @@ test("outbound links: rawg.io for RAWG, www.igdb.com (https) for IGDB, http(s) w
 // Stage 5 boundary: franchises
 
 test("IGDB never gets curated franchises (Stage 5), RAWG keeps them", () => {
-  assert.deepEqual(providerFeatures("rawg"), { franchises: true, librarySaves: true });
-  assert.deepEqual(providerFeatures("igdb"), { franchises: false, librarySaves: false });
+  assert.deepEqual(providerFeatures("rawg"), {
+    franchises: true,
+    librarySaves: true,
+    cards: "landscape",
+  });
+  assert.deepEqual(providerFeatures("igdb"), {
+    franchises: false,
+    librarySaves: false,
+    cards: "cover",
+  });
   const discovery = src("views/game-discovery.tsx");
   assert.match(discovery, /const franchises = providerFeatures\(gate\.provider\)\.franchises;/);
   assert.match(discovery, /\{franchises && \(\s*<WhenNear/);

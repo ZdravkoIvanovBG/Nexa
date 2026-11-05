@@ -27,3 +27,18 @@ export function gameImage(url: string | null | undefined, width: GameImageWidth 
   const sized = resizeIgdbImage(url, IGDB_SIZE[width]);
   return sized === url ? [url] : [sized, url];
 }
+
+/**
+ * Cover card sizes: IGDB's `cover_big` (264×352, fitted, ~25 KB) covers cards
+ * up to ~300 device px; the 2x size (528×704, ~75 KB) only on 2x displays.
+ * The stored URL comes last as the fallback. Other URLs are returned as is.
+ */
+export function coverImage(
+  url: string | null | undefined,
+  dpr: number = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1,
+): string[] {
+  if (!url) return [];
+  if (!url.startsWith(IGDB_PREFIX) || dpr < 1.75) return [url];
+  const sharp = resizeIgdbImage(url, "cover_big", true);
+  return sharp === url ? [url] : [sharp, url];
+}

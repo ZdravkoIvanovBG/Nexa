@@ -60,6 +60,7 @@ export function toGameSummary(game: IgdbGame): GameSummary {
     platformFamilies: game.platformFamilies,
     esrb: game.esrb ? `ESRB ${game.esrb}` : null,
     shortScreenshots: game.screenshots.slice(0, SHORT_SCREENSHOTS).map(full),
+    cover: game.cover,
     criticScore: game.criticScore,
     criticCount: game.criticCount,
     userScore: game.userScore,

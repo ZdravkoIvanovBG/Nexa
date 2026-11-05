@@ -93,3 +93,19 @@ export const VARIANT_LABEL: Record<NonNullable<GameSummary["variant"]>, string> 
   update: "Update",
   edition: "Edition",
 };
+
+/**
+ * A genre name short enough for a cover card. IGDB's names are long
+ * ("Role-playing (RPG)", "Hack and slash/Beat 'em up"): an all-caps
+ * abbreviation in brackets wins, otherwise the part before a slash.
+ */
+export function shortGenre(name: string): string {
+  const abbreviation = /\(([A-Z0-9]{2,5})\)\s*$/.exec(name)?.[1];
+  if (abbreviation) return abbreviation;
+  return (
+    name
+      .replace(/\s*\(.*\)\s*$/, "")
+      .split("/")[0]
+      .trim() || name
+  );
+}

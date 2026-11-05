@@ -16,6 +16,7 @@ import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { GameCard, GameCardSkeleton } from "./game-card";
+import { CARD_MIN_WIDTH, cardShapeOf } from "./game-row";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
 import { PillToggle } from "./pill-toggle";
@@ -78,6 +79,7 @@ function BrowseBody({
 }) {
   const t = useT();
   const igdb = gate.provider === "igdb";
+  const shape = cardShapeOf(gate);
   const [input, setInput] = useState(spec.filter.search ?? "");
   const [search, setSearch] = useState(spec.filter.search ?? "");
   const [ordering, setOrdering] = useState<OrderingChoice>(
@@ -238,9 +240,15 @@ function BrowseBody({
           onRetry={() => void query.refetch()}
         />
       ) : query.isPending ? (
-        <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <div
+          className={
+            shape === "cover"
+              ? "grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8"
+              : "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+          }
+        >
           {Array.from({ length: 8 }).map((_, i) => (
-            <GameCardSkeleton key={i} />
+            <GameCardSkeleton key={i} shape={shape} />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -259,12 +267,12 @@ function BrowseBody({
           <VirtualGrid
             items={items}
             scrollRef={scrollRef}
-            minColumnWidth={260}
+            minColumnWidth={CARD_MIN_WIDTH[shape]}
             gapX={20}
             gapY={32}
-            estimateRowHeight={210}
+            estimateRowHeight={shape === "cover" ? 300 : 210}
             getKey={(game) => game.id}
-            renderItem={(game) => <GameCard game={game} />}
+            renderItem={(game) => <GameCard game={game} shape={shape} />}
           />
           <div ref={sentinel} className="flex h-16 items-center justify-center">
             {isFetchingNextPage && <Loader2 size={18} className="animate-spin text-ink-subtle" />}
