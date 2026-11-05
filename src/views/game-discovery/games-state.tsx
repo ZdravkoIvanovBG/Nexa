@@ -1,8 +1,9 @@
-import { KeyRound, RefreshCw, ShieldAlert, WifiOff } from "lucide-react";
+import { KeyRound, MonitorSmartphone, RefreshCw, ShieldAlert, WifiOff } from "lucide-react";
 import type { ReactNode } from "react";
-import type { RawgConfigState } from "@/lib/game-discovery/gates";
+import type { GamesErrorKind } from "@/lib/game-discovery/errors";
+import type { GameProvider } from "@/lib/game-discovery/game-id";
+import type { GamesConfigState } from "@/lib/game-discovery/gates";
 import { useT } from "@/lib/i18n";
-import type { RawgErrorKind } from "@/lib/providers/rawg";
 import { useView } from "@/lib/view";
 
 function StateCard({
@@ -39,8 +40,8 @@ function ActionButton({ onClick, children }: { onClick: () => void; children: Re
   );
 }
 
-/** Shown instead of content when RAWG requests aren't allowed (no key, unverified, rejected). */
-export function GamesConfigState({ state }: { state: Exclude<RawgConfigState, "ready"> }) {
+/** Shown instead of content when the active provider can't serve requests yet. */
+export function GamesConfigState({ state }: { state: GamesConfigState }) {
   const t = useT();
   const { openSettings } = useView();
   const open = (
@@ -49,6 +50,67 @@ export function GamesConfigState({ state }: { state: Exclude<RawgConfigState, "r
       {t("Open Settings → Games")}
     </ActionButton>
   );
+  if (state === "igdb_checking") {
+    // A local credential-store read: nothing to explain yet.
+    return <div aria-busy className="h-[320px] animate-pulse rounded-2xl bg-elevated/30" />;
+  }
+  if (state === "igdb_missing") {
+    return (
+      <StateCard
+        icon={<KeyRound size={18} strokeWidth={1.9} />}
+        title={t("Connect IGDB")}
+        body={t(
+          "Games uses IGDB for game data. Add your Twitch developer Client ID and Client Secret in Settings to start browsing.",
+        )}
+        action={open}
+      />
+    );
+  }
+  if (state === "igdb_unverified") {
+    return (
+      <StateCard
+        icon={<KeyRound size={18} strokeWidth={1.9} />}
+        title={t("Verify your IGDB credentials")}
+        body={t(
+          "Your IGDB credentials haven't been verified on this device yet. Verify them in Settings to continue.",
+        )}
+        action={open}
+      />
+    );
+  }
+  if (state === "igdb_rejected") {
+    return (
+      <StateCard
+        icon={<ShieldAlert size={18} strokeWidth={1.9} />}
+        title={t("IGDB credentials rejected")}
+        body={t("Twitch rejected your IGDB credentials. Check or replace them in Settings.")}
+        action={open}
+      />
+    );
+  }
+  if (state === "igdb_unsupported") {
+    return (
+      <StateCard
+        icon={<MonitorSmartphone size={18} strokeWidth={1.9} />}
+        title={t("IGDB needs the desktop app")}
+        body={t(
+          "IGDB credentials are kept in your device's secure credential store, which is available in the Nexa desktop app on Windows and macOS.",
+        )}
+      />
+    );
+  }
+  if (state === "igdb_unavailable") {
+    return (
+      <StateCard
+        icon={<ShieldAlert size={18} strokeWidth={1.9} />}
+        title={t("Credential store unavailable")}
+        body={t(
+          "Nexa couldn't open this device's credential store to read your IGDB credentials. Check again in Settings.",
+        )}
+        action={open}
+      />
+    );
+  }
   if (state === "missing_key") {
     return (
       <StateCard
@@ -85,10 +147,12 @@ export function GamesConfigState({ state }: { state: Exclude<RawgConfigState, "r
 
 /** Page-level failure when nothing could be loaded. */
 export function GamesErrorState({
+  provider,
   kind,
   onRetry,
 }: {
-  kind: RawgErrorKind | null;
+  provider: GameProvider;
+  kind: GamesErrorKind | null;
   onRetry?: () => void;
 }) {
   const t = useT();
@@ -98,6 +162,46 @@ export function GamesErrorState({
       {t("Try again")}
     </ActionButton>
   ) : undefined;
+  if (provider === "igdb") {
+    if (kind === "network") {
+      return (
+        <StateCard
+          icon={<WifiOff size={18} strokeWidth={1.9} />}
+          title={t("Can't reach IGDB")}
+          body={t("Check your internet connection and try again.")}
+          action={retry}
+        />
+      );
+    }
+    if (kind === "rate_limited") {
+      return (
+        <StateCard
+          icon={<ShieldAlert size={18} strokeWidth={1.9} />}
+          title={t("IGDB request limit reached")}
+          body={t("IGDB is limiting requests for a moment. Try again in a few seconds.")}
+          action={retry}
+        />
+      );
+    }
+    if (kind === "credentials") {
+      return (
+        <StateCard
+          icon={<ShieldAlert size={18} strokeWidth={1.9} />}
+          title={t("IGDB credentials rejected")}
+          body={t("Twitch rejected your IGDB credentials. Check or replace them in Settings.")}
+          action={retry}
+        />
+      );
+    }
+    return (
+      <StateCard
+        icon={<ShieldAlert size={18} strokeWidth={1.9} />}
+        title={t("IGDB is unavailable")}
+        body={t("IGDB didn't respond as expected. Try again in a moment.")}
+        action={retry}
+      />
+    );
+  }
   if (kind === "network") {
     return (
       <StateCard

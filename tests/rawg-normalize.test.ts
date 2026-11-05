@@ -215,14 +215,20 @@ test("detail keeps a safe website and drops an unsafe one", () => {
 });
 
 // openUrl falls back to browser_open, which has no scheme check, so the game
-// page must never hand it anything that didn't pass webUrl.
-test("the game page only opens RAWG's own page or the validated website", () => {
+// page must never hand it anything that didn't pass a validator.
+test("the game page only opens the provider's own page or the validated website", () => {
   const view = readFileSync(
     new URL("../src/views/game-discovery/game-detail.tsx", import.meta.url),
     "utf8",
   );
   const opened = [...view.matchAll(/openUrl\(([^)]*)\)/g)].map((m) => m[1]).sort();
-  assert.deepEqual(opened, ["`https://rawg.io/games/${game.slug}`", "detail.website!"]);
+  assert.deepEqual(opened, ["link", "page", "website"]);
+  assert.match(view, /const link = seed \? providerPageUrl\(source, seed\.slug\) : null;/);
+  assert.match(
+    view,
+    /const page = providerPageUrl\(gate\.provider, game\.slug, detail\?\.providerUrl\);/,
+  );
+  assert.match(view, /const website = safeExternalUrl\(detail\.website\);/);
   const normalize = readFileSync(
     new URL("../src/lib/providers/rawg/normalize.ts", import.meta.url),
     "utf8",

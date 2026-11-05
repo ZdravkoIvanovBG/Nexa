@@ -1,6 +1,11 @@
 import { ArrowLeft, ExternalLink, Layers, Star } from "lucide-react";
 import { useState } from "react";
+import { gamesErrorKind } from "@/lib/game-discovery/errors";
+import { providerPageUrl, safeExternalUrl } from "@/lib/game-discovery/external-url";
 import { franchiseForSlug } from "@/lib/game-discovery/franchises";
+import { providerOf } from "@/lib/game-discovery/game-id";
+import { gameImage } from "@/lib/game-discovery/game-image";
+import { providerFeatures } from "@/lib/game-discovery/provider";
 import {
   useDeveloperGames,
   useGameDetail,
@@ -9,10 +14,8 @@ import {
   type RelatedKind,
 } from "@/lib/game-discovery/queries";
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
-import type { GameDetail, GameId, GameSummary } from "@/lib/game-discovery/types";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
-import { isRawgError } from "@/lib/providers/rawg";
-import { rawgImage } from "@/lib/providers/rawg/image";
+import type { GameDetail, GameId, GameProvider, GameSummary } from "@/lib/game-discovery/types";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { openUrl } from "@/lib/window";
@@ -22,8 +25,14 @@ import { MediaLightbox } from "../detail/media-lightbox";
 import { Pill } from "../detail/pill";
 import { Synopsis } from "../detail/synopsis";
 import { TitlePlate } from "../detail/title-plate";
-import { formatReleaseDate, releaseYear } from "./format";
-import { MetacriticBadge } from "./game-card";
+import {
+  criticScoreOf,
+  formatReleaseDate,
+  releaseYear,
+  userScoreOf,
+  VARIANT_LABEL,
+} from "./format";
+import { MetacriticBadge, PortraitFill } from "./game-card";
 import { SaveGameButton, useRefreshSavedGame } from "./save-controls";
 import { GameRail, GameRowSkeleton } from "./game-row";
 import { GamesFrame } from "./games-frame";
@@ -41,8 +50,90 @@ export function GameDetailView({
 }) {
   return (
     <GamesFrame scrollKey={`game-${gameId}`} active={active}>
-      {(gate) => <GameDetailBody gameId={gameId} seed={seed} gate={gate} active={active} />}
+      {(gate) =>
+        providerOf(gameId) === gate.provider ? (
+          <GameDetailBody gameId={gameId} seed={seed} gate={gate} active={active} />
+        ) : (
+          <OtherProviderGame gameId={gameId} seed={seed} />
+        )
+      }
     </GamesFrame>
+  );
+}
+
+const PROVIDER_NAME: Record<GameProvider, string> = { rawg: "RAWG", igdb: "IGDB" };
+
+/**
+ * A game from another provider (a saved RAWG record opened while IGDB is
+ * active, or the reverse). Its id means nothing to the active provider, so no
+ * request is made: the saved snapshot is shown as is and the library entry
+ * keeps working. Matching it to the active provider is Stage 6.
+ */
+function OtherProviderGame({ gameId, seed }: { gameId: GameId; seed?: GameSummary }) {
+  const t = useT();
+  const { goBack, canGoBack } = useView();
+  const source = providerOf(gameId);
+  const link = seed ? providerPageUrl(source, seed.slug) : null;
+  const note = t(
+    "This game was saved from {provider}. Its full details appear when {provider} is the active game data provider; matching saved games across providers comes in a later update.",
+    { provider: PROVIDER_NAME[source] },
+  );
+  if (!seed) {
+    return (
+      <div className="px-5 pt-28 sm:px-8 lg:px-12">
+        <GamesNotice>
+          <div className="flex flex-col items-center gap-4">
+            {note}
+            {canGoBack && (
+              <button
+                onClick={goBack}
+                className="flex h-10 items-center gap-2 rounded-full border border-edge px-5 text-[13.5px] text-ink hover:bg-elevated"
+              >
+                <ArrowLeft size={15} className="dir-icon" />
+                {t("Back")}
+              </button>
+            )}
+          </div>
+        </GamesNotice>
+      </div>
+    );
+  }
+  return (
+    <>
+      <section className="relative">
+        <div className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden bg-canvas">
+          {seed.image && <HeroBackdrop url={seed.image} />}
+          <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-canvas/85 via-canvas/35 to-transparent rtl:bg-gradient-to-l" />
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-14 sm:px-8 lg:px-12">
+            <TitlePlate title={seed.name} loading={false} />
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">
+              <Pill>
+                {seed.released
+                  ? (formatReleaseDate(seed.released) ?? releaseYear(seed))
+                  : t("Release date unknown")}
+              </Pill>
+              <Pill>{t("Saved from {provider}", { provider: PROVIDER_NAME[source] })}</Pill>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <SaveGameButton game={seed} franchise={null} />
+              {link && (
+                <button
+                  onClick={() => openUrl(link)}
+                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
+                >
+                  <ExternalLink size={16} strokeWidth={2} />
+                  {t("View on {provider}", { provider: PROVIDER_NAME[source] })}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+      <div className="px-5 pb-12 pt-14 sm:px-8 lg:px-12">
+        <GamesNotice>{note}</GamesNotice>
+      </div>
+    </>
   );
 }
 
@@ -54,12 +145,13 @@ function GameDetailBody({
 }: {
   gameId: GameId;
   seed?: GameSummary;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const t = useT();
   const { goBack, canGoBack } = useView();
   const query = useGameDetail(gate, gameId, active);
+  const igdb = gate.provider === "igdb";
   const detail = query.data ?? null;
   // The card's summary paints immediately while the detail request runs.
   const game: GameSummary | null = detail ?? seed ?? null;
@@ -70,7 +162,7 @@ function GameDetailBody({
       <div className="px-5 pt-28 sm:px-8 lg:px-12">
         <GamesNotice>
           <div className="flex flex-col items-center gap-4">
-            {t("RAWG has no game with this id.")}
+            {igdb ? t("This game isn't available on IGDB.") : t("RAWG has no game with this id.")}
             {canGoBack && (
               <button
                 onClick={goBack}
@@ -90,7 +182,8 @@ function GameDetailBody({
       return (
         <div className="px-5 pt-28 sm:px-8 lg:px-12">
           <GamesErrorState
-            kind={isRawgError(query.error) ? query.error.kind : null}
+            provider={gate.provider}
+            kind={gamesErrorKind(query.error)}
             onRetry={() => void query.refetch()}
           />
         </div>
@@ -101,14 +194,23 @@ function GameDetailBody({
     );
   }
 
-  const backdrop = game.image ?? detail?.imageAlt ?? null;
-  const franchise = franchiseForSlug(game.slug);
+  // A portrait cover is never stretched into the 16:9 backdrop: it gets a
+  // blurred fill instead, with landscape art preferred when there is any.
+  const portrait = game.imageKind === "portrait";
+  const backdrop = (portrait ? detail?.imageAlt : game.image) ?? detail?.imageAlt ?? null;
+  // Curated franchises are keyed by RAWG slugs until Stage 5 maps them to IGDB.
+  const franchise = providerFeatures(gate.provider).franchises ? franchiseForSlug(game.slug) : null;
+  const page = providerPageUrl(gate.provider, game.slug, detail?.providerUrl);
 
   return (
     <>
       <section className="relative">
         <div className="harbor-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden bg-canvas">
-          {backdrop && <HeroBackdrop url={backdrop} />}
+          {backdrop ? (
+            <HeroBackdrop url={backdrop} />
+          ) : portrait && game.image ? (
+            <PortraitFill src={game.image} lazy={false} />
+          ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-canvas/85 via-canvas/35 to-transparent rtl:bg-gradient-to-l" />
           <div className="absolute inset-x-0 bottom-0 px-5 pb-14 sm:px-8 lg:px-12">
@@ -121,6 +223,7 @@ function GameDetailBody({
                     ? t("TBA")
                     : t("Release date unknown")}
               </Pill>
+              {game.variant && <Pill>{t(VARIANT_LABEL[game.variant])}</Pill>}
               {game.genres.slice(0, 3).map((g) => (
                 <Pill key={g.id}>{g.name}</Pill>
               ))}
@@ -132,13 +235,15 @@ function GameDetailBody({
             <Scores game={game} />
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <SaveGameButton game={game} franchise={franchise} />
-              <button
-                onClick={() => openUrl(`https://rawg.io/games/${game.slug}`)}
-                className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
-              >
-                <ExternalLink size={16} strokeWidth={2} />
-                {t("View on RAWG")}
-              </button>
+              {page && (
+                <button
+                  onClick={() => openUrl(page)}
+                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
+                >
+                  <ExternalLink size={16} strokeWidth={2} />
+                  {igdb ? t("View on IGDB") : t("View on RAWG")}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -156,6 +261,14 @@ function GameDetailBody({
                 <div className="h-4 w-2/3 animate-pulse rounded bg-elevated/40" />
               </div>
             ) : null}
+            {detail?.storyline && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                  {t("Storyline")}
+                </h3>
+                <Synopsis text={detail.storyline} />
+              </div>
+            )}
             {franchise && <FranchiseLink id={franchise.id} name={franchise.name} />}
           </div>
           {detail && <InfoBlock detail={detail} />}
@@ -183,9 +296,27 @@ function GameDetailBody({
         )}
         {detail && detail.counts.parents > 0 && (
           <RelatedRow
-            title={t("Part of")}
+            title={igdb ? t("Original game") : t("Part of")}
             gameId={game.id}
             kind="parent-games"
+            gate={gate}
+            active={active}
+          />
+        )}
+        {detail && (detail.counts.versions ?? 0) > 0 && (
+          <RelatedRow
+            title={t("Remakes & remasters")}
+            gameId={game.id}
+            kind="versions"
+            gate={gate}
+            active={active}
+          />
+        )}
+        {detail && (detail.counts.similar ?? 0) > 0 && (
+          <RelatedRow
+            title={t("Similar games")}
+            gameId={game.id}
+            kind="similar"
             gate={gate}
             active={active}
           />
@@ -206,13 +337,36 @@ function GameDetailBody({
 
 function Scores({ game }: { game: GameSummary }) {
   const t = useT();
-  if (game.metacritic === null && game.rating === null) return null;
+  const critic = criticScoreOf(game);
+  const user = userScoreOf(game);
+  if (!critic && !user && game.rating === null) return null;
   return (
     <div className="mt-5 flex flex-wrap items-center gap-6 text-[13.5px] text-ink-muted">
-      {game.metacritic !== null && (
+      {critic && (
         <span className="flex items-center gap-2">
-          <MetacriticBadge score={game.metacritic} size="md" />
-          <span className="font-medium text-ink">{t("Metacritic")}</span>
+          <MetacriticBadge
+            score={critic.score}
+            size="md"
+            title={critic.label === "Metacritic" ? t("Metacritic score") : t("Critic score")}
+          />
+          <span className="font-medium text-ink">{t(critic.label)}</span>
+          {critic.count > 0 && (
+            <span className="text-ink-subtle">
+              {t("{n} critic reviews", { n: critic.count.toLocaleString() })}
+            </span>
+          )}
+        </span>
+      )}
+      {user && (
+        <span className="flex items-center gap-2" title={t("IGDB user score")}>
+          <Star size={15} className="fill-current text-accent" />
+          <span className="font-semibold tabular-nums text-ink">{user.score}</span>
+          <span>/ 100 · {t("User score")}</span>
+          {user.count > 0 && (
+            <span className="text-ink-subtle">
+              {t("{n} ratings", { n: user.count.toLocaleString() })}
+            </span>
+          )}
         </span>
       )}
       {game.rating !== null && (
@@ -266,17 +420,16 @@ function InfoBlock({ detail }: { detail: GameDetail }) {
   }
   const released = formatReleaseDate(detail.released);
   if (released) rows.push({ label: t("Release date"), value: released });
-  if (detail.website) {
+  const website = safeExternalUrl(detail.website);
+  if (website) {
     rows.push({
       label: t("Website"),
       value: (
         <button
-          onClick={() => openUrl(detail.website!)}
+          onClick={() => openUrl(website)}
           className="inline-flex max-w-full items-center gap-1 truncate text-ink underline-offset-4 hover:underline"
         >
-          <span className="truncate">
-            {detail.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-          </span>
+          <span className="truncate">{website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
           <ExternalLink size={12} className="shrink-0" />
         </button>
       ),
@@ -322,7 +475,7 @@ function Screenshots({
 }: {
   game: GameSummary;
   detail: GameDetail | null;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const t = useT();
@@ -331,7 +484,8 @@ function Screenshots({
   const seeded = game.shortScreenshots;
   // List responses carry a few screenshots for free; the full set is one request, on demand.
   const needFetch = seeded.length === 0 || viewAll;
-  const unavailable = rawgSessionStatus.isCapabilityUnavailable("screenshots");
+  const unavailable =
+    gate.provider === "rawg" && rawgSessionStatus.isCapabilityUnavailable("screenshots");
   const query = useGameScreenshots(gate, game.id, active && needFetch && !unavailable);
   const images = viewAll || seeded.length === 0 ? (query.data ?? seeded) : seeded;
   const total = detail?.counts.screenshots ?? 0;
@@ -351,7 +505,7 @@ function Screenshots({
       </div>
       <MediaRail>
         {images.map((src, i) => {
-          const [thumb, ...fallbacks] = rawgImage(src, 640);
+          const [thumb, ...fallbacks] = gameImage(src, 640);
           return (
             <button
               key={src}
@@ -390,7 +544,7 @@ function RelatedRow({
   title: string;
   gameId: GameId;
   kind: RelatedKind;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   return (
@@ -410,7 +564,7 @@ function RelatedRowBody({
   title: string;
   gameId: GameId;
   kind: RelatedKind;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const query = useGameRelated(gate, gameId, kind, active);
@@ -431,7 +585,7 @@ function DeveloperRow({
   developerId: number;
   developerName: string;
   exclude: GameId;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const t = useT();
@@ -459,7 +613,7 @@ function DeveloperRowBody({
   title: string;
   developerId: number;
   exclude: GameId;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const { openGameBrowse } = useView();
@@ -477,6 +631,8 @@ function DeveloperRowBody({
         openGameBrowse({
           title,
           filter: { developers: String(developerId), ordering: "-added" },
+          // A developer id belongs to the provider that reported it.
+          provider: gate.provider,
         })
       }
     />

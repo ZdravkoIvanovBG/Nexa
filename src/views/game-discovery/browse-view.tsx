@@ -1,7 +1,8 @@
-import { Gamepad2, Loader2, Search, X } from "lucide-react";
+import { ArrowLeft, Gamepad2, Loader2, Search, X } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollRootContext } from "@/components/row";
 import { VirtualGrid } from "@/components/virtual-grid";
+import { gamesErrorKind } from "@/lib/game-discovery/errors";
 import { useGameBrowse } from "@/lib/game-discovery/queries";
 import { GAME_GENRE_TILES, GAME_PLATFORM_FILTERS } from "@/lib/game-discovery/sections";
 import type {
@@ -11,9 +12,9 @@ import type {
   GameOrdering,
   GameSummary,
 } from "@/lib/game-discovery/types";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
-import { isRawgError } from "@/lib/providers/rawg";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { GameCard, GameCardSkeleton } from "./game-card";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
@@ -27,8 +28,38 @@ type OrderingChoice = "relevance" | GameOrdering;
 export function GameBrowseView({ spec, active }: { spec: GameBrowseSpec; active: boolean }) {
   return (
     <GamesFrame scrollKey={`game-browse-${spec.title}`} active={active}>
-      {(gate) => <BrowseBody spec={spec} gate={gate} active={active} />}
+      {(gate) =>
+        spec.provider && spec.provider !== gate.provider ? (
+          <OtherProviderNotice />
+        ) : (
+          <BrowseBody spec={spec} gate={gate} active={active} />
+        )
+      }
     </GamesFrame>
+  );
+}
+
+/** A list opened under another provider: its ids and recipe mean nothing here. */
+function OtherProviderNotice() {
+  const t = useT();
+  const { goBack, canGoBack } = useView();
+  return (
+    <div className="px-5 pt-28 sm:px-8 lg:px-12">
+      <GamesNotice>
+        <div className="flex flex-col items-center gap-4">
+          {t("This list came from another game data provider. Open it again from Games.")}
+          {canGoBack && (
+            <button
+              onClick={goBack}
+              className="flex h-10 items-center gap-2 rounded-full border border-edge px-5 text-[13.5px] text-ink hover:bg-elevated"
+            >
+              <ArrowLeft size={15} className="dir-icon" />
+              {t("Back")}
+            </button>
+          )}
+        </div>
+      </GamesNotice>
+    </div>
   );
 }
 
@@ -42,10 +73,11 @@ function BrowseBody({
   active,
 }: {
   spec: GameBrowseSpec;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const t = useT();
+  const igdb = gate.provider === "igdb";
   const [input, setInput] = useState(spec.filter.search ?? "");
   const [search, setSearch] = useState(spec.filter.search ?? "");
   const [ordering, setOrdering] = useState<OrderingChoice>(
@@ -132,7 +164,7 @@ function BrowseBody({
     ...(search ? [{ value: "relevance" as const, label: t("Relevance") }] : []),
     { value: "-added", label: t("Popular") },
     { value: "-released", label: t("Release date") },
-    { value: "-metacritic", label: t("Metacritic") },
+    { value: "-metacritic", label: igdb ? t("Critic score") : t("Metacritic") },
     { value: "name", label: t("Name") },
   ];
 
@@ -195,11 +227,14 @@ function BrowseBody({
 
       {idle ? (
         <GamesNotice>
-          {t("Type at least two characters to search RAWG's game catalog.")}
+          {igdb
+            ? t("Type at least two characters to search IGDB's game catalog.")
+            : t("Type at least two characters to search RAWG's game catalog.")}
         </GamesNotice>
       ) : query.isError && items.length === 0 ? (
         <GamesErrorState
-          kind={isRawgError(query.error) ? query.error.kind : null}
+          provider={gate.provider}
+          kind={gamesErrorKind(query.error)}
           onRetry={() => void query.refetch()}
         />
       ) : query.isPending ? (
@@ -216,7 +251,9 @@ function BrowseBody({
         <>
           {total !== null && (
             <p className="text-[13px] text-ink-subtle">
-              {t("{n} games on RAWG", { n: total.toLocaleString() })}
+              {igdb
+                ? t("{n} games on IGDB", { n: total.toLocaleString() })
+                : t("{n} games on RAWG", { n: total.toLocaleString() })}
             </p>
           )}
           <VirtualGrid

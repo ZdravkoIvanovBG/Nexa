@@ -3,9 +3,10 @@ import { useMemo } from "react";
 import { Row } from "@/components/row";
 import { FRANCHISES } from "@/lib/game-discovery/franchises";
 import { useGameList } from "@/lib/game-discovery/queries";
+import { gamesErrorKind } from "@/lib/game-discovery/errors";
+import { providerFeatures } from "@/lib/game-discovery/provider";
 import { gameSections, type GameSection } from "@/lib/game-discovery/sections";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
-import { isRawgError } from "@/lib/providers/rawg";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { FranchiseCard } from "./game-discovery/franchise-card";
@@ -28,10 +29,12 @@ export function GamesView({ active }: { active: boolean }) {
   );
 }
 
-function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean }) {
+function GamesDiscovery({ gate, active }: { gate: GamesGate; active: boolean }) {
   const t = useT();
   const { openGameBrowse } = useView();
-  const sections = useMemo(() => gameSections(), []);
+  const sections = useMemo(() => gameSections(new Date(), gate.provider), [gate.provider]);
+  // Curated franchises are keyed by RAWG slugs until Stage 5 maps them to IGDB.
+  const franchises = providerFeatures(gate.provider).franchises;
   const byId = (id: GameSection["id"]) => sections.find((s) => s.id === id)!;
   const popular = byId("popular");
   const fresh = byId("new");
@@ -40,8 +43,12 @@ function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean
   const popularQuery = useGameList(gate, popular.filter, ROW_PAGE_SIZE, active);
   const freshQuery = useGameList(gate, fresh.filter, ROW_PAGE_SIZE, active);
 
+  // Hero slides need landscape art; a portrait cover would be cropped.
   const hero = useMemo(
-    () => (popularQuery.data?.items ?? []).filter((g) => g.image).slice(0, HERO_SLIDES),
+    () =>
+      (popularQuery.data?.items ?? [])
+        .filter((g) => g.image && g.imageKind !== "portrait")
+        .slice(0, HERO_SLIDES),
     [popularQuery.data],
   );
   const showHero = hero.length >= MIN_HERO_SLIDES;
@@ -64,7 +71,8 @@ function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean
     return (
       <div className="px-5 pt-28 sm:px-8 lg:px-12">
         <GamesErrorState
-          kind={isRawgError(error) ? error.kind : null}
+          provider={gate.provider}
+          kind={gamesErrorKind(error)}
           onRetry={() => {
             void popularQuery.refetch();
             void freshQuery.refetch();
@@ -77,7 +85,7 @@ function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean
   return (
     <>
       {showHero ? (
-        <GamesHero slides={hero} gate={gate} />
+        <GamesHero slides={hero} gate={gate} kicker={popular.title} />
       ) : popularQuery.isPending ? (
         <div className="harbor-bleed-stremio h-[78vh] min-h-[640px] w-full animate-pulse bg-elevated/30" />
       ) : null}
@@ -113,23 +121,28 @@ function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean
               <GameSectionRow section={s} gate={gate} active={active} exclude={shownAbove} />
             </WhenNear>
           ))}
-        <WhenNear minHeight={260} fallback={<GameRowSkeleton title={t("Franchise collections")} />}>
-          <Row
-            title={
-              <RowTitle
-                title={t("Franchise collections")}
-                subtitle={t("Curated series, every game in release order")}
-              />
-            }
-            shape="landscape"
-            min={300}
-            scrollKey="games-row-franchises"
+        {franchises && (
+          <WhenNear
+            minHeight={260}
+            fallback={<GameRowSkeleton title={t("Franchise collections")} />}
           >
-            {FRANCHISES.map((franchise) => (
-              <FranchiseCard key={franchise.id} franchise={franchise} gate={gate} />
-            ))}
-          </Row>
-        </WhenNear>
+            <Row
+              title={
+                <RowTitle
+                  title={t("Franchise collections")}
+                  subtitle={t("Curated series, every game in release order")}
+                />
+              }
+              shape="landscape"
+              min={300}
+              scrollKey="games-row-franchises"
+            >
+              {FRANCHISES.map((franchise) => (
+                <FranchiseCard key={franchise.id} franchise={franchise} gate={gate} />
+              ))}
+            </Row>
+          </WhenNear>
+        )}
         {sections
           .filter((s) => !s.eager && s.id !== "acclaimed")
           .map((s) => (

@@ -39,3 +39,45 @@ export function formatReleaseDate(iso: string | null, locale?: string): string |
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
+
+/**
+ * The critic score a game shows: RAWG's Metacritic, or a provider's own critic
+ * score (IGDB) labelled as such. Never both, never relabelled.
+ */
+export function criticScoreOf(
+  game: Pick<GameSummary, "metacritic" | "criticScore" | "criticCount">,
+): { score: number; label: "Metacritic" | "Critic score"; count: number } | null {
+  if (game.metacritic !== null) return { score: game.metacritic, label: "Metacritic", count: 0 };
+  if (typeof game.criticScore === "number") {
+    return { score: game.criticScore, label: "Critic score", count: game.criticCount ?? 0 };
+  }
+  return null;
+}
+
+/** IGDB's 0–100 user score, when the game has one. RAWG's 0–5 rating stays separate. */
+export function userScoreOf(
+  game: Pick<GameSummary, "userScore" | "userCount">,
+): { score: number; count: number } | null {
+  return typeof game.userScore === "number"
+    ? { score: game.userScore, count: game.userCount ?? 0 }
+    : null;
+}
+
+/** Pill label for a record that isn't a main game. */
+export const VARIANT_LABEL: Record<NonNullable<GameSummary["variant"]>, string> = {
+  dlc: "DLC",
+  expansion: "Expansion",
+  bundle: "Bundle",
+  standalone: "Standalone expansion",
+  mod: "Mod",
+  episode: "Episode",
+  season: "Season",
+  remake: "Remake",
+  remaster: "Remaster",
+  expanded: "Expanded edition",
+  port: "Port",
+  fork: "Fork",
+  pack: "Pack",
+  update: "Update",
+  edition: "Edition",
+};

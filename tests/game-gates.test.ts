@@ -111,6 +111,8 @@ test("global search takes the kid check from the active profile", () => {
     "utf8",
   );
   assert.match(overlay, /const kid = useActiveKid\(\);/);
-  assert.match(overlay, /gamesSearchAvailable\(rawgGate, !!kid\)/);
-  assert.doesNotMatch(overlay, /rawgGate\.featureEnabled/);
+  // The active provider's gate (RAWG, or IGDB in development builds).
+  assert.match(overlay, /const gamesGate = useGamesGate\(\);/);
+  assert.match(overlay, /gamesSearchAvailable\(gamesGate, !!kid\)/);
+  assert.doesNotMatch(overlay, /gamesGate\.featureEnabled/);
 });

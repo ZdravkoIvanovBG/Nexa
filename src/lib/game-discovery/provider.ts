@@ -19,9 +19,6 @@ import type { GameDetail, GameListFilter, GamePage, GameSummary } from "./types.
  */
 export const PRODUCTION_GAME_PROVIDER: GameProvider = "rawg";
 
-/** The provider Games Discovery uses until the development switch is wired in. */
-export const ACTIVE_GAME_PROVIDER: GameProvider = PRODUCTION_GAME_PROVIDER;
-
 /**
  * Related-game rows. RAWG serves the first three; IGDB serves additions,
  * parent-games, versions (remakes and remasters) and similar. A provider

@@ -1,14 +1,15 @@
 // @ts-nocheck -- Node's test modules are not included in the application tsconfig.
-// Where IGDB credentials may and may not go (Stage 3). Source-shape checks
-// plus the pure gate helper; no Tauri, no network, no OS credential store.
+// Where IGDB credentials may and may not go (Stage 3), and where IGDB requests
+// may start (Stage 4). Source-shape checks plus the pure gate helpers; no Tauri,
+// no network, no OS credential store.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { activeProviderReady } from "../src/lib/game-discovery/gates.ts";
-import { ACTIVE_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
+import { activeProviderReady, gamesToggleAllowed } from "../src/lib/game-discovery/gates.ts";
+import { PRODUCTION_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), "utf8");
@@ -143,12 +144,13 @@ test("lib.rs only registers the commands; nothing runs at startup", () => {
   ]);
 });
 
-test("no app code sends IGDB queries in Stage 3", () => {
+test("only the Games IGDB wiring creates an IGDB client (Stage 4)", () => {
   const offenders = [];
   for (const file of walk(join(ROOT, "src"))) {
     if (rel(file).startsWith("src/lib/providers/igdb/")) continue;
+    if (rel(file) === "src/lib/game-discovery/igdb-discovery.ts") continue;
     if (
-      /igdb_query|createNativeIgdbClient|createTauriTransport|createIgdbClient/.test(
+      /igdb_query|createNativeIgdbClient|createTauriTransport|createIgdbClient|createIgdbProvider/.test(
         readFileSync(file, "utf8"),
       )
     ) {
@@ -156,20 +158,36 @@ test("no app code sends IGDB queries in Stage 3", () => {
     }
   }
   assert.deepEqual(offenders, []);
+  // That wiring is loaded only by the Games query hooks (the lazy Games views).
+  const importers = walk(join(ROOT, "src"))
+    .filter((file) =>
+      /from "\.\/igdb-discovery"|game-discovery\/igdb-discovery/.test(readFileSync(file, "utf8")),
+    )
+    .map(rel);
+  assert.deepEqual(importers, ["src/lib/game-discovery/queries.ts"]);
 });
 
-test("RAWG stays the active provider; verified IGDB credentials unlock nothing", () => {
-  assert.equal(ACTIVE_GAME_PROVIDER, "rawg");
-  assert.equal(activeProviderReady(ACTIVE_GAME_PROVIDER, { rawg: false, igdb: true }), false);
-  assert.equal(activeProviderReady(ACTIVE_GAME_PROVIDER, { rawg: true, igdb: false }), true);
+test("production builds use RAWG; only the active provider's readiness counts", () => {
+  assert.equal(PRODUCTION_GAME_PROVIDER, "rawg");
+  assert.equal(activeProviderReady(PRODUCTION_GAME_PROVIDER, { rawg: false, igdb: true }), false);
+  assert.equal(activeProviderReady(PRODUCTION_GAME_PROVIDER, { rawg: true, igdb: false }), true);
   assert.equal(activeProviderReady("igdb", { rawg: false, igdb: true }), true);
   assert.equal(activeProviderReady("igdb", { rawg: true, igdb: false }), false);
-  // The Games toggle is still gated on RAWG alone.
+  // The RAWG toggle rule is unchanged; IGDB uses the same rule on its own readiness.
   const gates = read("src/lib/game-discovery/gates.ts");
   assert.match(
     gates,
     /return gamesFeatureEnabled\(settings\) \|\| rawgReady\(settings, isRejected\);/,
   );
+  assert.equal(gamesToggleAllowed(false, true), true);
+  assert.equal(gamesToggleAllowed(false, false), false);
+  assert.equal(gamesToggleAllowed(true, false), true, "turning Games off is always allowed");
+  // The dev switch reads import.meta.env.DEV and nothing else turns IGDB on.
+  const native = code(read("src/lib/game-discovery/igdb-native.ts"));
+  assert.match(native, /dev: import\.meta\.env\.DEV,/);
+  assert.match(native, /storage: import\.meta\.env\.DEV \? devStorage\(\) : null,/);
+  const panel = code(read("src/views/settings/games-panel.tsx"));
+  assert.match(panel, /\{import\.meta\.env\.DEV && <DevProviderSection \/>\}/);
 });
 
 test("the local credentials file is never committed", () => {

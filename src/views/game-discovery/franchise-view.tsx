@@ -1,5 +1,6 @@
-import { ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { gamesErrorKind } from "@/lib/game-discovery/errors";
 import type { FranchiseGroupId, FranchiseSort } from "@/lib/game-discovery/franchise-resolve";
 import { franchiseById } from "@/lib/game-discovery/franchises";
 import {
@@ -7,10 +8,11 @@ import {
   useFranchiseArt,
   useFranchiseGames,
 } from "@/lib/game-discovery/queries";
+import { providerFeatures } from "@/lib/game-discovery/provider";
 import type { GameSummary } from "@/lib/game-discovery/types";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
-import { isRawgError } from "@/lib/providers/rawg";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { GameCard, GameCardSkeleton } from "./game-card";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
@@ -28,8 +30,43 @@ export function GameFranchiseView({
 }) {
   return (
     <GamesFrame scrollKey={`game-franchise-${franchiseId}`} active={active}>
-      {(gate) => <FranchiseBody franchiseId={franchiseId} gate={gate} active={active} />}
+      {(gate) =>
+        providerFeatures(gate.provider).franchises ? (
+          <FranchiseBody franchiseId={franchiseId} gate={gate} active={active} />
+        ) : (
+          <FranchisesComingSoon />
+        )
+      }
     </GamesFrame>
+  );
+}
+
+/**
+ * The curated catalog is keyed by RAWG slugs until Stage 5 maps it to reviewed
+ * IGDB ids, so under IGDB a franchise page shows this instead of guessing.
+ */
+function FranchisesComingSoon() {
+  const t = useT();
+  const { goBack, canGoBack } = useView();
+  return (
+    <div className="px-5 pt-28 sm:px-8 lg:px-12">
+      <GamesNotice>
+        <div className="flex flex-col items-center gap-4">
+          {t(
+            "Franchise collections aren't available with IGDB yet. They're coming in a later update.",
+          )}
+          {canGoBack && (
+            <button
+              onClick={goBack}
+              className="flex h-10 items-center gap-2 rounded-full border border-edge px-5 text-[13.5px] text-ink hover:bg-elevated"
+            >
+              <ArrowLeft size={15} className="dir-icon" />
+              {t("Back")}
+            </button>
+          )}
+        </div>
+      </GamesNotice>
+    </div>
   );
 }
 
@@ -39,7 +76,7 @@ function FranchiseBody({
   active,
 }: {
   franchiseId: string;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
 }) {
   const t = useT();
@@ -146,7 +183,8 @@ function FranchiseBody({
       <div className="flex flex-col gap-14 px-5 pb-12 pt-10 sm:px-8 lg:px-12">
         {query.isError ? (
           <GamesErrorState
-            kind={isRawgError(query.error) ? query.error.kind : null}
+            provider={gate.provider}
+            kind={gamesErrorKind(query.error)}
             onRetry={() => void query.refetch()}
           />
         ) : !resolved ? (

@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { ScrollRootContext } from "@/components/row";
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
-import { useRawgGate, type RawgGateState } from "@/lib/game-discovery/use-rawg";
+import { useGamesGate, type GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useSettings } from "@/lib/settings";
 import { useScrollMemory } from "@/lib/view";
 import { GamesConfigState } from "./games-state";
-import { RawgAttribution } from "./rawg-attribution";
+import { GamesAttribution } from "./rawg-attribution";
 
 /**
  * Shared shell for every Games view: owns the scroll container, scroll memory,
- * the RAWG request gate and the attribution footer RAWG's terms require. When
- * the gate is closed it renders the configuration state and nothing that could
- * issue a request.
+ * the active provider's request gate and the attribution footer. When the gate
+ * is closed it renders the configuration state and nothing that could issue a
+ * request.
  */
 export function GamesFrame({
   scrollKey,
@@ -21,9 +21,9 @@ export function GamesFrame({
 }: {
   scrollKey: string;
   active: boolean;
-  children: (gate: RawgGateState) => ReactNode;
+  children: (gate: GamesGate) => ReactNode;
 }) {
-  const gate = useRawgGate();
+  const gate = useGamesGate();
   const { settings, update } = useSettings();
   const scrollRef = useRef<HTMLElement | null>(null);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
@@ -37,25 +37,28 @@ export function GamesFrame({
   // A key RAWG rejected mid-session loses its verification, so later sessions
   // don't retry a dead key. Only if the stored key is still the rejected one.
   const { rawgKeyVerifiedFor } = settings;
+  const rawg = gate.rawg;
   useEffect(() => {
-    if (gate.config !== "rejected") return;
-    if (rawgKeyVerifiedFor !== gate.fingerprint) return;
-    if (!rawgSessionStatus.isRejected(gate.fingerprint)) return;
+    if (gate.provider !== "rawg" || rawg.config !== "rejected") return;
+    if (rawgKeyVerifiedFor !== rawg.fingerprint) return;
+    if (!rawgSessionStatus.isRejected(rawg.fingerprint)) return;
     update({ rawgKeyVerifiedFor: "" });
-  }, [gate.config, gate.fingerprint, rawgKeyVerifiedFor, update]);
+  }, [gate.provider, rawg.config, rawg.fingerprint, rawgKeyVerifiedFor, update]);
 
   return (
     <main ref={scrollCb} className="relative h-full overflow-y-auto bg-canvas">
       <ScrollRootContext.Provider value={scrollEl}>
         {gate.ready ? (
-          children(gate)
+          // Keyed by provider and scope: switching provider or credentials
+          // remounts the page, so no view state from the old one carries over.
+          <Fragment key={`${gate.provider}:${gate.scope}`}>{children(gate)}</Fragment>
         ) : (
           <div className="px-5 pb-10 pt-28 sm:px-8 lg:px-12">
             <GamesConfigState state={gate.config === "ready" ? "unverified" : gate.config} />
           </div>
         )}
         <footer className="px-5 pb-24 pt-6 sm:px-8 lg:px-12">
-          <RawgAttribution />
+          <GamesAttribution provider={gate.provider} />
         </footer>
         <BackToTop scrollRef={scrollRef} />
       </ScrollRootContext.Provider>

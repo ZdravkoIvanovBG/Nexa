@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { keyFingerprint } from "../src/lib/game-discovery/gates.ts";
-import { ACTIVE_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
+import { PRODUCTION_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
 import { createRawgSessionStatus } from "../src/lib/game-discovery/status.ts";
 import { createRawgClient } from "../src/lib/providers/rawg/client.ts";
 import {
@@ -72,8 +72,8 @@ const WITCHER = {
   ],
 };
 
-test("Stage 2 keeps RAWG as the only active provider", () => {
-  assert.equal(ACTIVE_GAME_PROVIDER, "rawg");
+test("production builds keep RAWG as the provider", () => {
+  assert.equal(PRODUCTION_GAME_PROVIDER, "rawg");
 });
 
 test("list: one request with exactly the pre-seam path and params", async () => {
@@ -149,6 +149,9 @@ test("another provider's id never reaches RAWG", async () => {
   assert.equal(await provider.detail("igdb:3328"), null);
   assert.deepEqual(await provider.screenshots("igdb:3328"), []);
   assert.deepEqual(await provider.related("igdb:3328", "additions"), []);
+  // IGDB-only row kinds never become a RAWG path.
+  assert.deepEqual(await provider.related("rawg:3328", "versions"), []);
+  assert.deepEqual(await provider.related("rawg:3328", "similar"), []);
   for (const odd of ["", "rawg:01", "igdb:", "steam:1", "a:b"]) {
     assert.equal(await provider.detail(odd), null, odd);
   }
@@ -253,9 +256,11 @@ test("queries.ts makes no provider requests of its own", () => {
   );
   assert.ok(!/rawg\.get\(/.test(source), "every request goes through the provider");
   assert.ok(!/providers\/rawg\/(normalize|detail)/.test(source));
-  assert.ok(!/providers\/igdb/.test(source), "IGDB is not wired in");
+  // IGDB is reached only through the app's IGDB wiring, never its client directly.
+  assert.ok(!/providers\/igdb/.test(source), "no direct IGDB client use");
+  assert.match(source, /from "\.\/igdb-discovery"/);
   assert.ok(
-    /useMemo\(\(\) => \{\s*switch \(ACTIVE_GAME_PROVIDER\)/.test(source),
+    /useMemo\(\(\) => \{\s*switch \(id\) \{\s*case "rawg":/.test(source),
     "one provider per key change, not per render",
   );
   // Same cache lifetimes and retry policy as before the seam.
@@ -273,7 +278,13 @@ test("query keys are provider-namespaced and hold no credential", () => {
     new URL("../src/lib/game-discovery/queries.ts", import.meta.url),
     "utf8",
   );
-  assert.ok(source.includes('const ROOT = ["harbor", "games"] as const;'));
+  // The root lives beside the cache-isolation predicate that matches it.
+  assert.ok(source.includes("const ROOT = GAMES_QUERY_ROOT;"));
+  const root = readFileSync(
+    new URL("../src/lib/game-discovery/query-root.ts", import.meta.url),
+    "utf8",
+  );
+  assert.ok(root.includes('export const GAMES_QUERY_ROOT = ["harbor", "games"] as const;'));
   assert.ok(/\[\.\.\.ROOT, p\.id, p\.scope, "detail"/.test(source));
   assert.ok(!/auth\.key\]/.test(source));
 });

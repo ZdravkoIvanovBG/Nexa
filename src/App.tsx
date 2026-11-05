@@ -80,6 +80,7 @@ import { MediaFavoritesProvider } from "@/lib/media-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
 import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
+import { useGamesCacheIsolation } from "@/lib/game-discovery/cache-isolation";
 import { effectiveBinding, eventToBinding, shouldHandleGlobalKeyboardEvent } from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
 import type { MetaType } from "@/lib/cinemeta";
@@ -509,6 +510,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   } = useView();
   const { settings, update } = useSettings();
   const gamesOn = gamesFeatureEnabled(settings);
+  useGamesCacheIsolation();
   const { setOpen: setSearchOpen, open: searchOpen } = useSearch();
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();

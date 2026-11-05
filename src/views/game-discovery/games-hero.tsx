@@ -1,16 +1,18 @@
 import { ChevronRight, Info, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useGameDetail } from "@/lib/game-discovery/queries";
+import { gameImage } from "@/lib/game-discovery/game-image";
 import type { GameSummary } from "@/lib/game-discovery/types";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { observe, usePageVisible } from "@/lib/visibility";
 import { MetacriticBadge } from "./game-card";
-import { releaseYear } from "./format";
+import { criticScoreOf, releaseYear, userScoreOf } from "./format";
 
 // Adapted from CinemaHero: same rotation, drag and gradients. No trailer, logo
-// or Play button -- RAWG has no logo art and launching games isn't Phase 1.
+// or Play button -- neither provider has logo art and launching games isn't
+// Phase 1. Slides need landscape art: the caller never passes portrait covers.
 
 const ROTATE_MS = 11000;
 const DESCRIPTION_DWELL_MS = 1200;
@@ -23,7 +25,16 @@ function rubberBand(distance: number, dim: number, c = 0.55): number {
   return (1 - 1 / (distance / dim / c + 1)) * dim * c;
 }
 
-export function GamesHero({ slides, gate }: { slides: GameSummary[]; gate: RawgGateState }) {
+export function GamesHero({
+  slides,
+  gate,
+  kicker,
+}: {
+  slides: GameSummary[];
+  gate: GamesGate;
+  /** The row the slides come from, e.g. "Popular this year". */
+  kicker: string;
+}) {
   const t = useT();
   const [activeIndex, setActive] = useState(0);
   const active = activeIndex < slides.length ? activeIndex : 0;
@@ -150,6 +161,7 @@ export function GamesHero({ slides, gate }: { slides: GameSummary[]; gate: RawgG
                     game={game}
                     active={i === active && !dragging && inViewport && pageVisible}
                     gate={gate}
+                    kicker={kicker}
                   />
                 ) : null}
               </div>
@@ -179,10 +191,12 @@ function GameSlide({
   game,
   active,
   gate,
+  kicker,
 }: {
   game: GameSummary;
   active: boolean;
-  gate: RawgGateState;
+  gate: GamesGate;
+  kicker: string;
 }) {
   const t = useT();
   const { openGame } = useView();
@@ -198,12 +212,16 @@ function GameSlide({
   const description = detail.data?.description ?? null;
   const year = releaseYear(game);
   const genres = game.genres.slice(0, 2).map((g) => g.name);
+  const critic = criticScoreOf(game);
+  const user = userScoreOf(game);
+  // RAWG keeps its original URL here; IGDB art is already stored full size.
+  const [image] = gameImage(game.image, null);
 
   return (
     <div aria-hidden={!active} className="relative h-full w-full">
-      {game.image && (
+      {image && (
         <img
-          src={game.image}
+          src={image}
           alt=""
           decoding="async"
           fetchPriority={active ? "high" : "low"}
@@ -216,7 +234,7 @@ function GameSlide({
       <div className="relative flex h-full items-end pb-28 ps-20 pe-20">
         <div className="flex max-w-[640px] flex-col gap-5">
           <span className="text-[11px] font-bold uppercase tracking-[0.42em] text-ink-subtle">
-            {t("Popular this year")}
+            {t(kicker)}
           </span>
           <h2
             className="font-display text-[clamp(44px,5.4vw,72px)] font-medium leading-[0.95] tracking-tight text-ink [text-wrap:balance]"
@@ -228,13 +246,26 @@ function GameSlide({
             {year && <span className="tabular-nums">{year}</span>}
             {genres.length > 0 && year && <Dot />}
             {genres.length > 0 && <span>{genres.join(" · ")}</span>}
-            {game.metacritic !== null && <Dot />}
-            {game.metacritic !== null && (
+            {critic && <Dot />}
+            {critic && (
               <span className="flex items-center gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-subtle">
-                  {t("Metacritic")}
+                  {t(critic.label)}
                 </span>
-                <MetacriticBadge score={game.metacritic} />
+                <MetacriticBadge
+                  score={critic.score}
+                  title={critic.label === "Metacritic" ? t("Metacritic score") : t("Critic score")}
+                />
+              </span>
+            )}
+            {user && <Dot />}
+            {user && (
+              <span className="flex items-center gap-1.5" title={t("IGDB user score")}>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-subtle">
+                  {t("User score")}
+                </span>
+                <Star size={12} className="fill-current text-accent" />
+                <span className="font-semibold tabular-nums text-ink">{user.score}</span>
               </span>
             )}
             {game.rating !== null && <Dot />}

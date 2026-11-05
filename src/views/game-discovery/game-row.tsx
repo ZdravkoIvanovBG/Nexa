@@ -2,7 +2,7 @@ import { Row } from "@/components/row";
 import { useGameList } from "@/lib/game-discovery/queries";
 import type { GameSection } from "@/lib/game-discovery/sections";
 import type { GameId, GameSummary } from "@/lib/game-discovery/types";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { GameCard, GameCardSkeleton } from "./game-card";
@@ -23,7 +23,7 @@ export function RowTitle({ title, subtitle }: { title: string; subtitle?: string
   );
 }
 
-/** A horizontal discovery rail backed by one RAWG list query. Hides itself when empty or failed. */
+/** A horizontal discovery rail backed by one provider list query. Hides itself when empty or failed. */
 export function GameSectionRow({
   section,
   gate,
@@ -31,7 +31,7 @@ export function GameSectionRow({
   exclude,
 }: {
   section: GameSection;
-  gate: RawgGateState;
+  gate: GamesGate;
   active: boolean;
   /** Games already shown above (hero, earlier rows). */
   exclude?: ReadonlySet<GameId>;
@@ -51,7 +51,13 @@ export function GameSectionRow({
       games={items}
       scrollKey={`games-row-${section.id}`}
       onViewAll={() =>
-        openGameBrowse({ title: section.title, kicker: section.subtitle, filter: section.filter })
+        openGameBrowse({
+          title: section.title,
+          kicker: section.subtitle,
+          filter: section.filter,
+          // IGDB rows name a recipe only IGDB knows.
+          ...(section.filter.section ? { provider: gate.provider } : {}),
+        })
       }
     />
   );

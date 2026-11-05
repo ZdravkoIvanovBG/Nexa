@@ -1,6 +1,7 @@
 import { KeyRound, Loader2, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { igdbNative, igdbNativeAvailable } from "@/lib/game-discovery/igdb-native";
+import { igdbNative, igdbNativeAvailable, igdbStatus } from "@/lib/game-discovery/igdb-native";
+import { useActiveGameProvider } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import {
   toNativeError,
@@ -12,8 +13,9 @@ import { ExtLink, Section } from "../shared";
 // IGDB credentials (Stage 3). They live in the OS credential store through the
 // Rust IGDB module, never in Settings, localStorage, cloud sync or backups.
 // The secret is held only in this component's state while the user types it,
-// and cleared once it's been sent. Games still use RAWG; verifying here
-// doesn't change that.
+// and cleared once it's been sent. Every status this section reads or gets back
+// is shared with the Games gate (igdbStatus), so Games opens, closes and drops
+// its cache as soon as credentials are verified, replaced or removed.
 
 type Busy = "loading" | "saving" | "verifying" | "removing" | null;
 type Badge = { label: string; tone: "ok" | "warn" | "bad" | "muted" };
@@ -107,7 +109,14 @@ function CredentialInput({
 
 export function IgdbSection() {
   const t = useT();
-  const [status, setStatus] = useState<IgdbNativeStatus | null>(null);
+  const igdbActive = useActiveGameProvider() === "igdb";
+  const [status, setStatusLocal] = useState<IgdbNativeStatus | null>(null);
+  // Local state plus the shared store. `changed` marks a credential change
+  // (saved, replaced, removed), which starts a fresh Games cache.
+  const setStatus = useCallback((next: IgdbNativeStatus, changed = false) => {
+    setStatusLocal(next);
+    igdbStatus.publish(next, { credentialsChanged: changed });
+  }, []);
   const [busy, setBusy] = useState<Busy>("loading");
   const [replacing, setReplacing] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -131,7 +140,7 @@ export function IgdbSection() {
     } catch (e) {
       if (mounted.current) setError(toNativeError(e).kind);
     }
-  }, []);
+  }, [setStatus]);
 
   // Reads the OS credential store once on open; makes no network request.
   useEffect(() => {
@@ -152,7 +161,7 @@ export function IgdbSection() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [setStatus]);
 
   useEffect(() => {
     if (!confirmRemove) return;
@@ -189,7 +198,7 @@ export function IgdbSection() {
     try {
       const next = await igdbNative.setCredentials(id, value);
       if (!mounted.current) return;
-      setStatus(next);
+      setStatus(next, true);
       setReplacing(false);
       setClientId("");
       setSecret("");
@@ -236,7 +245,7 @@ export function IgdbSection() {
     try {
       const next = await igdbNative.clear();
       if (!mounted.current) return;
-      setStatus(next);
+      setStatus(next, true);
       closeForm();
       setNotice("removed");
     } catch (e) {
@@ -329,9 +338,15 @@ export function IgdbSection() {
   return (
     <Section
       title={t("IGDB")}
-      subtitle={t(
-        "Connect your own Twitch developer application to prepare Nexa's upcoming IGDB game data. Games still use RAWG for now: saving credentials here doesn't change what you see in Games.",
-      )}
+      subtitle={
+        igdbActive
+          ? t(
+              "Connect your own Twitch developer application for IGDB game data. Games on this device is using IGDB (development builds only).",
+            )
+          : t(
+              "Connect your own Twitch developer application to prepare Nexa's upcoming IGDB game data. Games still use RAWG for now: saving credentials here doesn't change what you see in Games.",
+            )
+      }
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">

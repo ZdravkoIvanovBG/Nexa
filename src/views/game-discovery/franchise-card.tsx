@@ -2,19 +2,13 @@ import { Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FranchiseDef } from "@/lib/game-discovery/franchises";
 import { useFranchiseArt } from "@/lib/game-discovery/queries";
-import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
-import { rawgImage } from "@/lib/providers/rawg/image";
+import { gameImage } from "@/lib/game-discovery/game-image";
+import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 
 /** Franchise tile, styled like CollectionCard. Art is looked up only once the card is near view. */
-export function FranchiseCard({
-  franchise,
-  gate,
-}: {
-  franchise: FranchiseDef;
-  gate: RawgGateState;
-}) {
+export function FranchiseCard({ franchise, gate }: { franchise: FranchiseDef; gate: GamesGate }) {
   const t = useT();
   const { openGameFranchise } = useView();
   const ref = useRef<HTMLButtonElement>(null);
@@ -34,7 +28,7 @@ export function FranchiseCard({
   }, [inView]);
 
   const art = useFranchiseArt(gate, franchise, inView);
-  const [image] = rawgImage(art.image, 640);
+  const [image] = gameImage(art.image, 640);
   const hue = [...franchise.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
   const count = franchise.mainline.length;
 

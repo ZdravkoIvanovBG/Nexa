@@ -11,28 +11,32 @@ import { readFranchiseArt, writeFranchiseArt } from "./franchise-art-cache";
 import { resolveFranchise, type FranchiseSort, type ResolvedFranchise } from "./franchise-resolve";
 import type { FranchiseDef } from "./franchises";
 import { rawgIdOf, type GameId } from "./game-id";
+import { igdbProviderFor } from "./igdb-discovery";
+import { GAMES_QUERY_ROOT } from "./query-root";
 import {
-  ACTIVE_GAME_PROVIDER,
+  providerFeatures,
+  type DetailLookup,
   type FranchiseData,
   type GameMetadataProvider,
   type RelatedKind,
 } from "./provider";
 import type { GameDetail, GameListFilter, GamePage, GameSummary } from "./types";
-import type { RawgGateState } from "./use-rawg";
+import type { GamesGate } from "./use-games-gate";
 
 export type { FranchiseData, RelatedKind } from "./provider";
 
-// Every query key starts with ROOT + the provider + its cache scope (for RAWG,
-// the key's fingerprint), so a provider or key change starts a fresh cache and
-// no credential is ever part of a key. Ids in keys are provider-qualified.
+// Every query key starts with ROOT + the provider + its cache scope (RAWG: the
+// key's fingerprint; IGDB: the credential generation), so a provider or
+// credential change starts a fresh cache and no credential is ever part of a
+// key. Ids in keys are provider-qualified.
 // gcTime >= staleTime everywhere: cached data is reused until it goes stale.
-const ROOT = ["harbor", "games"] as const;
+const ROOT = GAMES_QUERY_ROOT;
 const LIST = { staleTime: 30 * 60_000, gcTime: 60 * 60_000 };
 const DETAIL = { staleTime: 6 * 60 * 60_000, gcTime: 6 * 60 * 60_000 };
 // The client already retries transport and 5xx failures.
 const NO_RETRY = { retry: false as const, refetchOnReconnect: false };
 
-type Gate = Pick<RawgGateState, "ready" | "fingerprint" | "auth">;
+type Gate = Pick<GamesGate, "provider" | "ready" | "scope" | "auth">;
 type Scope = Pick<GameMetadataProvider, "id" | "scope">;
 
 export const gameKeys = {
@@ -52,21 +56,26 @@ export const gameKeys = {
 };
 
 /**
- * The active metadata provider for this gate. Exactly one provider is active
- * (RAWG in Stage 2); memoised on the credential state, so it is created once
- * per key change, never per render.
+ * The active metadata provider for this gate. Exactly one provider is active;
+ * memoised on the credential state, so it's created once per key or
+ * credential change, never per render. IGDB's instance is shared app-wide.
  */
 export function useGameProvider(gate: Gate): GameMetadataProvider {
   const { key, verifiedFor } = gate.auth;
-  const scope = gate.fingerprint;
+  const { provider: id, scope } = gate;
   return useMemo(() => {
-    switch (ACTIVE_GAME_PROVIDER) {
+    switch (id) {
       case "rawg":
         return createRawgProvider(rawg, { key, verifiedFor }, scope);
-      default:
-        throw new Error("No metadata provider is available");
+      case "igdb":
+        return igdbProviderFor(scope);
     }
-  }, [key, verifiedFor, scope]);
+  }, [id, key, verifiedFor, scope]);
+}
+
+/** A detail lookup through the query cache: cached details cost no request. */
+function cachedLookup(qc: QueryClient, provider: GameMetadataProvider): DetailLookup {
+  return (idOrSlug) => qc.fetchQuery(detailQueryOptions(qc, provider, idOrSlug));
 }
 
 /** Detail by id or slug; null when the provider has no such game (cached, so a bad slug costs one request). */
@@ -125,10 +134,11 @@ export function useGameDetail(gate: Gate, idOrSlug: GameId | string | null, enab
 }
 
 export function useGameScreenshots(gate: Gate, id: GameId, enabled: boolean) {
+  const qc = useQueryClient();
   const provider = useGameProvider(gate);
   return useQuery({
     queryKey: gameKeys.screenshots(provider, id),
-    queryFn: ({ signal }) => provider.screenshots(id, signal),
+    queryFn: ({ signal }) => provider.screenshots(id, signal, cachedLookup(qc, provider)),
     enabled: enabled && gate.ready,
     ...DETAIL,
     ...NO_RETRY,
@@ -136,10 +146,11 @@ export function useGameScreenshots(gate: Gate, id: GameId, enabled: boolean) {
 }
 
 export function useGameRelated(gate: Gate, id: GameId, kind: RelatedKind, enabled: boolean) {
+  const qc = useQueryClient();
   const provider = useGameProvider(gate);
   return useQuery({
     queryKey: gameKeys.related(provider, id, kind),
-    queryFn: ({ signal }) => provider.related(id, kind, signal),
+    queryFn: ({ signal }) => provider.related(id, kind, signal, cachedLookup(qc, provider)),
     enabled: enabled && gate.ready,
     ...DETAIL,
     ...NO_RETRY,
@@ -167,7 +178,8 @@ export function useGameBrowse(gate: Gate, filter: GameListFilter, enabled: boole
   const provider = useGameProvider(gate);
   return useInfiniteQuery({
     queryKey: gameKeys.browse(provider, filter),
-    queryFn: ({ pageParam, signal }) => provider.list(filter, pageParam, BROWSE_PAGE_SIZE, signal),
+    queryFn: ({ pageParam, signal }) =>
+      provider.list(filter, pageParam, BROWSE_PAGE_SIZE, signal, { withCount: pageParam === 1 }),
     initialPageParam: 1,
     getNextPageParam: (last, pages) =>
       last.hasMore && last.items.length > 0 ? pages.length + 1 : undefined,
@@ -184,13 +196,9 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
     queryKey: gameKeys.franchise(provider, def?.id ?? ""),
     queryFn: async ({ signal }): Promise<FranchiseData> => {
       if (!def) throw new Error("unknown franchise");
-      return provider.franchise(
-        def,
-        (idOrSlug) => qc.fetchQuery(detailQueryOptions(qc, provider, idOrSlug)),
-        signal,
-      );
+      return provider.franchise(def, cachedLookup(qc, provider), signal);
     },
-    enabled: enabled && gate.ready && def !== null,
+    enabled: enabled && gate.ready && def !== null && providerFeatures(provider.id).franchises,
     ...DETAIL,
     ...NO_RETRY,
   });
@@ -207,8 +215,11 @@ export function resolveFranchiseData(data: FranchiseData, sort: FranchiseSort): 
 export function useFranchiseArt(gate: Gate, def: FranchiseDef | null, enabled: boolean) {
   const qc = useQueryClient();
   const provider = useGameProvider(gate);
-  const id = def?.id ?? "";
-  const artwork = def?.artwork ?? "";
+  // Curated franchise art comes from RAWG's catalog (Stage 5 maps it to IGDB);
+  // another provider gets none, cached RAWG art included.
+  const supported = providerFeatures(provider.id).franchises;
+  const id = supported ? (def?.id ?? "") : "";
+  const artwork = supported ? (def?.artwork ?? "") : "";
   const cached = useMemo(() => (id ? readFranchiseArt(id) : null), [id]);
   const known = useMemo(
     () =>

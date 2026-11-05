@@ -1,19 +1,38 @@
 import { ExternalLink } from "lucide-react";
+import type { GameProvider } from "@/lib/game-discovery/game-id";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 
-// RAWG's terms require an active hyperlink to RAWG on every page that shows its data.
-export function RawgAttribution({ className = "" }: { className?: string }) {
+const SOURCES: Record<GameProvider, { name: string; url: string }> = {
+  rawg: { name: "RAWG", url: "https://rawg.io/" },
+  igdb: { name: "IGDB", url: "https://www.igdb.com/" },
+};
+
+// RAWG's terms require an active hyperlink to RAWG on every page that shows its
+// data; IGDB data is credited the same way. The footer also makes the active
+// provider plain on every Games page.
+export function GamesAttribution({
+  provider,
+  className = "",
+}: {
+  provider: GameProvider;
+  className?: string;
+}) {
   const t = useT();
+  const source = SOURCES[provider];
   return (
     <p className={`text-[12px] leading-relaxed text-ink-subtle ${className}`}>
       {t("Game data and images provided by")}{" "}
       <button
-        onClick={() => openUrl("https://rawg.io/")}
+        onClick={() => openUrl(source.url)}
         className="inline-flex items-center gap-1 font-medium text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
       >
-        RAWG <ExternalLink size={11} />
+        {source.name} <ExternalLink size={11} />
       </button>
     </p>
   );
+}
+
+export function RawgAttribution({ className = "" }: { className?: string }) {
+  return <GamesAttribution provider="rawg" className={className} />;
 }

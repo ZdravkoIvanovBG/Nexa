@@ -1,8 +1,19 @@
-import { Check, FolderPlus, Layers, ListOrdered, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  Check,
+  Clock,
+  FolderPlus,
+  Layers,
+  ListOrdered,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { emitListToast } from "@/components/lists/list-toast";
 import type { FranchiseDef } from "@/lib/game-discovery/franchises";
-import type { GameSummary } from "@/lib/game-discovery/types";
+import { providerOf } from "@/lib/game-discovery/game-id";
+import { providerFeatures } from "@/lib/game-discovery/provider";
+import type { GameRef, GameSummary } from "@/lib/game-discovery/types";
 import { toGameRef } from "@/lib/game-discovery/types";
 import {
   addCatalogGames,
@@ -26,7 +37,17 @@ import { requestTab } from "../game-library/tab";
 import { removeWithUndo } from "../game-library/wishlist-actions";
 
 // Saving from Discovery. Everything saved is what's already on screen, so these
-// controls cost no RAWG request of their own.
+// controls cost no provider request of their own.
+//
+// Stage 4 boundary: only games from a provider whose library saves are enabled
+// (RAWG) can be written. An IGDB game is never saved, under its own id or any
+// other, until Stage 6 adds IGDB identities to the Game Library. Every write
+// below takes its ref from `savableRef`, the one place that check lives.
+
+/** The ref to save for a game, or null when its provider can't be saved yet. */
+export function savableRef(game: GameSummary): GameRef | null {
+  return providerFeatures(providerOf(game.id)).librarySaves ? toGameRef(game) : null;
+}
 
 const ICON = { size: 14, strokeWidth: 2 } as const;
 
@@ -57,8 +78,24 @@ export function useRefreshSavedGame(game: GameSummary | null): void {
   const saved = game ? !!data.records[game.id] : false;
   useEffect(() => {
     if (!ready || !saved || !game) return;
-    changeGameLibrary((d, ctx) => refreshSnapshot(d, toGameRef(game), ctx));
+    const ref = savableRef(game);
+    if (!ref) return;
+    changeGameLibrary((d, ctx) => refreshSnapshot(d, ref, ctx));
   }, [ready, saved, game]);
+}
+
+/** In place of the save controls for a game that can't be saved yet (IGDB, Stage 4). */
+function NotSavableYet() {
+  const t = useT();
+  return (
+    <span
+      title={t("Saving IGDB games to your Game Library comes in a later update.")}
+      className={`${BUTTON} cursor-default border border-edge bg-canvas/50 text-ink-muted`}
+    >
+      <Clock size={16} strokeWidth={2.2} />
+      {t("Wishlist coming soon for IGDB games")}
+    </span>
+  );
 }
 
 export function SaveGameButton({
@@ -78,10 +115,12 @@ export function SaveGameButton({
   const stage = gameStage(data, gameId);
   const placed = useMemo(() => placementsOf(data, gameId), [data, gameId]);
   if (!canSave) return null;
+  const ref = savableRef(game);
+  if (!ref) return <NotSavableYet />;
 
   const view = { label: t("View in Wishlist"), run: openWishlist };
   const addToCollection = (collectionId: string, title: string) => {
-    changeGameLibrary((d, ctx) => addMember(d, collectionId, toGameRef(game), ctx));
+    changeGameLibrary((d, ctx) => addMember(d, collectionId, ref, ctx));
     emitListToast(t("Added {name} to {collection}", { name: game.name, collection: title }), view);
   };
   const collectionItems: MenuItem[] = liveCollections(data)
@@ -99,7 +138,7 @@ export function SaveGameButton({
 
   if (stage === "none") {
     const save = () => {
-      changeGameLibrary((d, ctx) => saveGame(d, toGameRef(game), ctx));
+      changeGameLibrary((d, ctx) => saveGame(d, ref, ctx));
       emitListToast(t("Added {name} to your Wishlist", { name: game.name }), view);
     };
     const ownCollection = franchise ? savedCollection(data, franchise.id) : null;
@@ -152,7 +191,7 @@ export function SaveGameButton({
       label: t("Also add on its own"),
       icon: <Plus {...ICON} />,
       run: () => {
-        changeGameLibrary((d, ctx) => saveGame(d, toGameRef(game), ctx));
+        changeGameLibrary((d, ctx) => saveGame(d, ref, ctx));
         emitListToast(t("Added {name} to your Wishlist", { name: game.name }), view);
       },
     });
@@ -232,6 +271,10 @@ export function SaveCollectionButton({
   const menu = useActionMenu();
   const openWishlist = useOpenWishlist();
   if (!canSave || !games || games.length === 0) return null;
+  // Every member must be savable; a franchise page never mixes providers.
+  const refs = games.map(savableRef);
+  if (refs.some((r) => r === null)) return null;
+  const memberRefs = refs as GameRef[];
 
   const saved = savedCollection(data, def.id);
   const view = { label: t("View in Wishlist"), run: openWishlist };
@@ -242,7 +285,7 @@ export function SaveCollectionButton({
         saveCollection(
           d,
           { franchiseId: def.id, title: def.name, image: image ?? games[0].image },
-          games.map(toGameRef),
+          memberRefs,
           def.mainline,
           ctx,
         ),
@@ -259,6 +302,7 @@ export function SaveCollectionButton({
 
   const offered = new Set(catalogAdditions(saved, def.mainline));
   const newGames = games.filter((g) => offered.has(slugOf(g)));
+  const newRefs = newGames.map(savableRef).filter((r): r is GameRef => r !== null);
   const items: MenuItem[] = [
     {
       id: "view",
@@ -277,7 +321,7 @@ export function SaveCollectionButton({
       icon: <Sparkles {...ICON} />,
       run: () => {
         changeGameLibrary((d, ctx) =>
-          addCatalogGames(d, saved.entryId, newGames.map(toGameRef), newGames.map(slugOf), ctx),
+          addCatalogGames(d, saved.entryId, newRefs, newGames.map(slugOf), ctx),
         );
         emitListToast(
           newGames.length === 1

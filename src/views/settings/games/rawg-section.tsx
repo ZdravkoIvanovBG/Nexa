@@ -1,7 +1,8 @@
 import { Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { canToggleGames, keyFingerprint } from "@/lib/game-discovery/gates";
+import { canToggleGames, gamesToggleAllowed, keyFingerprint } from "@/lib/game-discovery/gates";
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
+import { useGamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useRawgGate } from "@/lib/game-discovery/use-rawg";
 import { useT } from "@/lib/i18n";
 import { rawg, type RawgKeyCheck } from "@/lib/providers/rawg";
@@ -34,6 +35,8 @@ export function RawgSection() {
   const t = useT();
   const { settings, update } = useSettings();
   const gate = useRawgGate();
+  const games = useGamesGate();
+  const igdbActive = games.provider === "igdb";
   const [draft, setDraft] = useState(settings.rawgApiKey);
   const [saved, setSaved] = useState(false);
   const [check, setCheck] = useState<CheckState>("idle");
@@ -130,14 +133,18 @@ export function RawgSection() {
               ? t("RAWG rejected this key while browsing. Verify it again or replace it.")
               : null;
 
-  const toggleLocked = !canToggleGames(
-    {
-      gamesEnabled: settings.gamesEnabled,
-      rawgApiKey: settings.rawgApiKey,
-      rawgKeyVerifiedFor: settings.rawgKeyVerifiedFor,
-    },
-    rawgSessionStatus.isRejected,
-  );
+  // The toggle needs the *active* provider ready: a RAWG key while RAWG is
+  // active, verified IGDB credentials while IGDB is (development builds).
+  const toggleLocked = igdbActive
+    ? !gamesToggleAllowed(settings.gamesEnabled, games.ready)
+    : !canToggleGames(
+        {
+          gamesEnabled: settings.gamesEnabled,
+          rawgApiKey: settings.rawgApiKey,
+          rawgKeyVerifiedFor: settings.rawgKeyVerifiedFor,
+        },
+        rawgSessionStatus.isRejected,
+      );
 
   return (
     <>
@@ -201,11 +208,22 @@ export function RawgSection() {
           )}
           value={settings.gamesEnabled}
           onChange={(v) => update({ gamesEnabled: v })}
-          lockReason={toggleLocked ? t("Verify a RAWG API key first") : undefined}
+          lockReason={
+            toggleLocked
+              ? igdbActive
+                ? t("Verify your IGDB credentials first")
+                : t("Verify a RAWG API key first")
+              : undefined
+          }
         />
         <p className="text-[12px] leading-relaxed text-ink-subtle">
           {t("Game data and images are provided by")}{" "}
-          <ExtLink href="https://rawg.io/">RAWG</ExtLink>.
+          {igdbActive ? (
+            <ExtLink href="https://www.igdb.com/">IGDB</ExtLink>
+          ) : (
+            <ExtLink href="https://rawg.io/">RAWG</ExtLink>
+          )}
+          .
         </p>
       </Section>
     </>
