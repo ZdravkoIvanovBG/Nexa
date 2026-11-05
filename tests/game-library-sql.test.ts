@@ -236,7 +236,7 @@ test("verify checks the exact columns the migration creates, in order", () => {
 
 test("the README lists every script, and each file it names exists", () => {
   const listed = [...README.matchAll(/`((?:tests|migrations|rollback)\/[^`]+)`/g)].map((m) => m[1]);
-  assert.equal(new Set(listed).size, 5);
+  assert.equal(new Set(listed).size, 6);
   for (const path of listed) {
     assert.ok(existsSync(new URL(`../supabase/${path}`, import.meta.url)), path);
   }

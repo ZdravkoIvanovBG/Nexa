@@ -21,6 +21,7 @@ the files here and the table below are the record of what has been run.
 | `migrations/20261102120000_game_library.sql`    | Permanent schema change                            | Already applied everywhere it needs to be. Don't run it again   |
 | `tests/game_library_verify.sql`                 | Reads catalogs. Writes nothing                     | Anywhere                                                        |
 | `tests/game_library_checks.sql`                 | Creates throwaway users and rows, then undoes them | Blank test project only. It refuses to run where accounts exist |
+| `tests/game_library_igdb_checks.sql`            | Same, for IGDB ids next to RAWG ones (Stage 6)     | Blank test project only. It refuses to run where accounts exist |
 | `rollback/20261102120000_game_library_down.sql` | Deletes the tables and all their data              | Only to abandon the migration                                   |
 
 ## Applied
@@ -31,6 +32,11 @@ the files here and the table below are the record of what has been run.
 
 This migration is live, so it is now frozen. Any change to these tables needs a new
 migration file.
+
+IGDB games (Stage 6 of the IGDB plan) need no migration. `game_id` and `entry_id` are
+plain `text` with no format check, so `igdb:N`, `g:igdb:N` and `c:<franchise>|igdb:N`
+are stored exactly like the RAWG ids, under the same keys, policies and merge triggers.
+`tests/game_library_igdb_checks.sql` proves that on a blank test project.
 
 ### `20261102120000_game_library`
 
