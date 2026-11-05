@@ -13,6 +13,18 @@ const PLATFORM_SHORT: Record<PlatformFamily, string> = {
   other: "",
 };
 
+/**
+ * Art for the hero and the game page backdrop. RAWG has one image per game,
+ * used everywhere as before. IGDB picks hero art separately (large landscape
+ * only); null means the game has none and shouldn't be a hero slide.
+ */
+export function heroImageOf(
+  game: Pick<GameSummary, "image" | "imageKind" | "heroImage">,
+): string | null {
+  if (game.heroImage !== undefined) return game.heroImage;
+  return game.imageKind === "portrait" ? null : game.image;
+}
+
 export function releaseYear(game: Pick<GameSummary, "released" | "tba">): string | null {
   if (game.released) return game.released.slice(0, 4);
   return game.tba ? "TBA" : null;

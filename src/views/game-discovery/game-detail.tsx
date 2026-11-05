@@ -28,6 +28,7 @@ import { TitlePlate } from "../detail/title-plate";
 import {
   criticScoreOf,
   formatReleaseDate,
+  heroImageOf,
   releaseYear,
   userScoreOf,
   VARIANT_LABEL,
@@ -194,10 +195,11 @@ function GameDetailBody({
     );
   }
 
-  // A portrait cover is never stretched into the 16:9 backdrop: it gets a
-  // blurred fill instead, with landscape art preferred when there is any.
+  // Hero-quality art first, then the card's landscape art, then another
+  // landscape image. A portrait cover is never stretched into the backdrop:
+  // it gets a blurred fill instead.
   const portrait = game.imageKind === "portrait";
-  const backdrop = (portrait ? detail?.imageAlt : game.image) ?? detail?.imageAlt ?? null;
+  const backdrop = heroImageOf(game) ?? (portrait ? null : game.image) ?? detail?.imageAlt ?? null;
   // Curated franchises are keyed by RAWG slugs until Stage 5 maps them to IGDB.
   const franchise = providerFeatures(gate.provider).franchises ? franchiseForSlug(game.slug) : null;
   const page = providerPageUrl(gate.provider, game.slug, detail?.providerUrl);

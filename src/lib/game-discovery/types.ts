@@ -53,6 +53,12 @@ export type GameSummary = {
   userCount?: number;
   /** "portrait" when `image` is a cover, not landscape art: never crop it to 16:9. */
   imageKind?: "portrait";
+  /**
+   * Large landscape art for the hero and the game page backdrop, chosen apart
+   * from the card art (IGDB). Null: the provider has nothing big enough, so the
+   * game isn't a hero slide. Undefined (RAWG): use `image`.
+   */
+  heroImage?: string | null;
   /** What the record is when it isn't a main game (IGDB game_type / editions). */
   variant?: GameVariant;
 };

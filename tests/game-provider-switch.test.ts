@@ -275,7 +275,10 @@ test("image sizes: RAWG unchanged, IGDB resized, covers never resized into a cro
 
 test("portrait covers are never placed in the hero or stretched in a card", () => {
   const discovery = src("views/game-discovery.tsx");
-  assert.match(discovery, /\.filter\(\(g\) => g\.image && g\.imageKind !== "portrait"\)/);
+  assert.match(discovery, /\.filter\(\(g\) => heroImageOf\(g\)\)/);
+  const format = src("views/game-discovery/format.ts");
+  assert.match(format, /if \(game\.heroImage !== undefined\) return game\.heroImage;/);
+  assert.match(format, /return game\.imageKind === "portrait" \? null : game\.image;/);
   const card = src("views/game-discovery/game-card.tsx");
   assert.match(
     card,

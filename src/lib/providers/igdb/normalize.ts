@@ -2,11 +2,14 @@
 // requests, no app state. Anything malformed is dropped rather than guessed.
 
 import type { NamedRef, PlatformFamily } from "../../game-discovery/types.ts";
-import { igdbImage, pickArt, validImageId } from "./image.ts";
+import { artCandidates, selectArt, type ArtCandidate } from "./art.ts";
+import { artOverrideFor } from "./art-overrides.ts";
+import { igdbImage, validImageId } from "./image.ts";
 import { AGE_RATING_ORG_ESRB, THEME_EROTIC } from "./query.ts";
 import type {
   IgdbGame,
   IgdbGameDetail,
+  IgdbArt,
   IgdbGameId,
   RawIgdbGame,
   RawIgdbNamed,
@@ -134,6 +137,29 @@ export function isErotic(raw: RawIgdbGame): boolean {
   );
 }
 
+const landscape = (c: ArtCandidate | null): IgdbArt | null =>
+  c ? { url: igdbImage(c.imageId, "screenshot_big")!, kind: c.kind, blur: false } : null;
+
+/**
+ * Card and hero art (art.ts): landscape candidates ranked by type, size and
+ * shape, curated overrides first. A card with no usable landscape image falls
+ * back to the portrait cover (shown whole on a blurred fill); a hero never does.
+ */
+function chooseArt(
+  raw: RawIgdbGame,
+  id: IgdbGameId,
+): { card: IgdbArt | null; hero: IgdbArt | null } {
+  const candidates = artCandidates(raw);
+  const override = artOverrideFor(id);
+  const hero = landscape(selectArt(candidates, "hero", override?.hero));
+  let card = landscape(selectArt(candidates, "card", override?.card));
+  const cover = raw.cover?.image_id;
+  if (!card && validImageId(cover)) {
+    card = { url: igdbImage(cover, "cover_big")!, kind: "cover", blur: true };
+  }
+  return { card, hero };
+}
+
 export function normalizeIgdbGame(raw: RawIgdbGame | null | undefined): IgdbGame | null {
   if (!raw || typeof raw !== "object") return null;
   const igdbId = positiveInt(raw.id);
@@ -142,6 +168,7 @@ export function normalizeIgdbGame(raw: RawIgdbGame | null | undefined): IgdbGame
   if (igdbId === null || !name || !slug) return null;
   const released = isoDate(raw.first_release_date);
   const cover = raw.cover?.image_id;
+  const chosen = chooseArt(raw, igdbGameId(igdbId));
   const screenshots: string[] = [];
   for (const shot of raw.screenshots ?? []) {
     const shotId = shot?.image_id;
@@ -155,7 +182,8 @@ export function normalizeIgdbGame(raw: RawIgdbGame | null | undefined): IgdbGame
     name,
     released,
     tba: released === null,
-    art: pickArt(raw),
+    art: chosen.card,
+    heroArt: chosen.hero,
     cover: validImageId(cover) ? igdbImage(cover, "cover_big") : null,
     criticScore: score(raw.aggregated_rating),
     criticCount: count(raw.aggregated_rating_count),

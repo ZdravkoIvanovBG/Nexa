@@ -25,6 +25,9 @@ const NOW_MS = Date.UTC(2026, 10, 5);
 const NOW = NOW_MS / 1000;
 
 const img = (id) => ({ image_id: id });
+// Sized images, as IGDB returns them with the Stage 4A art fields.
+const keyArt = (id) => ({ image_id: id, width: 3840, height: 2160, artwork_type: 2 });
+const shot = (id) => ({ image_id: id, width: 1920, height: 1080 });
 function game(id, extra = {}) {
   return {
     id,
@@ -37,8 +40,8 @@ function game(id, extra = {}) {
     rating: 91.6,
     rating_count: 900,
     cover: img(`cov${id}`),
-    artworks: [img(`art${id}`)],
-    screenshots: [img(`shot${id}a`), img(`shot${id}b`)],
+    artworks: [keyArt(`art${id}`)],
+    screenshots: [shot(`shot${id}a`), shot(`shot${id}b`)],
     genres: [{ id: 12, name: "Role-playing (RPG)", slug: "role-playing-rpg" }],
     themes: [{ id: 1, name: "Action", slug: "action" }],
     platforms: [{ id: 6, name: "PC (Microsoft Windows)" }],
@@ -146,12 +149,14 @@ test("an Erotic-themed game is never served as a detail page", async () => {
 test("art: landscape first at full size, a portrait cover is flagged, never cropped", () => {
   const landscape = toGameSummary(normalizeIgdbGame(game(1)));
   assert.match(landscape.image, /\/t_1080p\/art1\.jpg$/);
+  assert.match(landscape.heroImage, /\/t_1080p\/art1\.jpg$/);
   assert.equal(landscape.imageKind, undefined);
-  const shot = toGameSummary(normalizeIgdbGame(game(2, { artworks: [] })));
-  assert.match(shot.image, /\/t_1080p\/shot2a\.jpg$/);
+  const screenshot = toGameSummary(normalizeIgdbGame(game(2, { artworks: [] })));
+  assert.match(screenshot.image, /\/t_1080p\/shot2a\.jpg$/);
   const cover = toGameSummary(normalizeIgdbGame(game(3, { artworks: [], screenshots: [] })));
   assert.match(cover.image, /\/t_cover_big\/cov3\.jpg$/);
   assert.equal(cover.imageKind, "portrait");
+  assert.equal(cover.heroImage, null, "a cover is never hero art");
   const none = toGameSummary(
     normalizeIgdbGame(game(4, { artworks: [], screenshots: [], cover: null })),
   );

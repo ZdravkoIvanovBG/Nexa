@@ -102,7 +102,11 @@ test("summary fields: dates, scores, art, platforms, ESRB", () => {
   assert.equal(witcher.criticCount, 31);
   assert.equal(witcher.userScore, 93);
   assert.equal(witcher.userCount, 4120);
-  assert.equal(witcher.art.kind, "artwork");
+  // Stage 4A: an artwork without size or type can't be trusted to frame
+  // well, so the sized-unknown screenshot (a 16:9 frame grab) wins on cards,
+  // and nothing unsized is ever hero art.
+  assert.equal(witcher.art.kind, "screenshot");
+  assert.equal(witcher.heroArt, null);
   assert.equal(witcher.cover, `${IGDB_IMAGE_BASE}/t_cover_big/coaarl.jpg`);
   assert.deepEqual(witcher.platformFamilies, ["pc", "playstation", "xbox", "nintendo"]);
   assert.equal(witcher.esrb, "M", "ESRB is picked by organization, not PEGI");

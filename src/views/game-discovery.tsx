@@ -15,6 +15,7 @@ import { GamesFrame } from "./game-discovery/games-frame";
 import { GamesHero } from "./game-discovery/games-hero";
 import { GamesErrorState } from "./game-discovery/games-state";
 import { GameGenreTiles } from "./game-discovery/genre-tiles";
+import { heroImageOf } from "./game-discovery/format";
 import { WhenNear } from "./game-discovery/when-near";
 
 const ROW_PAGE_SIZE = 20;
@@ -43,12 +44,9 @@ function GamesDiscovery({ gate, active }: { gate: GamesGate; active: boolean }) 
   const popularQuery = useGameList(gate, popular.filter, ROW_PAGE_SIZE, active);
   const freshQuery = useGameList(gate, fresh.filter, ROW_PAGE_SIZE, active);
 
-  // Hero slides need landscape art; a portrait cover would be cropped.
+  // Hero slides need large landscape art: no portrait covers, nothing small.
   const hero = useMemo(
-    () =>
-      (popularQuery.data?.items ?? [])
-        .filter((g) => g.image && g.imageKind !== "portrait")
-        .slice(0, HERO_SLIDES),
+    () => (popularQuery.data?.items ?? []).filter((g) => heroImageOf(g)).slice(0, HERO_SLIDES),
     [popularQuery.data],
   );
   const showHero = hero.length >= MIN_HERO_SLIDES;

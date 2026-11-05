@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { observe, usePageVisible } from "@/lib/visibility";
 import { MetacriticBadge } from "./game-card";
-import { criticScoreOf, releaseYear, userScoreOf } from "./format";
+import { criticScoreOf, heroImageOf, releaseYear, userScoreOf } from "./format";
 
 // Adapted from CinemaHero: same rotation, drag and gradients. No trailer, logo
 // or Play button -- neither provider has logo art and launching games isn't
@@ -214,8 +214,8 @@ function GameSlide({
   const genres = game.genres.slice(0, 2).map((g) => g.name);
   const critic = criticScoreOf(game);
   const user = userScoreOf(game);
-  // RAWG keeps its original URL here; IGDB art is already stored full size.
-  const [image] = gameImage(game.image, null);
+  // RAWG keeps its original URL here; IGDB hero art is already full size.
+  const [image] = gameImage(heroImageOf(game), null);
 
   return (
     <div aria-hidden={!active} className="relative h-full w-full">

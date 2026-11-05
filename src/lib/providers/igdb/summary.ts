@@ -65,6 +65,7 @@ export function toGameSummary(game: IgdbGame): GameSummary {
     userScore: game.userScore,
     userCount: game.userCount,
   };
+  summary.heroImage = game.heroArt ? full(game.heroArt.url) : null;
   if (portrait) summary.imageKind = "portrait";
   const variant = variantOf(game);
   if (variant) summary.variant = variant;
@@ -102,8 +103,9 @@ function tags(game: IgdbGame): NamedRef[] {
 export function toGameDetail(detail: IgdbGameDetail, raw: RawIgdbGame): GameDetail {
   const summary = toGameSummary(detail);
   const screenshots = detail.screenshots.map(full);
-  // The second landscape image (backdrop alternative), when there is one.
-  const imageAlt = screenshots.find((url) => url !== summary.image) ?? null;
+  // A second landscape image (backdrop alternative), when there is one.
+  const imageAlt =
+    screenshots.find((url) => url !== summary.image && url !== summary.heroImage) ?? null;
   const r = detail.related;
   const parents = [r.parent, detail.versionParent].filter(
     (n, i, all): n is number => n !== null && all.indexOf(n) === i,

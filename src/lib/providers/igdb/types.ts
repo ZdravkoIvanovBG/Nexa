@@ -12,7 +12,16 @@ import type { NamedRef, PlatformFamily } from "../../game-discovery/types.ts";
 
 export type IgdbGameId = `igdb:${number}`;
 
-export type RawIgdbImage = { id?: number; image_id?: string; width?: number; height?: number };
+export type RawIgdbImage = {
+  id?: number;
+  image_id?: string;
+  width?: number;
+  height?: number;
+  /** Artworks only: IGDB artwork_type id (or the expanded object). */
+  artwork_type?: number | { id?: number };
+  alpha_channel?: boolean;
+  animated?: boolean;
+};
 export type RawIgdbNamed = { id?: number; slug?: string; name?: string };
 export type RawIgdbPlatform = RawIgdbNamed & {
   abbreviation?: string;
@@ -87,8 +96,10 @@ export type IgdbGame = {
   /** ISO date (YYYY-MM-DD, UTC) or null when IGDB has no first release date. */
   released: string | null;
   tba: boolean;
-  /** Landscape art for cards and heroes, or null. */
+  /** Card art: landscape when there is any usable, else a blurred portrait cover; or null. */
   art: IgdbArt | null;
+  /** Hero and backdrop art: large landscape only, never a cover; or null. */
+  heroArt: IgdbArt | null;
   /** Portrait cover (cover_big), or null. */
   cover: string | null;
   /** IGDB aggregated critic score, 0–100, rounded; null when unrated. */
