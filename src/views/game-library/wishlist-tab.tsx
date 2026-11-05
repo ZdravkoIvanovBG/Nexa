@@ -1,5 +1,7 @@
 import { LayoutGrid, LayoutList, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { providerFeatures } from "@/lib/game-discovery/provider";
+import { useActiveGameProvider } from "@/lib/game-discovery/use-active-provider";
 import { wishlistView } from "@/lib/game-library/rules";
 import { useGameLibrary } from "@/lib/game-library/store";
 import { useT } from "@/lib/i18n";
@@ -54,6 +56,8 @@ export function WishlistTab({ active }: { active: boolean }) {
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const openSearch = useOpenGameSearch();
+  // The same card shape as Discovery: landscape on RAWG, 3:4 covers on IGDB.
+  const shape = providerFeatures(useActiveGameProvider()).cards;
 
   useEffect(() => {
     try {
@@ -149,13 +153,14 @@ export function WishlistTab({ active }: { active: boolean }) {
           </div>
 
           {mode === "list" ? (
-            <WishlistList items={items} expanded={expanded} onToggle={toggle} />
+            <WishlistList items={items} expanded={expanded} onToggle={toggle} shape={shape} />
           ) : (
             <WishlistGallery
               items={items}
               // The sheet is in a portal, so it would stay on screen over other pages.
               sheetId={active ? sheetId : null}
               onOpenSheet={setSheetId}
+              shape={shape}
             />
           )}
         </>

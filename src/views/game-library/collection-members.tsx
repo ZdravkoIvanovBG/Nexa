@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { useActionMenu } from "./action-menu";
 import { announceMove, memberMenu } from "./entry-menus";
-import { GameArt } from "./game-art";
+import { GameArt, type GameArtShape } from "./game-art";
 import { usePointerSort } from "./use-pointer-sort";
 import { moveTo } from "./wishlist-actions";
 import { Dot, MoreButton, ReorderButtons, SortHandle, StatusChip, yearOf } from "./wishlist-parts";
@@ -32,10 +32,12 @@ export function dismissNewGames(entry: QueueEntry): void {
 export function CollectionMembers({
   collection,
   members,
+  shape,
   onNavigate,
 }: {
   collection: QueueEntry;
   members: CollectionMember[];
+  shape: GameArtShape;
   /** Runs before leaving the page, for the sheet to close itself. */
   onNavigate?: () => void;
 }) {
@@ -127,7 +129,8 @@ export function CollectionMembers({
                     image={record.image}
                     seed={record.gameId}
                     name={record.name}
-                    className="w-[92px] shrink-0"
+                    shape={shape}
+                    className={`${shape === "cover" ? "w-[40px]" : "w-[92px]"} shrink-0`}
                   />
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="truncate text-[14px] font-medium text-ink">{record.name}</span>

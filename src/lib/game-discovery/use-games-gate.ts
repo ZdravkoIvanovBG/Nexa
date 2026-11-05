@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { GameProvider } from "./game-id";
 import { igdbConfigState, type GamesConfigState } from "./gates";
-import { devGamesProvider, igdbNativeAvailable, igdbStatus } from "./igdb-native";
+import { igdbNativeAvailable, igdbStatus } from "./igdb-native";
+import { useActiveGameProvider } from "./use-active-provider";
 import { useRawgGate, type RawgGateState } from "./use-rawg";
 
 /**
@@ -22,10 +23,7 @@ export type GamesGate = {
   rawg: RawgGateState;
 };
 
-/** The provider Discovery uses right now (RAWG unless the dev switch says IGDB). */
-export function useActiveGameProvider(): GameProvider {
-  return useSyncExternalStore(devGamesProvider.subscribe, devGamesProvider.get);
-}
+export { useActiveGameProvider };
 
 /**
  * The IGDB credential status, read from the device store the first time it's

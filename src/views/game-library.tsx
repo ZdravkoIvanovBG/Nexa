@@ -1,11 +1,13 @@
 import { Gamepad2, ListOrdered, TriangleAlert, Trophy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
+import { GAME_PROVIDERS, type GameProvider } from "@/lib/game-discovery/game-id";
+import { useActiveGameProvider } from "@/lib/game-discovery/use-active-provider";
 import { requestGameLibrarySync } from "@/lib/game-library/cloud/sync";
-import { useGameLibraryUnsaved } from "@/lib/game-library/store";
+import { useGameLibrary, useGameLibraryUnsaved } from "@/lib/game-library/store";
 import { useT } from "@/lib/i18n";
 import { useScrollMemory, useView } from "@/lib/view";
-import { RawgAttribution } from "./game-discovery/rawg-attribution";
+import { GamesAttribution } from "./game-discovery/rawg-attribution";
 import { PlayingEmpty, TierListEmpty } from "./game-library/empty-states";
 import { onTabRequest, readSavedTab, saveTab, type GameLibraryTab } from "./game-library/tab";
 import { WishlistTab } from "./game-library/wishlist-tab";
@@ -19,10 +21,10 @@ const ACTIVITY: Record<GameLibraryTab, string> = {
 
 /**
  * The Game Library. Unlike the Discovery pages this isn't wrapped in GamesFrame,
- * which hides its content until a RAWG key checks out: this page belongs to the
- * user, so it opens whatever state RAWG is in, and it sends RAWG no requests.
- * Saved art loads from RAWG's image host like any other picture, and falls
- * back to a plain plate when it can't.
+ * which hides its content until the active provider's credentials check out:
+ * this page belongs to the user, so it opens whatever state RAWG or IGDB is in,
+ * and it sends neither any requests. Saved art loads from the provider's image
+ * host like any other picture, and falls back to a plain plate when it can't.
  */
 export function GameLibraryView({
   active,
@@ -108,10 +110,33 @@ export function GameLibraryView({
         {tab === "playing" && <PlayingEmpty />}
         {tab === "tiers" && <TierListEmpty />}
         <footer className="mt-auto pt-6">
-          <RawgAttribution />
+          <LibraryAttribution />
         </footer>
       </div>
     </main>
+  );
+}
+
+/**
+ * Credits every provider whose data and images the library shows: RAWG for
+ * games saved from RAWG, IGDB for games saved from IGDB, or the active provider
+ * while nothing is saved.
+ */
+function LibraryAttribution() {
+  const { data } = useGameLibrary();
+  const active = useActiveGameProvider();
+  const providers = useMemo(() => {
+    const used = new Set<GameProvider>();
+    for (const record of Object.values(data.records)) used.add(record.provider);
+    if (used.size === 0) used.add(active);
+    return GAME_PROVIDERS.filter((provider) => used.has(provider));
+  }, [data, active]);
+  return (
+    <div className="flex flex-col gap-1">
+      {providers.map((provider) => (
+        <GamesAttribution key={provider} provider={provider} />
+      ))}
+    </div>
   );
 }
 

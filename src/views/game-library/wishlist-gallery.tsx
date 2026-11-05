@@ -9,14 +9,18 @@ import { useView } from "@/lib/view";
 import { useActionMenu } from "./action-menu";
 import { CollectionMembers, newCatalogGames } from "./collection-members";
 import { collectionMenu, gameMenu } from "./entry-menus";
-import { CollectionArt, GameArt } from "./game-art";
+import { CollectionArt, collectionImage, GameArt, type GameArtShape } from "./game-art";
 import { removeWithUndo } from "./wishlist-actions";
 import { Dot, MoreButton, yearOf } from "./wishlist-parts";
 
 // The same entries as the List, drawn as cards. Reordering here goes through
 // each card's menu: dragging stays in the List, where an order reads naturally.
 
-const GRID = "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
+const GRID: Record<GameArtShape, string> = {
+  landscape: "grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4",
+  cover:
+    "grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-7",
+};
 
 function RankBadge({ n }: { n: number }) {
   return (
@@ -33,10 +37,12 @@ export function WishlistGallery({
   items,
   sheetId,
   onOpenSheet,
+  shape,
 }: {
   items: WishlistItem[];
   sheetId: string | null;
   onOpenSheet: (entryId: string | null) => void;
+  shape: GameArtShape;
 }) {
   const t = useT();
   const { openGame, openGameFranchise } = useView();
@@ -49,7 +55,7 @@ export function WishlistGallery({
 
   return (
     <>
-      <ol aria-label={t("Wishlist")} className={GRID}>
+      <ol aria-label={t("Wishlist")} className={GRID[shape]}>
         {items.map((item, index) => {
           const place = { index, count };
           const { entry } = item;
@@ -75,6 +81,7 @@ export function WishlistGallery({
                       seed={record.gameId}
                       name={record.name}
                       width={640}
+                      shape={shape}
                       showName
                       posterClassName="harbor-card-ring shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] transition-[box-shadow] duration-300 group-hover/card:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65)]"
                     />
@@ -106,7 +113,7 @@ export function WishlistGallery({
           const total = item.members.length;
           const def = entry.franchiseId ? franchiseById(entry.franchiseId) : null;
           const additions = newCatalogGames(entry);
-          const art = entry.image ?? item.members[0]?.record.image ?? null;
+          const art = collectionImage(entry, item.members, shape);
           const menuItems = () =>
             collectionMenu(t, entry, place, {
               onToggle: () => onOpenSheet(entry.entryId),
@@ -133,6 +140,7 @@ export function WishlistGallery({
                     seed={entry.entryId}
                     name={entry.title}
                     width={640}
+                    shape={shape}
                     showName
                   />
                   <RankBadge n={item.rank} />
@@ -176,7 +184,7 @@ export function WishlistGallery({
         })}
       </ol>
       {menu.element}
-      {sheet && <CollectionSheet item={sheet} onClose={() => onOpenSheet(null)} />}
+      {sheet && <CollectionSheet item={sheet} shape={shape} onClose={() => onOpenSheet(null)} />}
     </>
   );
 }
@@ -203,9 +211,11 @@ function CardMenuButton({
 /** A collection opened from the Gallery: its games, in their own order, reorderable. */
 function CollectionSheet({
   item,
+  shape,
   onClose,
 }: {
   item: Extract<WishlistItem, { kind: "collection" }>;
+  shape: GameArtShape;
   onClose: () => void;
 }) {
   const t = useT();
@@ -248,10 +258,11 @@ function CollectionSheet({
       >
         <header className="flex items-start gap-4 border-b border-edge-soft p-5">
           <CollectionArt
-            image={entry.image ?? members[0]?.record.image ?? null}
+            image={collectionImage(entry, members, shape)}
             seed={entry.entryId}
             name={entry.title}
-            className="mt-1.5 w-[120px] shrink-0"
+            shape={shape}
+            className={`mt-1.5 ${shape === "cover" ? "w-[78px]" : "w-[120px]"} shrink-0`}
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-ink-subtle">
@@ -280,7 +291,12 @@ function CollectionSheet({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <CollectionMembers collection={entry} members={members} onNavigate={onClose} />
+          <CollectionMembers
+            collection={entry}
+            members={members}
+            shape={shape}
+            onNavigate={onClose}
+          />
         </div>
         <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-edge-soft px-5 py-3.5">
           <button

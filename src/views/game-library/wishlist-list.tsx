@@ -7,7 +7,7 @@ import { useView } from "@/lib/view";
 import { useActionMenu } from "./action-menu";
 import { CollectionMembers, newCatalogGames } from "./collection-members";
 import { announceMove, collectionMenu, gameMenu } from "./entry-menus";
-import { CollectionArt, GameArt } from "./game-art";
+import { CollectionArt, collectionImage, GameArt, type GameArtShape } from "./game-art";
 import { usePointerSort } from "./use-pointer-sort";
 import { moveTo } from "./wishlist-actions";
 import { Dot, MoreButton, ReorderButtons, SortHandle, yearOf } from "./wishlist-parts";
@@ -16,6 +16,12 @@ const ROW =
   "group/row flex items-center gap-3 rounded-2xl bg-surface/60 py-2.5 ps-2 pe-3 ring-1 ring-edge-soft transition-[background-color,box-shadow] duration-200 hover:bg-surface";
 const DRAGGING =
   "[[data-sort-dragging]>&]:bg-elevated [[data-sort-dragging]>&]:shadow-[0_24px_50px_-18px_rgba(0,0,0,0.85)] [[data-sort-dragging]>&]:ring-white/10";
+
+/** About the same row height either way: 16:9 at 148 px, or a 3:4 cover at 64 px. */
+const THUMB: Record<GameArtShape, string> = {
+  landscape: "w-[124px] sm:w-[148px]",
+  cover: "w-[54px] sm:w-[64px]",
+};
 
 function Rank({ n }: { n: number }) {
   return (
@@ -33,10 +39,12 @@ export function WishlistList({
   items,
   expanded,
   onToggle,
+  shape,
 }: {
   items: WishlistItem[];
   expanded: ReadonlySet<string>;
   onToggle: (entryId: string) => void;
+  shape: GameArtShape;
 }) {
   const t = useT();
   const { openGame, openGameFranchise } = useView();
@@ -88,7 +96,8 @@ export function WishlistList({
                       image={record.image}
                       seed={record.gameId}
                       name={record.name}
-                      className="w-[124px] shrink-0 sm:w-[148px]"
+                      shape={shape}
+                      className={`${THUMB[shape]} shrink-0`}
                     />
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="truncate text-[15.5px] font-semibold text-ink">
@@ -125,7 +134,7 @@ export function WishlistList({
           const total = item.members.length;
           const additions = newCatalogGames(entry);
           const def = entry.franchiseId ? franchiseById(entry.franchiseId) : null;
-          const art = entry.image ?? item.members[0]?.record.image ?? null;
+          const art = collectionImage(entry, item.members, shape);
           const panelId = `collection-${entry.entryId}`;
           const menuItems = () =>
             collectionMenu(t, entry, place, {
@@ -161,7 +170,8 @@ export function WishlistList({
                     image={art}
                     seed={entry.entryId}
                     name={entry.title}
-                    className="mt-1 w-[124px] shrink-0 sm:w-[148px]"
+                    shape={shape}
+                    className={`mt-1 ${THUMB[shape]} shrink-0`}
                   />
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="flex min-w-0 items-center gap-2">
@@ -233,7 +243,7 @@ export function WishlistList({
                   id={panelId}
                   className="animate-fade-in rounded-b-2xl bg-surface/35 px-3 pb-3 pt-2.5 ring-1 ring-edge-soft sm:ps-14"
                 >
-                  <CollectionMembers collection={entry} members={item.members} />
+                  <CollectionMembers collection={entry} members={item.members} shape={shape} />
                 </div>
               )}
             </li>
