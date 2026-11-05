@@ -6,7 +6,7 @@ import type { GameRecord } from "./types.ts";
 
 export function snapshotSummary(record: GameRecord): GameSummary {
   return {
-    rawgId: record.rawgId,
+    id: record.gameId,
     slug: record.slug,
     name: record.name,
     released: record.released,

@@ -17,7 +17,7 @@ import {
   savedCollection,
 } from "@/lib/game-library/rules";
 import { changeGameLibrary, useGameLibrary } from "@/lib/game-library/store";
-import { gameIdFor, memberEntryId, rootEntryId } from "@/lib/game-library/types";
+import { memberEntryId, rootEntryId } from "@/lib/game-library/types";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -54,7 +54,7 @@ function useOpenWishlist(): () => void {
 /** Keeps a saved game's name and art current while its page is open anyway. */
 export function useRefreshSavedGame(game: GameSummary | null): void {
   const { data, ready } = useGameLibrary();
-  const saved = game ? !!data.records[gameIdFor(game.rawgId)] : false;
+  const saved = game ? !!data.records[game.id] : false;
   useEffect(() => {
     if (!ready || !saved || !game) return;
     changeGameLibrary((d, ctx) => refreshSnapshot(d, toGameRef(game), ctx));
@@ -74,7 +74,7 @@ export function SaveGameButton({
   const canSave = useCanSave();
   const menu = useActionMenu();
   const openWishlist = useOpenWishlist();
-  const gameId = gameIdFor(game.rawgId);
+  const gameId = game.id;
   const stage = gameStage(data, gameId);
   const placed = useMemo(() => placementsOf(data, gameId), [data, gameId]);
   if (!canSave) return null;

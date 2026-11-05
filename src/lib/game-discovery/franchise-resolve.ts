@@ -1,7 +1,8 @@
 import { curatedSlugs, type FranchiseDef, type FranchiseVariant } from "./franchises.ts";
+import type { GameId } from "./game-id.ts";
 import type { GameSummary } from "./types.ts";
 
-// Pure franchise resolution. Games are deduplicated by RAWG id only and
+// Pure franchise resolution. Games are deduplicated by provider-qualified id only and
 // classified only by the curated slug lists -- never by name similarity, so
 // same-named titles from different eras stay separate.
 
@@ -70,21 +71,21 @@ export function missingCuratedSlugs(def: FranchiseDef, knownSlugs: Iterable<stri
 }
 
 /**
- * @param aliases RAWG id -> the curated slug that was requested for it, for
- *   games reached through a RAWG slug redirect (their canonical slug differs
+ * @param aliases Game id -> the curated slug that was requested for it, for
+ *   games reached through a provider slug redirect (their canonical slug differs
  *   from the catalog's). Matching by id keeps them classified correctly.
  */
 export function resolveFranchise(
   def: FranchiseDef,
   games: (GameSummary | null | undefined)[],
   sort: FranchiseSort = "release",
-  aliases: ReadonlyMap<number, string> = new Map(),
+  aliases: ReadonlyMap<GameId, string> = new Map(),
 ): ResolvedFranchise {
-  const byId = new Map<number, GameSummary>();
+  const byId = new Map<GameId, GameSummary>();
   for (const game of games) {
-    if (game && !byId.has(game.rawgId)) byId.set(game.rawgId, game);
+    if (game && !byId.has(game.id)) byId.set(game.id, game);
   }
-  const slugOf = (game: GameSummary) => aliases.get(game.rawgId) ?? game.slug;
+  const slugOf = (game: GameSummary) => aliases.get(game.id) ?? game.slug;
   const mainline = new Set(def.mainline);
   const exclude = new Set(def.exclude ?? []);
   const groups: Record<FranchiseGroupId, GameSummary[]> = {

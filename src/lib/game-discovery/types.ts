@@ -1,5 +1,10 @@
-// Domain types for Games discovery. RAWG is a metadata provider only; these
-// shapes are what the UI consumes after normalization.
+// Domain types for Games discovery. Metadata providers (RAWG today) normalize
+// into these shapes; the UI consumes nothing else. Game identity is always
+// provider-qualified (see game-id.ts), so no view depends on a provider's ids.
+
+import { parseGameId, type GameId } from "./game-id.ts";
+
+export type { GameId, GameProvider } from "./game-id.ts";
 
 export type PlatformFamily =
   | "pc"
@@ -16,7 +21,9 @@ export type PlatformFamily =
 export type NamedRef = { id: number; slug: string; name: string };
 
 export type GameSummary = {
-  rawgId: number;
+  /** Provider-qualified identity, e.g. "rawg:3328". */
+  id: GameId;
+  /** The provider's own slug; only meaningful to that provider. */
   slug: string;
   name: string;
   /** ISO date (YYYY-MM-DD) or null when unknown. */
@@ -85,27 +92,38 @@ export type GameBrowseSpec = {
   focusSearch?: boolean;
 };
 
-/**
- * Stable reference for future personal-library entries (wishlist, currently
- * playing, tier lists). A snapshot so entries render without RAWG — keyless,
- * offline or after a key change. Not persisted anywhere in Phase 1.
- */
-export type GameRef = {
-  provider: "rawg";
-  rawgId: number;
+type GameRefSnapshot = {
   slug: string;
   name: string;
   released: string | null;
   image: string | null;
 };
 
+/**
+ * Snapshot reference stored in personal-library records (wishlist, currently
+ * playing, tier list), so entries render without any provider: keyless,
+ * offline or after a key change. Persisted; the RAWG shape is exactly the one
+ * saved before providers became pluggable, so existing records never change.
+ */
+export type RawgGameRef = GameRefSnapshot & { provider: "rawg"; rawgId: number };
+export type IgdbGameRef = GameRefSnapshot & { provider: "igdb"; igdbId: number };
+export type GameRef = RawgGameRef | IgdbGameRef;
+
 export function toGameRef(game: GameSummary): GameRef {
-  return {
-    provider: "rawg",
-    rawgId: game.rawgId,
+  const parsed = parseGameId(game.id);
+  if (!parsed) throw new RangeError("Invalid game id");
+  const snapshot = {
     slug: game.slug,
     name: game.name,
     released: game.released,
     image: game.image,
   };
+  return parsed.provider === "rawg"
+    ? { provider: "rawg", rawgId: parsed.providerId, ...snapshot }
+    : { provider: "igdb", igdbId: parsed.providerId, ...snapshot };
+}
+
+/** The provider-qualified id a snapshot reference belongs to. */
+export function gameIdOfRef(ref: GameRef): GameId {
+  return ref.provider === "rawg" ? `rawg:${ref.rawgId}` : `igdb:${ref.igdbId}`;
 }

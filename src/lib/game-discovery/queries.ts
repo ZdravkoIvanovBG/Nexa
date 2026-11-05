@@ -26,6 +26,7 @@ import {
   type ResolvedFranchise,
 } from "./franchise-resolve";
 import type { FranchiseDef } from "./franchises";
+import { rawgIdOf, type GameId } from "./game-id";
 import { listParams } from "./sections";
 import type { GameDetail, GameListFilter, GamePage, GameSummary } from "./types";
 import type { RawgGateState } from "./use-rawg";
@@ -49,10 +50,10 @@ export const gameKeys = {
   list: (fp: string, filter: GameListFilter, pageSize: number) =>
     [...ROOT, fp, "list", filter, pageSize] as const,
   browse: (fp: string, filter: GameListFilter) => [...ROOT, fp, "browse", filter] as const,
-  detail: (fp: string, idOrSlug: number | string) =>
+  detail: (fp: string, idOrSlug: GameId | string) =>
     [...ROOT, fp, "detail", String(idOrSlug)] as const,
-  screenshots: (fp: string, id: number) => [...ROOT, fp, "screenshots", id] as const,
-  related: (fp: string, id: number, kind: RelatedKind) =>
+  screenshots: (fp: string, id: GameId) => [...ROOT, fp, "screenshots", id] as const,
+  related: (fp: string, id: GameId, kind: RelatedKind) =>
     [...ROOT, fp, "related", kind, id] as const,
   developer: (fp: string, developerId: number) => [...ROOT, fp, "developer", developerId] as const,
   franchise: (fp: string, franchiseId: string) => [...ROOT, fp, "franchise", franchiseId] as const,
@@ -80,19 +81,22 @@ async function fetchList(
 async function fetchDetail(
   qc: QueryClient,
   gate: Gate,
-  idOrSlug: number | string,
+  idOrSlug: GameId | string,
   signal?: AbortSignal,
 ): Promise<GameDetail | null> {
+  // A rawg: id is looked up by its number; another provider's id is never sent to RAWG.
+  const lookup = rawgIdOf(idOrSlug) ?? (String(idOrSlug).includes(":") ? null : idOrSlug);
+  if (lookup === null || lookup === "") return null;
   try {
     const raw = await getGameDetailRaw(
       (path) => rawg.get<RawgGameDetail>(path, {}, gate.auth, signal),
-      idOrSlug,
+      lookup,
     );
     const detail = normalizeGameDetail(raw);
     if (detail) {
       // Seed the id and canonical-slug keys so every lookup form shares one request.
-      for (const key of [detail.rawgId, detail.slug]) {
-        if (String(key) !== String(idOrSlug)) {
+      for (const key of [detail.id, detail.slug]) {
+        if (key !== String(idOrSlug)) {
           qc.setQueryData(gameKeys.detail(gate.fingerprint, key), detail);
         }
       }
@@ -104,7 +108,7 @@ async function fetchDetail(
   }
 }
 
-function detailQueryOptions(qc: QueryClient, gate: Gate, idOrSlug: number | string) {
+function detailQueryOptions(qc: QueryClient, gate: Gate, idOrSlug: GameId | string) {
   return {
     queryKey: gameKeys.detail(gate.fingerprint, idOrSlug),
     queryFn: ({ signal }: { signal: AbortSignal }) => fetchDetail(qc, gate, idOrSlug, signal),
@@ -128,7 +132,7 @@ export function useGameList(
   });
 }
 
-export function useGameDetail(gate: Gate, idOrSlug: number | string | null, enabled: boolean) {
+export function useGameDetail(gate: Gate, idOrSlug: GameId | string | null, enabled: boolean) {
   const qc = useQueryClient();
   return useQuery({
     ...detailQueryOptions(qc, gate, idOrSlug ?? ""),
@@ -136,37 +140,37 @@ export function useGameDetail(gate: Gate, idOrSlug: number | string | null, enab
   });
 }
 
-export function useGameScreenshots(gate: Gate, id: number, enabled: boolean) {
+export function useGameScreenshots(gate: Gate, id: GameId, enabled: boolean) {
   return useQuery({
     queryKey: gameKeys.screenshots(gate.fingerprint, id),
     queryFn: async ({ signal }) =>
       normalizeScreenshots(
         await rawg.get<RawgPage<RawgScreenshot>>(
-          `/games/${id}/screenshots`,
+          `/games/${rawgIdOf(id)}/screenshots`,
           { page_size: 40 },
           gate.auth,
           signal,
         ),
       ),
-    enabled: enabled && gate.ready,
+    enabled: enabled && gate.ready && rawgIdOf(id) !== null,
     ...DETAIL,
     ...NO_RETRY,
   });
 }
 
-export function useGameRelated(gate: Gate, id: number, kind: RelatedKind, enabled: boolean) {
+export function useGameRelated(gate: Gate, id: GameId, kind: RelatedKind, enabled: boolean) {
   return useQuery({
     queryKey: gameKeys.related(gate.fingerprint, id, kind),
     queryFn: async ({ signal }) =>
       normalizeGamePage(
         await rawg.get<RawgPage<RawgListGame>>(
-          `/games/${id}/${kind}`,
+          `/games/${rawgIdOf(id)}/${kind}`,
           { page_size: 20 },
           gate.auth,
           signal,
         ),
       ).items,
-    enabled: enabled && gate.ready,
+    enabled: enabled && gate.ready && rawgIdOf(id) !== null,
     ...DETAIL,
     ...NO_RETRY,
   });
@@ -229,8 +233,8 @@ async function fetchSeries(
 export type FranchiseData = {
   def: FranchiseDef;
   games: GameSummary[];
-  /** RAWG id -> curated slug, for curated games reached through a slug redirect. */
-  aliases: Map<number, string>;
+  /** Game id -> curated slug, for curated games reached through a slug redirect. */
+  aliases: Map<GameId, string>;
   seriesAvailable: boolean;
 };
 
@@ -243,12 +247,13 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
       const anchorSlug = def.seriesAnchor ?? def.artwork;
       const anchor = await qc.fetchQuery(detailQueryOptions(qc, gate, anchorSlug));
       const games: GameSummary[] = anchor ? [anchor] : [];
-      const aliases = new Map<number, string>();
-      if (anchor && anchor.slug !== anchorSlug) aliases.set(anchor.rawgId, anchorSlug);
+      const aliases = new Map<GameId, string>();
+      if (anchor && anchor.slug !== anchorSlug) aliases.set(anchor.id, anchorSlug);
       let seriesAvailable = true;
-      if (anchor) {
+      const anchorRawgId = anchor ? rawgIdOf(anchor.id) : null;
+      if (anchorRawgId !== null) {
         try {
-          games.push(...(await fetchSeries(gate, anchor.rawgId, signal)));
+          games.push(...(await fetchSeries(gate, anchorRawgId, signal)));
         } catch (error) {
           // A plan without series access degrades to the curated list only.
           if (isRawgError(error) && error.kind === "capability_unavailable")
@@ -267,7 +272,7 @@ export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled:
       extra.forEach((game, i) => {
         if (!game) return;
         games.push(game);
-        if (game.slug !== missing[i]) aliases.set(game.rawgId, missing[i]);
+        if (game.slug !== missing[i]) aliases.set(game.id, missing[i]);
       });
       return { def, games, aliases, seriesAvailable };
     },
@@ -304,8 +309,9 @@ export function useFranchiseArt(gate: Gate, def: FranchiseDef | null, enabled: b
   });
   const game: GameSummary | null = known ?? query.data ?? null;
   useEffect(() => {
-    if (game && !cached && id) {
-      writeFranchiseArt(id, { rawgId: game.rawgId, slug: game.slug, image: game.image });
+    const rawgId = game ? rawgIdOf(game.id) : null;
+    if (game && rawgId !== null && !cached && id) {
+      writeFranchiseArt(id, { rawgId, slug: game.slug, image: game.image });
     }
   }, [game, cached, id]);
   if (game) return { image: game.image, loading: false };

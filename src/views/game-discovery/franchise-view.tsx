@@ -58,7 +58,7 @@ function FranchiseBody({
   );
   const aliases = query.data?.aliases;
   const slugOf = useMemo(
-    () => (game: GameSummary) => aliases?.get(game.rawgId) ?? game.slug,
+    () => (game: GameSummary) => aliases?.get(game.id) ?? game.slug,
     [aliases],
   );
 
@@ -226,7 +226,7 @@ function Group({
       {open && (
         <div className={GRID}>
           {games.map((game) => (
-            <GameCard key={game.rawgId} game={game} />
+            <GameCard key={game.id} game={game} />
           ))}
         </div>
       )}

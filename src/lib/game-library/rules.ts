@@ -2,14 +2,13 @@
 // and what every change writes. Pure, like tier-order.ts, so these rules run
 // under `node --test`. Changes return a LibraryPatch of the rows they touched,
 // which is all the store needs to persist them and queue them for upload.
-import type { GameRef } from "../game-discovery/types.ts";
+import { gameIdOfRef, type GameRef } from "../game-discovery/types.ts";
 import { ALL_TIERS, type Tier } from "../tracking-tiers.ts";
 import { compareRank, keyBetween, placeAt, spreadKeys, type Ranked } from "./rank-key.ts";
 import {
   MAX_NOTES_LENGTH,
   ROOT_PARENT,
   collectionEntryId,
-  gameIdFor,
   memberEntryId,
   nextStamp,
   rootEntryId,
@@ -60,7 +59,7 @@ export function applyPatch(data: GameLibraryData, patch: LibraryPatch): GameLibr
 export function newRecord(ref: GameRef, now: number): GameRecord {
   return {
     ...ref,
-    gameId: gameIdFor(ref.rawgId),
+    gameId: gameIdOfRef(ref),
     metaAt: now,
     status: null,
     startedAt: null,
@@ -141,7 +140,7 @@ function tombstone(entry: QueueEntry, ctx: ChangeContext): QueueEntry {
 
 function withRecord(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
   const patch = emptyPatch();
-  if (!data.records[gameIdFor(ref.rawgId)]) patch.records.push(newRecord(ref, ctx.now));
+  if (!data.records[gameIdOfRef(ref)]) patch.records.push(newRecord(ref, ctx.now));
   return patch;
 }
 
@@ -167,7 +166,7 @@ function liveCollection(data: GameLibraryData, collectionId: string): QueueEntry
 // ── wishlist changes ────────────────────────────────────────────────────────
 
 export function saveGame(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
-  const gameId = gameIdFor(ref.rawgId);
+  const gameId = gameIdOfRef(ref);
   if (data.queue[rootEntryId(gameId)]?.deletedAt === null) return emptyPatch();
   const patch = withRecord(data, ref, ctx);
   patch.queue.push(addRootGame(data, gameId, ctx));
@@ -189,7 +188,7 @@ export function saveCollection(
   const entryId = collectionEntryId(def.franchiseId);
   if (data.queue[entryId]?.deletedAt === null) return emptyPatch();
 
-  const unique = new Map(refs.map((ref) => [gameIdFor(ref.rawgId), ref]));
+  const unique = new Map(refs.map((ref) => [gameIdOfRef(ref), ref]));
   const patch = emptyPatch();
   patch.queue.push(
     liveEntry(
@@ -241,7 +240,7 @@ export function addMember(
   ctx: ChangeContext,
 ): LibraryPatch {
   if (!liveCollection(data, collectionId)) return emptyPatch();
-  const gameId = gameIdFor(ref.rawgId);
+  const gameId = gameIdOfRef(ref);
   const entryId = memberEntryId(collectionId, gameId);
   if (data.queue[entryId]?.deletedAt === null) return emptyPatch();
   const patch = withRecord(data, ref, ctx);
@@ -428,11 +427,10 @@ export function savedCollection(data: GameLibraryData, franchiseId: string): Que
 
 // ── play state ──────────────────────────────────────────────────────────────
 
-function changeState(
-  record: GameRecord,
-  fields: Partial<GameRecord>,
-  ctx: ChangeContext,
-): LibraryPatch {
+/** Fields a change may set: never the identity (provider, provider id, gameId). */
+type RecordChange = Partial<Omit<GameRecord, "provider" | "gameId">>;
+
+function changeState(record: GameRecord, fields: RecordChange, ctx: ChangeContext): LibraryPatch {
   const patch = emptyPatch();
   patch.records.push({ ...record, ...fields, stateAt: nextStamp(record.stateAt, ctx.now) });
   return patch;
@@ -477,7 +475,7 @@ export function setStatus(
 
 /** Starts a game from anywhere, including one that was never saved. */
 export function startGame(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
-  const gameId = gameIdFor(ref.rawgId);
+  const gameId = gameIdOfRef(ref);
   const record = data.records[gameId] ?? newRecord(ref, ctx.now);
   return setStatus(
     { ...data, records: { ...data.records, [gameId]: record } },
@@ -566,7 +564,7 @@ export function refreshSnapshot(
   ctx: ChangeContext,
 ): LibraryPatch {
   const patch = emptyPatch();
-  const record = data.records[gameIdFor(ref.rawgId)];
+  const record = data.records[gameIdOfRef(ref)];
   if (!record) return patch;
   const image = ref.image ?? record.image;
   if (

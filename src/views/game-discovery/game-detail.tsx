@@ -9,7 +9,7 @@ import {
   type RelatedKind,
 } from "@/lib/game-discovery/queries";
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
-import type { GameDetail, GameSummary } from "@/lib/game-discovery/types";
+import type { GameDetail, GameId, GameSummary } from "@/lib/game-discovery/types";
 import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
 import { isRawgError } from "@/lib/providers/rawg";
 import { rawgImage } from "@/lib/providers/rawg/image";
@@ -35,7 +35,7 @@ export function GameDetailView({
   seed,
   active,
 }: {
-  gameId: number;
+  gameId: GameId;
   seed?: GameSummary;
   active: boolean;
 }) {
@@ -52,7 +52,7 @@ function GameDetailBody({
   gate,
   active,
 }: {
-  gameId: number;
+  gameId: GameId;
   seed?: GameSummary;
   gate: RawgGateState;
   active: boolean;
@@ -166,7 +166,7 @@ function GameDetailBody({
         {detail && detail.counts.series > 0 && (
           <RelatedRow
             title={t("More in this series")}
-            gameId={game.rawgId}
+            gameId={game.id}
             kind="game-series"
             gate={gate}
             active={active}
@@ -175,7 +175,7 @@ function GameDetailBody({
         {detail && detail.counts.additions > 0 && (
           <RelatedRow
             title={t("DLC & expansions")}
-            gameId={game.rawgId}
+            gameId={game.id}
             kind="additions"
             gate={gate}
             active={active}
@@ -184,7 +184,7 @@ function GameDetailBody({
         {detail && detail.counts.parents > 0 && (
           <RelatedRow
             title={t("Part of")}
-            gameId={game.rawgId}
+            gameId={game.id}
             kind="parent-games"
             gate={gate}
             active={active}
@@ -194,7 +194,7 @@ function GameDetailBody({
           <DeveloperRow
             developerId={detail.developers[0].id}
             developerName={detail.developers[0].name}
-            exclude={game.rawgId}
+            exclude={game.id}
             gate={gate}
             active={active}
           />
@@ -332,7 +332,7 @@ function Screenshots({
   // List responses carry a few screenshots for free; the full set is one request, on demand.
   const needFetch = seeded.length === 0 || viewAll;
   const unavailable = rawgSessionStatus.isCapabilityUnavailable("screenshots");
-  const query = useGameScreenshots(gate, game.rawgId, active && needFetch && !unavailable);
+  const query = useGameScreenshots(gate, game.id, active && needFetch && !unavailable);
   const images = viewAll || seeded.length === 0 ? (query.data ?? seeded) : seeded;
   const total = detail?.counts.screenshots ?? 0;
   if (images.length === 0) return null;
@@ -388,7 +388,7 @@ function RelatedRow({
   active,
 }: {
   title: string;
-  gameId: number;
+  gameId: GameId;
   kind: RelatedKind;
   gate: RawgGateState;
   active: boolean;
@@ -408,7 +408,7 @@ function RelatedRowBody({
   active,
 }: {
   title: string;
-  gameId: number;
+  gameId: GameId;
   kind: RelatedKind;
   gate: RawgGateState;
   active: boolean;
@@ -416,7 +416,7 @@ function RelatedRowBody({
   const query = useGameRelated(gate, gameId, kind, active);
   if (query.isError) return null;
   if (!query.data) return <GameRowSkeleton title={title} />;
-  const games = query.data.filter((g) => g.rawgId !== gameId);
+  const games = query.data.filter((g) => g.id !== gameId);
   if (games.length === 0) return null;
   return <GameRail title={title} games={games} scrollKey={`game-${gameId}-${kind}`} />;
 }
@@ -430,7 +430,7 @@ function DeveloperRow({
 }: {
   developerId: number;
   developerName: string;
-  exclude: number;
+  exclude: GameId;
   gate: RawgGateState;
   active: boolean;
 }) {
@@ -458,7 +458,7 @@ function DeveloperRowBody({
 }: {
   title: string;
   developerId: number;
-  exclude: number;
+  exclude: GameId;
   gate: RawgGateState;
   active: boolean;
 }) {
@@ -466,7 +466,7 @@ function DeveloperRowBody({
   const query = useDeveloperGames(gate, developerId, active);
   if (query.isError) return null;
   if (!query.data) return <GameRowSkeleton title={title} />;
-  const games = query.data.filter((g) => g.rawgId !== exclude);
+  const games = query.data.filter((g) => g.id !== exclude);
   if (games.length < 2) return null;
   return (
     <GameRail

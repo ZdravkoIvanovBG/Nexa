@@ -45,19 +45,16 @@ function GamesDiscovery({ gate, active }: { gate: RawgGateState; active: boolean
     [popularQuery.data],
   );
   const showHero = hero.length >= MIN_HERO_SLIDES;
-  const heroIds = useMemo(
-    () => new Set(showHero ? hero.map((g) => g.rawgId) : []),
-    [hero, showHero],
-  );
+  const heroIds = useMemo(() => new Set(showHero ? hero.map((g) => g.id) : []), [hero, showHero]);
   const shownAbove = useMemo(() => {
     const ids = new Set(heroIds);
-    for (const g of popularQuery.data?.items ?? []) ids.add(g.rawgId);
-    for (const g of freshQuery.data?.items ?? []) ids.add(g.rawgId);
+    for (const g of popularQuery.data?.items ?? []) ids.add(g.id);
+    for (const g of freshQuery.data?.items ?? []) ids.add(g.id);
     return ids;
   }, [heroIds, popularQuery.data, freshQuery.data]);
   const freshExclude = useMemo(() => {
     const ids = new Set(heroIds);
-    for (const g of popularQuery.data?.items ?? []) ids.add(g.rawgId);
+    for (const g of popularQuery.data?.items ?? []) ids.add(g.id);
     return ids;
   }, [heroIds, popularQuery.data]);
 

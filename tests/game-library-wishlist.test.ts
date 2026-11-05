@@ -148,7 +148,7 @@ test("a saved game opens details with every field the page reads", () => {
   let data = emptyLibrary();
   data = apply(data, (d, c) => saveGame(d, ref(42), c));
   const summary = snapshotSummary(data.records["rawg:42"]);
-  assert.equal(summary.rawgId, 42);
+  assert.equal(summary.id, "rawg:42");
   assert.equal(summary.name, "Game 42");
   for (const list of ["genres", "platformFamilies", "shortScreenshots"]) {
     assert.ok(Array.isArray(summary[list]), list);

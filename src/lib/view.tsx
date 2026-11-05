@@ -12,7 +12,7 @@ import {
 } from "react";
 import type { Meta } from "./cinemeta";
 import { profileFromMeta, trackEvent } from "./discover";
-import type { GameBrowseSpec, GameSummary } from "./game-discovery/types";
+import type { GameBrowseSpec, GameId, GameSummary } from "./game-discovery/types";
 import { currentLibrarySection, hasLibrarySection, type LibrarySection } from "./library-frames";
 import type { StreamingService } from "./settings";
 import { useTogether } from "./together/provider";
@@ -141,7 +141,7 @@ export type Frame =
     }
   | { kind: "player"; src: PlayerSrc }
   | { kind: "games" }
-  | { kind: "game"; id: number; seed?: GameSummary }
+  | { kind: "game"; id: GameId; seed?: GameSummary }
   | { kind: "game-franchise"; id: string }
   | { kind: "game-browse"; spec: GameBrowseSpec };
 
@@ -253,8 +253,8 @@ type ViewValue = {
   grid: GridSpec | null;
   openGrid: (g: GridSpec) => void;
   openCollections: () => void;
-  game: { id: number; seed?: GameSummary } | null;
-  openGame: (game: GameSummary | number) => void;
+  game: { id: GameId; seed?: GameSummary } | null;
+  openGame: (game: GameSummary | GameId) => void;
   gameFranchiseId: string | null;
   openGameFranchise: (id: string) => void;
   gameBrowse: GameBrowseSpec | null;
@@ -849,9 +849,9 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [setNavStack]);
 
   const openGame = useCallback(
-    (g: GameSummary | number) => {
-      const id = typeof g === "number" ? g : g.rawgId;
-      const seed = typeof g === "number" ? undefined : g;
+    (g: GameSummary | GameId) => {
+      const id = typeof g === "string" ? g : g.id;
+      const seed = typeof g === "string" ? undefined : g;
       setNavStack((cur) => {
         const t = cur[cur.length - 1];
         if (t.kind === "game" && t.id === id) return cur;

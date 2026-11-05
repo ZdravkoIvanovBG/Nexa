@@ -144,7 +144,7 @@ export function GamesHero({ slides, gate }: { slides: GameSummary[]; gate: RawgG
           {slides.map((game, i) => {
             const shouldMount = Math.abs(i - active) <= 1 || dragging;
             return (
-              <div key={game.rawgId} className="relative h-full w-full shrink-0">
+              <div key={game.id} className="relative h-full w-full shrink-0">
                 {shouldMount ? (
                   <GameSlide
                     game={game}
@@ -194,7 +194,7 @@ function GameSlide({
     const id = window.setTimeout(() => setDwelled(true), DESCRIPTION_DWELL_MS);
     return () => window.clearTimeout(id);
   }, [active, dwelled]);
-  const detail = useGameDetail(gate, game.rawgId, dwelled);
+  const detail = useGameDetail(gate, game.id, dwelled);
   const description = detail.data?.description ?? null;
   const year = releaseYear(game);
   const genres = game.genres.slice(0, 2).map((g) => g.name);

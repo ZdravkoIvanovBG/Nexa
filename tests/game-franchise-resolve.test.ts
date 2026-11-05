@@ -7,10 +7,11 @@ import {
   sortGames,
 } from "../src/lib/game-discovery/franchise-resolve.ts";
 import { FRANCHISES, franchiseForSlug } from "../src/lib/game-discovery/franchises.ts";
+import { rawgIdOf } from "../src/lib/game-discovery/game-id.ts";
 
 function game(rawgId: number, slug: string, name: string, released: string | null, extra = {}) {
   return {
-    rawgId,
+    id: `rawg:${rawgId}`,
     slug,
     name,
     released,
@@ -435,16 +436,16 @@ test("a curated game reached through a slug redirect keeps its curated classific
     ],
     "release",
     new Map([
-      [42, "far-cry-2"],
-      [7, "far-cry-primal"],
+      ["rawg:42", "far-cry-2"],
+      ["rawg:7", "far-cry-primal"],
     ]),
   );
   assert.deepEqual(
-    resolved.groups.main.map((g) => g.rawgId),
+    resolved.groups.main.map((g) => rawgIdOf(g.id)),
     [1, 42, 5],
   );
   assert.deepEqual(
-    resolved.groups.spinoffs.map((g) => g.rawgId),
+    resolved.groups.spinoffs.map((g) => rawgIdOf(g.id)),
     [7],
   );
   assert.equal(resolved.groups.other.length, 0);
@@ -466,7 +467,7 @@ test("excludes match either the curated or the canonical slug", () => {
       game(9, "dlc-canonical", "Some DLC", "2016-10-24"),
     ],
     "release",
-    new Map([[9, "old-dlc-slug"]]),
+    new Map([["rawg:9", "old-dlc-slug"]]),
   );
   assert.deepEqual(
     Object.values(resolved.groups)

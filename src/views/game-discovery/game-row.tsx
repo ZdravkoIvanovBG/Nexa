@@ -1,7 +1,7 @@
 import { Row } from "@/components/row";
 import { useGameList } from "@/lib/game-discovery/queries";
 import type { GameSection } from "@/lib/game-discovery/sections";
-import type { GameSummary } from "@/lib/game-discovery/types";
+import type { GameId, GameSummary } from "@/lib/game-discovery/types";
 import type { RawgGateState } from "@/lib/game-discovery/use-rawg";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -34,12 +34,12 @@ export function GameSectionRow({
   gate: RawgGateState;
   active: boolean;
   /** Games already shown above (hero, earlier rows). */
-  exclude?: ReadonlySet<number>;
+  exclude?: ReadonlySet<GameId>;
 }) {
   const t = useT();
   const { openGameBrowse } = useView();
   const query = useGameList(gate, section.filter, ROW_PAGE_SIZE, active);
-  const items = (query.data?.items ?? []).filter((g) => !exclude?.has(g.rawgId));
+  const items = (query.data?.items ?? []).filter((g) => !exclude?.has(g.id));
 
   if (query.isError) return null;
   if (!query.data) return <GameRowSkeleton title={t(section.title)} />;
@@ -79,7 +79,7 @@ export function GameRail({
       viewAllLabel={t("See all")}
     >
       {games.map((game) => (
-        <GameCard key={game.rawgId} game={game} />
+        <GameCard key={game.id} game={game} />
       ))}
     </Row>
   );

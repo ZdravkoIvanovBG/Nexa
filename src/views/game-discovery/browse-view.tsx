@@ -6,6 +6,7 @@ import { useGameBrowse } from "@/lib/game-discovery/queries";
 import { GAME_GENRE_TILES, GAME_PLATFORM_FILTERS } from "@/lib/game-discovery/sections";
 import type {
   GameBrowseSpec,
+  GameId,
   GameListFilter,
   GameOrdering,
   GameSummary,
@@ -97,12 +98,12 @@ function BrowseBody({
     !Object.values(spec.filter).some(Boolean);
   const query = useGameBrowse(gate, filter, active && !idle);
   const items = useMemo(() => {
-    const seen = new Set<number>();
+    const seen = new Set<GameId>();
     const out: GameSummary[] = [];
     for (const page of query.data?.pages ?? []) {
       for (const game of page.items) {
-        if (seen.has(game.rawgId)) continue;
-        seen.add(game.rawgId);
+        if (seen.has(game.id)) continue;
+        seen.add(game.id);
         out.push(game);
       }
     }
@@ -225,7 +226,7 @@ function BrowseBody({
             gapX={20}
             gapY={32}
             estimateRowHeight={210}
-            getKey={(game) => game.rawgId}
+            getKey={(game) => game.id}
             renderItem={(game) => <GameCard game={game} />}
           />
           <div ref={sentinel} className="flex h-16 items-center justify-center">

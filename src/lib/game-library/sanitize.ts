@@ -1,5 +1,6 @@
 // Everything read back from disk or the cloud passes through here, so a damaged
 // or hand-edited row can never reach the rules as anything but a valid one.
+import { parseGameId } from "../game-discovery/game-id.ts";
 import { TIERS } from "../tracking-tiers.ts";
 import {
   MAX_NOTES_LENGTH,
@@ -11,8 +12,6 @@ import {
   type QueueEntry,
   type QueueKind,
 } from "./types.ts";
-
-const GAME_ID = /^rawg:[1-9]\d*$/;
 
 const STATUSES: readonly string[] = ["playing", "paused", "completed", "dropped"];
 const TIER_VALUES: readonly string[] = [...TIERS, "unranked", "hidden"];
@@ -41,8 +40,22 @@ function optionalStamp(value: unknown): number | null {
   return value === null || value === undefined ? null : stamp(value);
 }
 
+/** A valid provider-qualified id ("rawg:N" or "igdb:N"), or null. */
 function gameId(value: unknown): GameId | null {
-  return typeof value === "string" && GAME_ID.test(value) ? (value as GameId) : null;
+  return parseGameId(value) ? (value as GameId) : null;
+}
+
+/**
+ * Provider fields rebuilt from the id, so they can never disagree with it. A
+ * RAWG record comes out exactly as it was saved: provider, rawgId, then the rest.
+ */
+function refFields(
+  id: GameId,
+): { provider: "rawg"; rawgId: number } | { provider: "igdb"; igdbId: number } {
+  const parsed = parseGameId(id)!;
+  return parsed.provider === "rawg"
+    ? { provider: "rawg", rawgId: parsed.providerId }
+    : { provider: "igdb", igdbId: parsed.providerId };
 }
 
 function progress(value: unknown): number | null {
@@ -56,8 +69,7 @@ export function sanitizeRecord(value: unknown): GameRecord | null {
   if (!raw || !id) return null;
   const tier = TIER_VALUES.includes(raw.tier as string) ? (raw.tier as GameTier) : null;
   return {
-    provider: "rawg",
-    rawgId: Number(id.slice("rawg:".length)),
+    ...refFields(id),
     slug: text(raw.slug),
     name: text(raw.name),
     released: optionalText(raw.released),

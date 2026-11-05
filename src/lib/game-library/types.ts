@@ -1,10 +1,15 @@
 // Personal Game Library records. Kept free of runtime imports from the app so
 // these rules run under `node --test`.
+import type { GameId, RawgGameId } from "../game-discovery/game-id.ts";
 import type { GameRef } from "../game-discovery/types.ts";
 import type { RankedTier } from "../tracking-tiers.ts";
 
-/** Provider-prefixed identity. A future launcher links to this, never replaces it. */
-export type GameId = `rawg:${number}`;
+/**
+ * Provider-qualified identity: "rawg:N" or "igdb:N" (see game-id.ts). A record
+ * keeps the id it was saved with forever; a future launcher or provider link
+ * points at it, never replaces it.
+ */
+export type { GameId };
 
 export type GameStatus = "playing" | "paused" | "completed" | "dropped";
 
@@ -86,7 +91,8 @@ export const ROOT_PARENT = "";
 
 export const MAX_NOTES_LENGTH = 4000;
 
-export function gameIdFor(rawgId: number): GameId {
+/** The id of a RAWG game. Only for RAWG numbers: other providers use gameIdOf. */
+export function gameIdFor(rawgId: number): RawgGameId {
   return `rawg:${rawgId}`;
 }
 

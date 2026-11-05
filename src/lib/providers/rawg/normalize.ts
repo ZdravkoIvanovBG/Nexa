@@ -1,3 +1,4 @@
+import { gameIdOf } from "../../game-discovery/game-id.ts";
 import type {
   GameDetail,
   GamePage,
@@ -103,13 +104,16 @@ export function normalizeGameSummary(raw: RawgListGame | null | undefined): Game
   const rawgId = num(raw?.id);
   const name = str(raw?.name);
   const slug = str(raw?.slug);
-  if (rawgId === null || !name || !slug) return null;
+  // A RAWG id must be a positive integer to form a valid "rawg:N" identity.
+  if (rawgId === null || !Number.isSafeInteger(rawgId) || rawgId < 1 || !name || !slug) {
+    return null;
+  }
   const rating = num(raw?.rating);
   const metacritic = num(raw?.metacritic);
   const screenshots = Array.isArray(raw?.short_screenshots) ? raw.short_screenshots : [];
   const image = str(raw?.background_image);
   return {
-    rawgId,
+    id: gameIdOf("rawg", rawgId),
     slug,
     name,
     released: date(raw?.released),
@@ -168,11 +172,11 @@ export function normalizeGameDetail(raw: RawgGameDetail | null | undefined): Gam
 export function normalizeGamePage(raw: RawgPage<RawgListGame> | null | undefined): GamePage {
   const results = Array.isArray(raw?.results) ? raw.results : [];
   const items: GameSummary[] = [];
-  const seen = new Set<number>();
+  const seen = new Set<string>();
   for (const entry of results) {
     const game = normalizeGameSummary(entry);
-    if (!game || seen.has(game.rawgId)) continue;
-    seen.add(game.rawgId);
+    if (!game || seen.has(game.id)) continue;
+    seen.add(game.id);
     items.push(game);
   }
   return { items, count: num(raw?.count) ?? items.length, hasMore: !!str(raw?.next) };
