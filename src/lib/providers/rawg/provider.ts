@@ -22,6 +22,12 @@ import { normalizeGameDetail, normalizeGamePage, normalizeScreenshots } from "./
 import type { RawgGameDetail, RawgListGame, RawgPage, RawgScreenshot } from "./types.ts";
 
 export const SERIES_PAGE_LIMIT = 3;
+/** The related-game endpoints RAWG has; other kinds answer empty without a request. */
+const RAWG_RELATED: ReadonlySet<RelatedKind> = new Set([
+  "game-series",
+  "additions",
+  "parent-games",
+]);
 export const MAX_CURATED_LOOKUPS = 6;
 
 /**
@@ -101,7 +107,7 @@ export function createRawgProvider(
 
     async related(id: GameId, kind: RelatedKind, signal?: AbortSignal) {
       const rawgId = rawgIdOf(id);
-      if (rawgId === null) return [];
+      if (rawgId === null || !RAWG_RELATED.has(kind)) return [];
       return normalizeGamePage(
         await get<RawgPage<RawgListGame>>(`/games/${rawgId}/${kind}`, { page_size: 20 }, signal),
       ).items;

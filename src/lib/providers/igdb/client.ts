@@ -94,6 +94,8 @@ export type IgdbClientOptions = {
   transport: IgdbTransport;
   /** Diagnostics hook. Receives the endpoint only, never the body. */
   onRequest?: (info: IgdbRequestInfo) => void;
+  /** Called when a request fails because credentials are missing or rejected. */
+  onCredentialError?: (kind: "missing_credentials" | "invalid_credentials") => void;
   timeoutMs?: number;
   concurrency?: number;
   ratePerSecond?: number;
@@ -270,7 +272,17 @@ export function createIgdbClient(options: IgdbClientOptions) {
     if (transport.ready && !transport.ready()) {
       return Promise.reject(new IgdbError("missing_credentials"));
     }
-    const shared = scheduler.schedule(`${endpoint}\n${body}`, () => execute(endpoint, body));
+    const shared = scheduler.schedule(`${endpoint}\n${body}`, () =>
+      execute(endpoint, body).catch((error: unknown) => {
+        if (
+          isIgdbError(error) &&
+          (error.kind === "missing_credentials" || error.kind === "invalid_credentials")
+        ) {
+          options.onCredentialError?.(error.kind);
+        }
+        throw error;
+      }),
+    );
     return raceAbort(shared, signal);
   };
 

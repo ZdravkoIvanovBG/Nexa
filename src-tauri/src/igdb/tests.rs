@@ -1084,3 +1084,62 @@ async fn live_twitch_and_igdb_round_trip() {
         CredentialState::Verified
     );
 }
+
+/// Replays every Stage 4 Discovery body (the `stage4 *` entries of the
+/// TypeScript fixture, recorded from the provider) through the real service:
+/// validator, token, limiter and HTTP, against the live API. Prints only case
+/// names, result counts and error kinds:
+/// cargo test --lib igdb::tests::live_stage4 -- --ignored --nocapture
+#[tokio::test]
+#[ignore]
+async fn live_stage4_discovery_bodies() {
+    let id = std::env::var("NEXA_IGDB_LIVE_CLIENT_ID").expect("NEXA_IGDB_LIVE_CLIENT_ID");
+    let sec = std::env::var("NEXA_IGDB_LIVE_CLIENT_SECRET").expect("NEXA_IGDB_LIVE_CLIENT_SECRET");
+    let http = Arc::new(Counting {
+        inner: super::http::ReqwestExec::new(),
+        tokens: AtomicUsize::new(0),
+        igdb: AtomicUsize::new(0),
+    });
+    let store = Arc::new(MemoryStore::default());
+    let svc = IgdbService::new(store, http.clone(), Config::default());
+    svc.set_credentials(id, Secret::new(sec))
+        .await
+        .expect("Twitch auth");
+
+    let fixture = include_str!("../../../tests/fixtures/igdb-query-bodies.json");
+    let cases: Vec<serde_json::Value> = serde_json::from_str(fixture).unwrap();
+    let mut failed = 0;
+    let mut ran = 0;
+    for case in cases
+        .iter()
+        .filter(|c| c["name"].as_str().unwrap_or("").starts_with("stage4 "))
+    {
+        let name = case["name"].as_str().unwrap();
+        let endpoint = case["endpoint"].as_str().unwrap();
+        let body = case["body"].as_str().unwrap();
+        ran += 1;
+        match svc.query(endpoint, body).await {
+            Ok(value) => {
+                let size = match &value {
+                    serde_json::Value::Array(items) => items.len(),
+                    serde_json::Value::Object(map) => {
+                        map.get("count").and_then(|c| c.as_u64()).unwrap_or(0) as usize
+                    }
+                    _ => 0,
+                };
+                println!("{name}: ok ({size})");
+            }
+            Err(error) => {
+                failed += 1;
+                println!("{name}: FAILED {:?}", error.kind);
+            }
+        }
+    }
+    println!(
+        "totals: cases={ran} failed={failed} token requests={} igdb requests={}",
+        http.tokens.load(Ordering::SeqCst),
+        http.igdb.load(Ordering::SeqCst)
+    );
+    assert!(ran >= 20, "expected the Stage 4 fixture cases");
+    assert_eq!(failed, 0);
+}

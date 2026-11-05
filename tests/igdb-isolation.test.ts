@@ -1,6 +1,6 @@
 // @ts-nocheck -- Node's test modules are not included in the application tsconfig.
-// Source-shape checks for the IGDB provider: the app reaches it only through
-// the native bridge (Stage 3), credential handling stays in server/ (dev) and
+// Source-shape checks for the IGDB provider: the app reaches it only from a
+// few known modules (Stage 4), credential handling stays in server/ (dev) and
 // Rust (app), and it never uses RAWG ids.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -30,21 +30,26 @@ const importsOf = (source) =>
     ),
   ].map((m) => m[1] ?? m[2]);
 
-// Stage 3: the app may use the native bridge (credential commands) and nothing
-// else from the provider. Games Discovery stays on RAWG.
-const APP_IMPORTERS = new Set([
-  "src/lib/game-discovery/igdb-native.ts",
-  "src/views/settings/games/igdb-section.tsx",
-]);
+// Stage 4: which app module may import which IGDB module. Views never import
+// IGDB code (except Settings for the credential bridge): they see only the
+// normalized types, and server/ (the dev-only token code) is never imported.
+const APP_IMPORTERS = {
+  "src/lib/game-discovery/igdb-native.ts": ["native"],
+  "src/lib/game-discovery/igdb-discovery.ts": ["client", "native", "provider"],
+  "src/lib/game-discovery/errors.ts": ["client"],
+  "src/lib/game-discovery/game-image.ts": ["image"],
+  "src/views/settings/games/igdb-section.tsx": ["native"],
+};
 
-test("the app imports only the IGDB native bridge, from known places", () => {
+test("the app imports IGDB modules only from known places", () => {
   const offenders = [];
   for (const file of walk(SRC)) {
     if (file.startsWith(IGDB + sep)) continue;
     for (const spec of importsOf(readFileSync(file, "utf8"))) {
       if (/(^|\/)providers\/igdb(\/|$)/.test(spec) || /(^|\/)igdb\//.test(spec)) {
-        const bridge = /(^|\/)providers\/igdb\/native(\.ts)?$/.test(spec);
-        if (!bridge || !APP_IMPORTERS.has(rel(file))) offenders.push(`${rel(file)} -> ${spec}`);
+        const module = /(^|\/)providers\/igdb\/([a-z-]+)(\.ts)?$/.exec(spec)?.[2];
+        const allowed = APP_IMPORTERS[rel(file)] ?? [];
+        if (!module || !allowed.includes(module)) offenders.push(`${rel(file)} -> ${spec}`);
       }
     }
   }

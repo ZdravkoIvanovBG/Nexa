@@ -1,10 +1,14 @@
-import type { GameListFilter } from "./types.ts";
+import type { GameProvider } from "./game-id.ts";
+import type { GameListFilter, GameSectionId } from "./types.ts";
 
-// Discovery rows. Each maps to one real RAWG /games query with an honest label:
-// "popular" means RAWG's `added` count (users who added the game), ratings are
-// Metacritic unless stated, and dates are release dates.
+// Discovery rows. Each maps to one real provider query with an honest label.
+// RAWG: "popular" means RAWG's `added` count (users who added the game),
+// ratings are Metacritic unless stated, and dates are release dates.
+// IGDB: each row names a recipe the IGDB provider owns (providers/igdb/
+// listing.ts); "popular" blends IGDB's Playing and Want to Play lists, and
+// scores are IGDB critic scores.
 
-export type GameSectionId = "popular" | "new" | "acclaimed" | "upcoming" | "classics";
+export type { GameSectionId } from "./types.ts";
 
 export type GameSection = {
   id: GameSectionId;
@@ -34,7 +38,11 @@ function shiftMonths(d: Date, months: number): Date {
   return out;
 }
 
-export function gameSections(today: Date = new Date()): GameSection[] {
+export function gameSections(
+  today: Date = new Date(),
+  provider: GameProvider = "rawg",
+): GameSection[] {
+  if (provider === "igdb") return igdbSections();
   const now = iso(today);
   const yearStart = `${today.getFullYear()}-01-01`;
   return [
@@ -74,6 +82,51 @@ export function gameSections(today: Date = new Date()): GameSection[] {
       title: "All-time classics",
       subtitle: "Metacritic 80+, before 2013",
       filter: { dates: "1985-01-01,2012-12-31", metacritic: "80,100", ordering: "-added" },
+      eager: false,
+    },
+  ];
+}
+
+/**
+ * IGDB rows: same ids, order and (except Popular) titles as RAWG's. Popular
+ * is "right now" because IGDB's popularity lists measure current activity, not
+ * this year's releases. Filters name the section; the provider owns the recipe.
+ */
+function igdbSections(): GameSection[] {
+  return [
+    {
+      id: "popular",
+      title: "Popular right now",
+      subtitle: "Most played and wanted on IGDB",
+      filter: { section: "popular" },
+      eager: true,
+    },
+    {
+      id: "new",
+      title: "New releases",
+      subtitle: "Last 90 days",
+      filter: { section: "new" },
+      eager: true,
+    },
+    {
+      id: "acclaimed",
+      title: "Critically acclaimed",
+      subtitle: "Critic score 85+",
+      filter: { section: "acclaimed", ordering: "-metacritic" },
+      eager: false,
+    },
+    {
+      id: "upcoming",
+      title: "Coming soon",
+      subtitle: "Most anticipated on IGDB",
+      filter: { section: "upcoming" },
+      eager: false,
+    },
+    {
+      id: "classics",
+      title: "All-time classics",
+      subtitle: "Rated 80+, before 2013",
+      filter: { section: "classics" },
       eager: false,
     },
   ];

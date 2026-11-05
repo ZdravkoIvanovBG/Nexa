@@ -18,6 +18,7 @@ import {
   sectionQuery,
   where,
 } from "../src/lib/providers/igdb/query.ts";
+import { createIgdbProvider } from "../src/lib/providers/igdb/provider.ts";
 
 const FIXTURE = new URL("./fixtures/igdb-query-bodies.json", import.meta.url);
 const NOW = 1_793_836_800; // 2026-11-05T00:00:00Z
@@ -84,8 +85,84 @@ function cases() {
   return out;
 }
 
-test("the query-body fixture matches the TypeScript builder", () => {
-  const built = cases();
+// Every body the Stage 4 provider sends for Discovery, recorded from the
+// provider itself with a fake client, so Rust validates exactly what the app
+// sends (and the live Rust test can replay them against IGDB).
+async function providerCases() {
+  const out = [];
+  const record = (name, endpoint, body) => out.push({ name: `stage4 ${name}`, endpoint, body });
+  let label = "";
+  const ranking = {
+    playing: [1942, 1020, 119133, 25076].map((game_id, i) => ({ game_id, value: 100 - i })),
+    want_to_play: [52189, 1942, 7346].map((game_id, i) => ({ game_id, value: 90 - i })),
+  };
+  const detail = {
+    id: 1942,
+    name: "The Witcher 3: Wild Hunt",
+    slug: "the-witcher-3-wild-hunt",
+    dlcs: [7300],
+    expansions: [7301],
+    remasters: [415005],
+    similar_games: [472, 1877],
+    version_parent: 22439,
+  };
+  const client = {
+    async query(endpoint, spec) {
+      record(label + (endpoint === "games/count" ? " count" : ""), endpoint, buildQuery(spec));
+      if (endpoint === "games/count") return { count: 1 };
+      return spec.limit === 1 ? [detail] : [];
+    },
+    async multiquery(queries) {
+      record(label, "multiquery", buildMultiquery(queries));
+      return ranking;
+    },
+  };
+  const fresh = createIgdbProvider(client, "g0", { now: () => NOW * 1000 });
+  const step = async (name, run) => {
+    label = name;
+    await run();
+  };
+  // The ranking multiquery, then the row's games.
+  await step("popular", () => fresh.list({ section: "popular" }, 1, 20));
+  for (const id of ["new", "upcoming", "acclaimed", "classics"]) {
+    await step(`section ${id}`, () => fresh.list({ section: id }, 1, 20));
+  }
+  await step("popular by release date", () =>
+    fresh.list({ section: "popular", ordering: "-released" }, 1, 40, undefined, {
+      withCount: true,
+    }),
+  );
+  await step("browse action", () =>
+    fresh.list({ genres: "action" }, 1, 40, undefined, { withCount: true }),
+  );
+  await step("browse horror on playstation by date", () =>
+    fresh.list({ tags: "horror", parentPlatforms: "2", ordering: "-released" }, 2, 40),
+  );
+  await step("browse mobile rpg by name", () =>
+    fresh.list(
+      { genres: "role-playing-games-rpg", parentPlatforms: "4,8", ordering: "name" },
+      1,
+      40,
+    ),
+  );
+  await step("search", () =>
+    fresh.list({ search: 'Zelda: "Breath" \\ of\nthe Wild' }, 1, 40, undefined, {
+      withCount: true,
+    }),
+  );
+  await step("search by critic score", () =>
+    fresh.list({ search: "witcher", ordering: "-metacritic" }, 1, 40),
+  );
+  await step("developer", () => fresh.list({ developers: "908", ordering: "-added" }, 1, 20));
+  await step("detail", () => fresh.detail("igdb:1942"));
+  for (const kind of ["additions", "parent-games", "versions", "similar"]) {
+    await step(`related ${kind}`, () => fresh.related("igdb:1942", kind));
+  }
+  return out;
+}
+
+test("the query-body fixture matches the TypeScript builder", async () => {
+  const built = [...cases(), ...(await providerCases())];
   if (process.env.UPDATE_IGDB_FIXTURE === "1") {
     writeFileSync(FIXTURE, JSON.stringify(built, null, 2) + "\n");
   }

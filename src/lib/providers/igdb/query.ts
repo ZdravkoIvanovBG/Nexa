@@ -352,7 +352,12 @@ export const DETAIL_FIELDS: readonly string[] = [
   "expansions",
   "standalone_expansions",
   "similar_games",
+  "websites.url",
+  "websites.type",
 ];
+
+/** IGDB website type for a game's official site (verified live 2026-11-05). */
+export const WEBSITE_TYPE_OFFICIAL = 1;
 
 /** Filters every public discovery list applies: standalone games, no editions, no Erotic theme. */
 export function publicFilters(): IgdbCondition[] {
@@ -401,12 +406,15 @@ export function sectionQuery(id: IgdbSectionId, nowSec: number, limit = 20): Igd
         sort: { field: "hypes", dir: "desc" },
       };
     case "acclaimed":
+      // Critic score 85+ from at least 10 critic reviews (live check
+      // 2026-11-05): a 5-review floor let single-outlet scores and odd records
+      // in; 10 keeps BotW, Elden Ring, God of War and friends on top.
       return {
         ...base,
         where: [
           ...publicFilters(),
           where.gte("aggregated_rating", 85),
-          where.gte("aggregated_rating_count", 5),
+          where.gte("aggregated_rating_count", 10),
         ],
         sort: { field: "aggregated_rating", dir: "desc" },
       };
@@ -418,12 +426,30 @@ export function sectionQuery(id: IgdbSectionId, nowSec: number, limit = 20): Igd
           // 1985-01-01 .. 2012-12-31 (UTC)
           where.gte("first_release_date", 473_385_600),
           where.lte("first_release_date", 1_356_998_399),
-          where.gte("total_rating", 80),
-          where.gte("total_rating_count", 50),
+          // Critic score first. IGDB has few critic reviews for most pre-2000
+          // games (Ocarina of Time has none), so a well-rated game with a large
+          // user base also qualifies.
+          where.or(
+            where.and(where.gte("aggregated_rating", 80), where.gte("aggregated_rating_count", 2)),
+            where.and(where.gte("total_rating", 85), where.gte("total_rating_count", 100)),
+          ),
         ],
+        // Among the acclaimed, the most rated first: the best-known classics lead.
         sort: { field: "total_rating_count", dir: "desc" },
       };
   }
+}
+
+/**
+ * Popular: released games from the blended Playing / Want to Play ranking
+ * (unreleased games have their own Coming soon row).
+ */
+export function popularFilters(nowSec: number): IgdbCondition[] {
+  return [
+    ...publicFilters(),
+    where.neq("first_release_date", null),
+    where.lte("first_release_date", Math.floor(finite(nowSec))),
+  ];
 }
 
 /**

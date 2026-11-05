@@ -12,7 +12,12 @@
 //   ./query.ts. Rust re-validates both, attaches credentials, rate-limits and
 //   retries; the client is told not to retry on top of that.
 
-import { createIgdbClient, type IgdbErrorKind, type IgdbTransport } from "./client.ts";
+import {
+  createIgdbClient,
+  type IgdbClientOptions,
+  type IgdbErrorKind,
+  type IgdbTransport,
+} from "./client.ts";
 import { isIgdbEndpoint } from "./query.ts";
 
 export const IGDB_COMMANDS = {
@@ -255,12 +260,17 @@ export function createTauriTransport(invoke: Invoke): IgdbTransport {
 export const TAURI_TRANSPORT_TIMEOUT_MS = 35_000;
 
 /**
- * An IGDB client backed by the Rust transport. Not used by the app in Stage 3
- * (RAWG is the active provider); Stage 4 builds the IGDB provider on it.
+ * An IGDB client backed by the Rust transport. Games Discovery uses one when
+ * IGDB is the active provider (development builds, Stage 4).
  */
-export function createNativeIgdbClient(invoke: Invoke) {
+export function createNativeIgdbClient(
+  invoke: Invoke,
+  options: Pick<IgdbClientOptions, "onRequest" | "onCredentialError"> = {},
+) {
   return createIgdbClient({
     transport: createTauriTransport(invoke),
     timeoutMs: TAURI_TRANSPORT_TIMEOUT_MS,
+    onRequest: options.onRequest,
+    onCredentialError: options.onCredentialError,
   });
 }

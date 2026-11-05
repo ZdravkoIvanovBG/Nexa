@@ -1,8 +1,9 @@
-// Domain types for Games discovery. Metadata providers (RAWG today) normalize
-// into these shapes; the UI consumes nothing else. Game identity is always
+// Domain types for Games discovery. Metadata providers (RAWG, and IGDB behind
+// the development switch) normalize into these shapes; the UI consumes nothing
+// else. Game identity is always
 // provider-qualified (see game-id.ts), so no view depends on a provider's ids.
 
-import { parseGameId, type GameId } from "./game-id.ts";
+import { parseGameId, type GameId, type GameProvider } from "./game-id.ts";
 
 export type { GameId, GameProvider } from "./game-id.ts";
 
@@ -42,7 +43,36 @@ export type GameSummary = {
   esrb: string | null;
   /** Up to ~6 screenshot URLs included in list responses. */
   shortScreenshots: string[];
+  // Provider-neutral extras. Optional, so RAWG summaries (and saved snapshots)
+  // keep exactly the shape they had before IGDB existed.
+  /** Critic score 0–100 from a provider without Metacritic (IGDB's aggregated rating). */
+  criticScore?: number | null;
+  criticCount?: number;
+  /** User score on a 0–100 scale (IGDB). RAWG's 0–5 rating stays in `rating`. */
+  userScore?: number | null;
+  userCount?: number;
+  /** "portrait" when `image` is a cover, not landscape art: never crop it to 16:9. */
+  imageKind?: "portrait";
+  /** What the record is when it isn't a main game (IGDB game_type / editions). */
+  variant?: GameVariant;
 };
+
+export type GameVariant =
+  | "dlc"
+  | "expansion"
+  | "bundle"
+  | "standalone"
+  | "mod"
+  | "episode"
+  | "season"
+  | "remake"
+  | "remaster"
+  | "expanded"
+  | "port"
+  | "fork"
+  | "pack"
+  | "update"
+  | "edition";
 
 export type GameDetail = GameSummary & {
   description: string | null;
@@ -60,19 +90,47 @@ export type GameDetail = GameSummary & {
     series: number;
     additions: number;
     parents: number;
+    /** Remakes and remasters (IGDB). */
+    versions?: number;
+    /** Similar games (IGDB). */
+    similar?: number;
+  };
+  /** Story text when the provider keeps it apart from the description (IGDB). */
+  storyline?: string | null;
+  /** The game's page on the provider's site, already validated (IGDB). */
+  providerUrl?: string | null;
+  /** Every screenshot, full size, when the detail response carries them (IGDB). */
+  screenshots?: string[];
+  /** Related games by provider-qualified id (IGDB); read by the provider's `related`. */
+  relations?: {
+    parents: GameId[];
+    versions: GameId[];
+    additions: GameId[];
+    similar: GameId[];
   };
 };
 
 export type GamePage = {
   items: GameSummary[];
-  count: number;
+  /** Total matches, or null when the provider didn't count them. */
+  count: number | null;
   hasMore: boolean;
 };
 
+/** Discovery rows. Defined here so list filters can name one. */
+export type GameSectionId = "popular" | "new" | "acclaimed" | "upcoming" | "classics";
+
 export type GameOrdering = "-added" | "-released" | "-metacritic" | "-rating" | "name";
 
-/** Filter for RAWG /games list queries (RAWG parameter semantics). */
+/**
+ * Filter for list queries. The values use RAWG's vocabulary (genre slugs, the
+ * horror tag, parent-platform ids, "a,b" date and score ranges), which is also
+ * the category vocabulary of the genre tiles and Browse pills; IGDB translates
+ * it. `developers` is the active provider's own company id. `section` names a
+ * Discovery row whose recipe the provider defines itself (IGDB only).
+ */
 export type GameListFilter = {
+  section?: GameSectionId;
   search?: string;
   genres?: string;
   tags?: string;
@@ -90,6 +148,11 @@ export type GameBrowseSpec = {
   filter: GameListFilter;
   /** Focus the search field when the frame opens. */
   focusSearch?: boolean;
+  /**
+   * Set when the filter holds provider-specific ids or recipes (a developer id,
+   * an IGDB section). Browse refuses to run it under another provider.
+   */
+  provider?: GameProvider;
 };
 
 type GameRefSnapshot = {
