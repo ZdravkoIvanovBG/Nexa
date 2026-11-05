@@ -13,7 +13,7 @@
 //   fields      verify current field names and enum ids we rely on
 //   discovery   popular, new, upcoming, acclaimed, classics, search, details
 //   media       art coverage per list and CDN reachability
-//   franchises  compare all curated franchises with IGDB [--franchise <id>] [--verbose]
+//   franchises  compare all curated franchises with IGDB [--franchise <id>] [--verbose] [--json]
 //   all         every mode above, in order
 
 import { createIgdbClient, isIgdbError } from "../src/lib/providers/igdb/client.ts";
@@ -693,6 +693,25 @@ async function franchises() {
       if (m.status === "matched" && m.passedOver.length) totals.resolved++;
       if (m.match) usedIds.add(m.match.igdbId);
       rows.push({ m, via });
+    }
+
+    // --json: one machine-readable line per curated entry, for drafting the
+    // reviewed IGDB mapping (src/lib/game-discovery/franchises-igdb.ts).
+    if (process.argv.includes("--json")) {
+      for (const { m } of rows) {
+        const pick = (c) =>
+          c && {
+            id: c.igdbId,
+            slug: c.slug,
+            name: c.name,
+            year: c.year,
+            type: typeName(c.gameType),
+            edition: c.versionParent !== null,
+          };
+        log(
+          `MAP	${JSON.stringify({ franchise: def.id, slug: m.entry.slug, role: m.entry.role, expected: m.entry.expectedYear ?? null, status: m.status, match: pick(m.match), candidates: m.candidates.slice(0, 4).map(pick), passedOver: m.passedOver.map(pick) })}`,
+        );
+      }
     }
 
     for (const { m, via } of rows) {
