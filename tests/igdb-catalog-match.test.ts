@@ -128,3 +128,200 @@ test("an exact-slug match wins over a looser one in the same year", () => {
   assert.equal(loose.status, "matched");
   assert.equal(loose.match.igdbId, 70);
 });
+
+// Candidate sets observed live on 2026-11-05 (ids, names, years and game types
+// copied from the dev-check report). Each case was "ambiguous" before role-fit
+// ranking; each must now resolve to IGDB's base record and report what it
+// passed over.
+const PORT = 11;
+const EXPANDED = 10;
+const BUNDLE = 3;
+const REMAKE = 8;
+const REMASTER = 9;
+const LIVE_CASES = [
+  [
+    "resident-evil",
+    1996,
+    "main",
+    424,
+    [
+      c(424, "resident-evil", "Resident Evil", 1996),
+      c(380192, "resident-evil--8", "Resident Evil", 1996, PORT),
+    ],
+  ],
+  [
+    "resident-evil-2",
+    1998,
+    "main",
+    880,
+    [
+      c(186400, "resident-evil-2--2", "Resident Evil 2", 1998, PORT),
+      c(217953, "resident-evil-2--4", "Resident Evil 2", 1998, PORT),
+      c(880, "resident-evil-2", "Resident Evil 2", 1998),
+    ],
+  ],
+  [
+    "resident-evil-4",
+    2005,
+    "main",
+    974,
+    [
+      c(974, "resident-evil-4", "Resident Evil 4", 2005),
+      c(145191, "resident-evil-4--2", "Resident Evil 4", 2005, EXPANDED),
+    ],
+  ],
+  [
+    "grand-theft-auto-2-1999",
+    1999,
+    "main",
+    819,
+    [
+      c(819, "grand-theft-auto-2", "Grand Theft Auto 2", 1999),
+      c(200403, "grand-theft-auto-2--2", "Grand Theft Auto 2", 1999, PORT),
+    ],
+  ],
+  [
+    "tomb-raider-legend",
+    2006,
+    "main",
+    1161,
+    [
+      c(165184, "tomb-raider-legend--3", "Tomb Raider: Legend", 2006, PORT),
+      c(146718, "tomb-raider-legend--2", "Tomb Raider: Legend", 2006, PORT),
+      c(248535, "tomb-raider-legend--4", "Tomb Raider: Legend", 2006, PORT),
+      c(248536, "tomb-raider-legend--5", "Tomb Raider: Legend", 2006, PORT),
+      c(1161, "tomb-raider-legend", "Tomb Raider: Legend", 2006),
+    ],
+  ],
+  [
+    "tomb-raider-underworld",
+    2008,
+    "main",
+    1163,
+    [
+      c(146720, "tomb-raider-underworld--1", "Tomb Raider: Underworld", 2008, PORT),
+      c(1163, "tomb-raider-underworld", "Tomb Raider: Underworld", 2008),
+      c(371966, "tomb-raider-underworld--3", "Tomb Raider: Underworld", 2008, PORT),
+      c(381691, "tomb-raider-underworld--4", "Tomb Raider: Underworld", 2008, PORT),
+    ],
+  ],
+  [
+    "tomb-raider-anniversary",
+    2007,
+    "remake",
+    1162,
+    [
+      c(312286, "tomb-raider-anniversary--1", "Tomb Raider: Anniversary", 2007, PORT),
+      c(1162, "tomb-raider-anniversary", "Tomb Raider: Anniversary", 2007, REMAKE),
+      c(381690, "tomb-raider-anniversary--4", "Tomb Raider: Anniversary", 2007, PORT),
+    ],
+  ],
+  [
+    "call-of-duty-world-at-war",
+    2008,
+    "main",
+    625,
+    [
+      c(343822, "call-of-duty-world-at-war--3", "Call of Duty: World at War", 2008, PORT),
+      c(625, "call-of-duty-world-at-war", "Call of Duty: World at War", 2008),
+      c(135296, "call-of-duty-world-at-war--2", "Call of Duty: World at War", 2008, PORT),
+      c(135297, "call-of-duty-world-at-war--1", "Call of Duty: World at War", 2008, PORT),
+    ],
+  ],
+  [
+    "call-of-duty-black-ops",
+    2010,
+    "main",
+    545,
+    [
+      c(545, "call-of-duty-black-ops", "Call of Duty: Black Ops", 2010),
+      c(135299, "call-of-duty-black-ops--1", "Call of Duty: Black Ops", 2010, PORT),
+      c(343819, "call-of-duty-black-ops--3", "Call of Duty: Black Ops", 2010, PORT),
+    ],
+  ],
+  [
+    "call-of-duty-modern-warfare-3",
+    2011,
+    "main",
+    979,
+    [
+      c(287021, "call-of-duty-modern-warfare-3--1", "Call of Duty: Modern Warfare 3", 2011, PORT),
+      c(979, "call-of-duty-modern-warfare-3", "Call of Duty: Modern Warfare 3", 2011),
+    ],
+  ],
+  [
+    "assassins-creed-iii-remastered",
+    2019,
+    "remaster",
+    109532,
+    [
+      c(
+        237701,
+        "assassins-creed-iii-remastered--1",
+        "Assassin's Creed III Remastered",
+        2019,
+        BUNDLE,
+      ),
+      c(
+        109532,
+        "assassins-creed-iii-remastered",
+        "Assassin's Creed III Remastered",
+        2019,
+        REMASTER,
+      ),
+    ],
+  ],
+];
+
+for (const [slug, year, role, expected, pool] of LIVE_CASES) {
+  test(`live case: ${slug} resolves to the base record ${expected}`, () => {
+    const m = matchCatalogEntry(entry(slug, year, role), pool, NOW);
+    assert.equal(m.status, "matched");
+    assert.equal(m.match.igdbId, expected);
+    assert.deepEqual(
+      m.passedOver.map((x) => x.igdbId).sort(),
+      pool
+        .filter((x) => x.igdbId !== expected)
+        .map((x) => x.igdbId)
+        .sort(),
+      "every same-title, same-year record is reported as passed over",
+    );
+    assert.deepEqual(m.notes, []);
+  });
+}
+
+test("the result does not depend on the order IGDB returns candidates in", () => {
+  for (const [slug, year, role, expected, pool] of LIVE_CASES) {
+    const reversed = matchCatalogEntry(entry(slug, year, role), [...pool].reverse(), NOW);
+    assert.equal(reversed.match?.igdbId, expected, slug);
+  }
+});
+
+test("role decides between a remake and its original in the same year", () => {
+  const pool = [c(1, "x", "X", 2020, 0), c(2, "x--1", "X", 2020, REMAKE)];
+  assert.equal(matchCatalogEntry(entry("x", 2020, "main"), pool, NOW).match.igdbId, 1);
+  assert.equal(matchCatalogEntry(entry("x", 2020, "remake"), pool, NOW).match.igdbId, 2);
+});
+
+test("edition role prefers the edition record; other roles avoid it", () => {
+  const pool = [c(1, "game", "Game", 2012), c(2, "game-saga", "Game", 2012, 0, 1)];
+  assert.equal(matchCatalogEntry(entry("game", 2012, "edition"), pool, NOW).match.igdbId, 2);
+  assert.equal(matchCatalogEntry(entry("game", 2012, "main"), pool, NOW).match.igdbId, 1);
+});
+
+test("two equally fitting ports stay ambiguous: no silent choice", () => {
+  const pool = [c(1, "g--1", "G", 2008, PORT), c(2, "g--2", "G", 2008, PORT)];
+  const m = matchCatalogEntry(entry("g", 2008, "main"), pool, NOW);
+  assert.equal(m.status, "ambiguous");
+  assert.equal(m.match, null);
+  assert.deepEqual(
+    m.candidates.map((x) => x.igdbId),
+    [1, 2],
+  );
+});
+
+test("a DLC-only match is flagged", () => {
+  const m = matchCatalogEntry(entry("g", 2008, "main"), [c(1, "g", "G", 2008, 1)], NOW);
+  assert.equal(m.status, "matched");
+  assert.ok(m.notes.includes("only DLC, packs or similar records match"));
+});

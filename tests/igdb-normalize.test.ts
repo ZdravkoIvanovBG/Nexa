@@ -133,6 +133,27 @@ test("platform families", () => {
   assert.equal(platformFamilyOf({}), null);
 });
 
+test("regression: IGDB family 4 (Linux) never makes a Linux badge by itself", () => {
+  // Live 2026-11-05: Android (34) and Google Stadia (170) carry platform_family 4.
+  assert.equal(platformFamilyOf({ id: 34, name: "Android", platform_family: 4 }), "android");
+  assert.equal(platformFamilyOf({ id: 170, name: "Google Stadia", platform_family: 4 }), "other");
+  assert.equal(platformFamilyOf({ id: 999, platform_family: { id: 4 } }), "other");
+  assert.equal(platformFamilyOf({ id: 3, name: "Linux", platform_family: 4 }), "linux");
+  // Red Dead Redemption 2's live platform list: no Linux badge.
+  const rdr2 = normalizeIgdbGame({
+    id: 25076,
+    name: "Red Dead Redemption 2",
+    slug: "red-dead-redemption-2",
+    platforms: [
+      { id: 170, name: "Google Stadia", platform_family: 4 },
+      { id: 48, name: "PlayStation 4", platform_family: 1 },
+      { id: 6, name: "PC (Microsoft Windows)" },
+      { id: 49, name: "Xbox One", platform_family: 2 },
+    ],
+  });
+  assert.deepEqual(rdr2.platformFamilies, ["other", "playstation", "pc", "xbox"]);
+});
+
 test("scores are clamped and rounded; bad values are null", () => {
   const g = normalizeIgdbGame({
     id: 1,

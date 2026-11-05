@@ -24,6 +24,7 @@ import {
   titleKey,
 } from "../src/lib/providers/igdb/catalog-match.ts";
 import { normalizeIgdbDetail } from "../src/lib/providers/igdb/normalize.ts";
+import { blendPopularity, orderByRanking } from "../src/lib/providers/igdb/popularity.ts";
 import {
   DETAIL_FIELDS,
   GAME_TYPE,
@@ -33,6 +34,7 @@ import {
   gameBySlug,
   gamesByIds,
   popularityQuery,
+  popularSubqueries,
   publicFilters,
   searchQuery,
   sectionQuery,
@@ -95,7 +97,7 @@ async function attempt(label, fn) {
 // IGDB's documented game_type names for the ids in GAME_TYPE, as title keys.
 const EXPECTED_TYPE_KEYS = {
   main: "main-game",
-  dlc: "dlc-addon",
+  dlc: "dlc",
   expansion: "expansion",
   bundle: "bundle",
   standaloneExpansion: "standalone-expansion",
@@ -107,7 +109,7 @@ const EXPECTED_TYPE_KEYS = {
   expandedGame: "expanded-game",
   port: "port",
   fork: "fork",
-  pack: "pack",
+  pack: "pack-addon",
   update: "update",
 };
 const LISTED_TYPE_KEYS = new Set([
@@ -352,13 +354,27 @@ async function discovery() {
       limit: 100,
     }),
   );
-  const wanted = [
-    "Visits",
-    "Want to Play",
-    "Playing",
-    "24hr Peak Players",
-    "Most Wishlisted Upcoming",
-  ];
+  // The chosen Popular recipe: Playing blended with Want to Play (Visits is not used).
+  const popular = await attempt("popular blend", async () => {
+    const lists = await igdb.multiquery(popularSubqueries(50));
+    const ranking = blendPopularity([lists.playing, lists.want_to_play], { limit: 60 });
+    const games = await igdb.games({
+      fields: SUMMARY_FIELDS,
+      where: [where.anyOf("id", ranking), ...publicFilters()],
+      limit: ranking.length,
+    });
+    return { ranking, games: orderByRanking(games, ranking) };
+  });
+  if (popular) {
+    sectionLists["popular (Playing + Want to Play)"] = popular.games;
+    log(
+      `  POPULAR (Playing + Want to Play): ${popular.ranking.length} blended -> ${popular.games.length} public games`,
+    );
+    for (const game of popular.games.slice(0, 15)) log(`    ${summarize(game)}`);
+  }
+
+  // Individual signals, for comparison only.
+  const wanted = ["Want to Play", "Playing", "24hr Peak Players", "Most Wishlisted Upcoming"];
   for (const name of wanted) {
     const type = (types ?? []).find((t) => typeof t.name === "string" && t.name.includes(name));
     if (!type) {
@@ -418,7 +434,7 @@ async function discovery() {
   for (const slug of [
     "the-witcher-3-wild-hunt",
     "elden-ring",
-    "baldurs-gate-3",
+    "baldurs-gate-iii",
     "red-dead-redemption-2",
   ]) {
     const raw = await attempt(`detail ${slug}`, () => igdb.query("games", gameBySlug(slug)));
@@ -575,7 +591,14 @@ async function franchises() {
     if (live) gameTypeNames = new Map(live.map((t) => [t.id, t.type]));
   }
   log("\n== franchises: curated catalog vs IGDB");
-  const totals = { matched: 0, near_year: 0, year_mismatch: 0, ambiguous: 0, missing: 0 };
+  const totals = {
+    resolved: 0,
+    matched: 0,
+    near_year: 0,
+    year_mismatch: 0,
+    ambiguous: 0,
+    missing: 0,
+  };
 
   for (const def of FRANCHISES) {
     if (only && def.id !== only) continue;
@@ -667,6 +690,7 @@ async function franchises() {
         }
       }
       totals[m.status]++;
+      if (m.status === "matched" && m.passedOver.length) totals.resolved++;
       if (m.match) usedIds.add(m.match.igdbId);
       rows.push({ m, via });
     }
@@ -680,7 +704,15 @@ async function franchises() {
           ? "  (not in IGDB's collection)"
           : "";
       const art = m.match?.art && m.match.art !== "artwork" ? `  art=${m.match.art}` : "";
-      if (m.status === "matched") {
+      const passed = m.passedOver.length
+        ? `  over ${m.passedOver.map((c) => `${c.igdbId} [${c.versionParent !== null ? "edition" : typeName(c.gameType)}]`).join(", ")}`
+        : "";
+      if (m.status === "matched" && passed) {
+        // Same title and year as other records: always shown so the choice can be checked.
+        log(
+          `  RESOLVED   ${head} -> ${describeCandidate(m.match)} [${typeName(m.match.gameType)}]${passed}${via}${notes}${inPrimary}${art}`,
+        );
+      } else if (m.status === "matched") {
         if (verbose || notes || inPrimary || art)
           log(
             `  ok         ${head} -> ${describeCandidate(m.match)}${via}${notes}${inPrimary}${art}`,
@@ -698,6 +730,51 @@ async function franchises() {
         log(`  ${label} ${head}${via}`);
         for (const c of m.candidates.slice(0, 4))
           log(`               candidate ${describeCandidate(c)} [${typeName(c.gameType)}]`);
+      }
+    }
+
+    // Cross-check: IGDB's own mainline = "Member" (type 1) memberships of the
+    // franchise's main collection whose game is a main game and not an edition.
+    // A review signal for catalog maintenance only, never used at runtime.
+    const mainCollections = collections.filter((c) => titleKey(c.name ?? "") === key);
+    const crossCollections = mainCollections.length
+      ? mainCollections
+      : [...collections]
+          .sort((a, b) => (b.games?.length ?? 0) - (a.games?.length ?? 0))
+          .slice(0, 1);
+    if (crossCollections.length) {
+      const memberships = await attempt("collection memberships", () =>
+        igdb.query("collection_memberships", {
+          fields: ["game", "type", "collection"],
+          where: [
+            where.anyOf(
+              "collection",
+              crossCollections.map((c) => c.id),
+            ),
+            where.eq("type", 1),
+          ],
+          limit: 500,
+        }),
+      );
+      const byId = new Map(pool.map((c) => [c.igdbId, c]));
+      const igdbMain = (memberships ?? [])
+        .map((r) => byId.get(r.game))
+        .filter((c) => c && c.gameType === 0 && c.versionParent === null);
+      const igdbMainIds = new Set(igdbMain.map((c) => c.igdbId));
+      const curatedMain = rows.filter(({ m }) => m.entry.role === "main" && m.match);
+      const curatedMainIds = new Set(curatedMain.map(({ m }) => m.match.igdbId));
+      const curatedAnyIds = new Set(rows.filter(({ m }) => m.match).map(({ m }) => m.match.igdbId));
+      const onlyIgdb = igdbMain.filter((c) => !curatedMainIds.has(c.igdbId));
+      const onlyCurated = curatedMain.filter(({ m }) => !igdbMainIds.has(m.match.igdbId));
+      log(
+        `  MAINLINE CROSS-CHECK vs IGDB ${crossCollections.map((c) => `"${c.name}" [${c.id}]`).join(", ")} Member+Main: IGDB ${igdbMain.length}, curated main matched ${curatedMain.length}, in both ${curatedMain.length - onlyCurated.length}`,
+      );
+      for (const c of onlyIgdb.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999))) {
+        const where_ = curatedAnyIds.has(c.igdbId) ? "curated as a variant" : "not curated";
+        log(`    IGDB mainline only (${where_}): ${describeCandidate(c)}`);
+      }
+      for (const { m } of onlyCurated) {
+        log(`    curated mainline only: ${m.entry.slug} -> ${describeCandidate(m.match)}`);
       }
     }
 
@@ -724,7 +801,7 @@ async function franchises() {
     }
   }
   log(
-    `\nFranchise totals: matched ${totals.matched}, near-year ${totals.near_year}, year mismatch ${totals.year_mismatch}, ambiguous ${totals.ambiguous}, missing ${totals.missing}`,
+    `\nFranchise totals: matched ${totals.matched} (resolved over same-title duplicates: ${totals.resolved}), near-year ${totals.near_year}, year mismatch ${totals.year_mismatch}, ambiguous ${totals.ambiguous}, missing ${totals.missing}`,
   );
 }
 

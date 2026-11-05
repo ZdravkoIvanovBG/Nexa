@@ -80,11 +80,12 @@ const PLATFORM_FAMILY_BY_ID: Record<number, PlatformFamily> = {
   82: "web", // Web browser
 };
 
-// IGDB platform_family ids.
+// IGDB platform_family ids, for console families only. IGDB's family 4
+// ("Linux") also holds Android (34) and Google Stadia (170), so Linux is
+// recognised by platform id 3 alone, never by family (verified live 2026-11-05).
 const FAMILY_BY_FAMILY_ID: Record<number, PlatformFamily> = {
   1: "playstation",
   2: "xbox",
-  4: "linux",
   5: "nintendo",
 };
 

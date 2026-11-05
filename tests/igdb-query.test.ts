@@ -182,7 +182,7 @@ test("section windows are computed from the given clock", () => {
   const body = buildQuery(sectionQuery("new", now));
   assert.ok(body.includes(`first_release_date >= ${now - 90 * 86400}`));
   assert.ok(body.includes(`first_release_date <= ${now}`));
-  assert.ok(body.includes("sort first_release_date desc"));
+  assert.ok(body.includes("sort hypes desc"), "new releases rank by interest, not just date");
   const up = buildQuery(sectionQuery("upcoming", now));
   assert.ok(up.includes(`first_release_date > ${now}`));
   assert.ok(up.includes("sort hypes desc"));

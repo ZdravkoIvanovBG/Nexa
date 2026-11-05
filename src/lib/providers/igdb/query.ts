@@ -373,21 +373,28 @@ export function sectionQuery(id: IgdbSectionId, nowSec: number, limit = 20): Igd
   const base = { fields: SUMMARY_FIELDS, limit };
   switch (id) {
     case "new":
+      // Released in the last 90 days, ranked by IGDB hypes (pre-release
+      // interest), like RAWG's popularity-ordered "new" row. Newest-first with
+      // a floor let day-old shovelware dominate (live check 2026-11-05).
+      // Lesser-known games still appear further down: the only floor is "has a
+      // cover and at least one hype or rating".
       return {
         ...base,
         where: [
           ...publicFilters(),
+          where.neq("cover", null),
           where.gte("first_release_date", now - 90 * DAY),
           where.lte("first_release_date", now),
-          where.or(where.gte("total_rating_count", 3), where.gte("hypes", 5)),
+          where.or(where.gte("hypes", 1), where.gte("total_rating_count", 1)),
         ],
-        sort: { field: "first_release_date", dir: "desc" },
+        sort: { field: "hypes", dir: "desc" },
       };
     case "upcoming":
       return {
         ...base,
         where: [
           ...publicFilters(),
+          where.neq("cover", null),
           where.gt("first_release_date", now),
           where.lte("first_release_date", now + 365 * DAY),
         ],
@@ -417,6 +424,28 @@ export function sectionQuery(id: IgdbSectionId, nowSec: number, limit = 20): Igd
         sort: { field: "total_rating_count", dir: "desc" },
       };
   }
+}
+
+/**
+ * IGDB popularity types used for "Popular" (ids verified live 2026-11-05).
+ * "Visits" (1) is deliberately unused: it surfaces low-quality page-view spikes.
+ */
+export const POPULARITY_TYPE = { wantToPlay: 2, playing: 3 } as const;
+
+/** Popular = Playing blended with Want to Play. Two sub-queries for one multiquery. */
+export function popularSubqueries(limit = 50): IgdbSubQuery[] {
+  return [
+    {
+      name: "playing",
+      endpoint: "popularity_primitives",
+      query: popularityQuery(POPULARITY_TYPE.playing, limit),
+    },
+    {
+      name: "want_to_play",
+      endpoint: "popularity_primitives",
+      query: popularityQuery(POPULARITY_TYPE.wantToPlay, limit),
+    },
+  ];
 }
 
 /** Top game ids for one popularity type. Resolve them with `gamesByIds`. */
