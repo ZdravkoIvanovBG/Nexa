@@ -29,6 +29,16 @@ export function gameImage(url: string | null | undefined, width: GameImageWidth 
 }
 
 /**
+ * What a saved image URL shows: an IGDB portrait cover, or landscape art (every
+ * RAWG image, and IGDB artwork and screenshots). Saved records keep one image,
+ * and Nexa builds every IGDB URL itself, so the size in the path says which.
+ */
+export function gameImageKind(url: string | null | undefined): "cover" | "landscape" | null {
+  if (!url) return null;
+  return url.startsWith(IGDB_PREFIX) && url.includes("/t_cover_") ? "cover" : "landscape";
+}
+
+/**
  * Cover card sizes: IGDB's `cover_big` (264×352, fitted, ~25 KB) covers cards
  * up to ~300 device px; the 2x size (528×704, ~75 KB) only on 2x displays.
  * The stored URL comes last as the fallback. Other URLs are returned as is.

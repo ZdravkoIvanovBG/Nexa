@@ -39,6 +39,8 @@ const APP_IMPORTERS = {
   "src/lib/game-discovery/errors.ts": ["client"],
   "src/lib/game-discovery/game-image.ts": ["image"],
   "src/views/settings/games/igdb-section.tsx": ["native"],
+  // Stage 6: possible matches reuse the catalog matcher's pure title key.
+  "src/lib/game-library/identity.ts": ["catalog-match"],
 };
 
 test("the app imports IGDB modules only from known places", () => {

@@ -184,6 +184,11 @@ export type RawgGameRef = GameRefSnapshot & { provider: "rawg"; rawgId: number }
 export type IgdbGameRef = GameRefSnapshot & { provider: "igdb"; igdbId: number };
 export type GameRef = RawgGameRef | IgdbGameRef;
 
+/**
+ * The snapshot a save stores. RAWG keeps its landscape art, exactly as before.
+ * IGDB stores the portrait cover its cards use (Stage 4B), or its landscape
+ * art when it has no usable cover; snapshotSummary tells the two apart by URL.
+ */
 export function toGameRef(game: GameSummary): GameRef {
   const parsed = parseGameId(game.id);
   if (!parsed) throw new RangeError("Invalid game id");
@@ -193,9 +198,14 @@ export function toGameRef(game: GameSummary): GameRef {
     released: game.released,
     image: game.image,
   };
-  return parsed.provider === "rawg"
-    ? { provider: "rawg", rawgId: parsed.providerId, ...snapshot }
-    : { provider: "igdb", igdbId: parsed.providerId, ...snapshot };
+  if (parsed.provider === "rawg")
+    return { provider: "rawg", rawgId: parsed.providerId, ...snapshot };
+  return {
+    provider: "igdb",
+    igdbId: parsed.providerId,
+    ...snapshot,
+    image: game.cover ?? game.image,
+  };
 }
 
 /** The provider-qualified id a snapshot reference belongs to. */
