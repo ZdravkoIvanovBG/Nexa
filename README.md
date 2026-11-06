@@ -9,7 +9,7 @@ Native playback, intelligent stream ranking, addons, debrid support, watch track
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-0.9.26-F5A623?style=for-the-badge&labelColor=17181b)](#install)
+[![Version](https://img.shields.io/badge/version-0.10.0-F5A623?style=for-the-badge&labelColor=17181b)](#install)
 [![License](https://img.shields.io/badge/license-MIT-F5A623?style=for-the-badge&labelColor=17181b)](./LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white&labelColor=17181b)](https://v2.tauri.app/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=17181b)](https://react.dev/)
