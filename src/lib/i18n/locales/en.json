@@ -4603,7 +4603,6 @@
   "Reorder {name}": "Reorder {name}",
   "Move {name} up": "Move {name} up",
   "Move {name} down": "Move {name} down",
-  "Drag to reorder, or use the up and down arrow keys. Home and End move to the top or bottom.": "Drag to reorder, or use the up and down arrow keys. Home and End move to the top or bottom.",
   "1 entry in your queue": "1 entry in your queue",
   "{n} entries in your queue": "{n} entries in your queue",
   "1 collection": "1 collection",
@@ -4750,5 +4749,8 @@
   "The legacy RAWG provider, used only while RAWG is chosen above. Your key is kept so you can switch back, and you can remove it here.": "The legacy RAWG provider, used only while RAWG is chosen above. Your key is kept so you can switch back, and you can remove it here.",
   "Games discovery (IGDB)": "Games discovery (IGDB)",
   "Nexa gets game data from IGDB. Connect your own free Twitch developer application to browse games, franchises and details on this device.": "Nexa gets game data from IGDB. Connect your own free Twitch developer application to browse games, franchises and details on this device.",
-  "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.": "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider."
+  "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.": "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.",
+  "Picked up {name}": "Picked up {name}",
+  "Put down {name}": "Put down {name}",
+  "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom.": "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom."
 }

@@ -1,8 +1,9 @@
 import { ChevronDown, ChevronUp, Ellipsis, GripVertical } from "lucide-react";
+import { useState } from "react";
 import type { GameRecord, GameStatus } from "@/lib/game-library/types";
 import { useT } from "@/lib/i18n";
 import { announceMove } from "./entry-menus";
-import { moveTo, shift, toTop } from "./wishlist-actions";
+import { announce, moveTo, shift, toTop } from "./wishlist-actions";
 
 export const HANDLE_HINT_ID = "game-wishlist-handle-hint";
 
@@ -13,6 +14,14 @@ export function yearOf(record: Pick<GameRecord, "released">): string | null {
 /**
  * The drag handle, which is also the keyboard way to reorder: arrow keys move
  * one place, Home and End to the ends. Focus stays on it after each move.
+ *
+ * With TV navigation on (the default), the app's arrow keys move focus, so the
+ * handle doesn't take them at rest: pressing Down on a handle goes to the next
+ * row, as everywhere else. Enter or Space lifts it instead. While lifted it
+ * sets data-tv-local-keys, so TV navigation leaves every key to it: the arrows
+ * move the game, and Enter, Space or Escape puts it down (Escape doesn't go
+ * Back). Leaving the handle puts it down too. With TV navigation off the
+ * arrows reach the handle directly, as before, lifted or not.
  */
 export function SortHandle({
   entryId,
@@ -30,7 +39,24 @@ export function SortHandle({
   disabled?: boolean;
 }) {
   const t = useT();
+  const [lifted, setLifted] = useState(false);
+  const lift = (next: boolean) => {
+    setLifted(next);
+    announce(next ? t("Picked up {name}", { name }) : t("Put down {name}", { name }));
+  };
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      lift(!lifted);
+      return;
+    }
+    if (e.key === "Escape" && lifted) {
+      e.preventDefault();
+      e.stopPropagation();
+      lift(false);
+      return;
+    }
     let to = -1;
     if (e.key === "ArrowUp" && index > 0) to = shift(entryId, -1) ? index - 1 : -1;
     else if (e.key === "ArrowDown" && index < count - 1) to = shift(entryId, 1) ? index + 1 : -1;
@@ -45,12 +71,23 @@ export function SortHandle({
     <button
       type="button"
       data-sort-handle={entryId}
+      data-tv-local-keys={lifted ? "true" : undefined}
       aria-label={t("Reorder {name}", { name })}
       aria-describedby={HANDLE_HINT_ID}
+      aria-pressed={lifted}
       disabled={disabled || count < 2}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
-      className="flex h-9 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-ink-subtle/70 transition-colors hover:text-ink focus-visible:text-ink active:cursor-grabbing disabled:cursor-default disabled:opacity-30"
+      onBlur={(e) => {
+        if (!lifted) return;
+        // A move re-renders the list and focus comes straight back to this
+        // handle (focusHandle), so only a real departure puts the game down.
+        const handle = e.currentTarget;
+        window.setTimeout(() => {
+          if (document.activeElement !== handle) setLifted(false);
+        }, 0);
+      }}
+      className="flex h-9 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-ink-subtle/70 transition-colors hover:text-ink focus-visible:text-ink active:cursor-grabbing disabled:cursor-default disabled:opacity-30 aria-pressed:bg-white/[0.1] aria-pressed:text-ink"
     >
       <GripVertical size={16} strokeWidth={2} />
     </button>

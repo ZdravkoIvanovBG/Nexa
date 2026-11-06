@@ -86,7 +86,7 @@ export function WishlistTab({ active }: { active: boolean }) {
     <section aria-label={t("Wishlist")} className="flex flex-col gap-5">
       <p id={HANDLE_HINT_ID} className="sr-only">
         {t(
-          "Drag to reorder, or use the up and down arrow keys. Home and End move to the top or bottom.",
+          "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom.",
         )}
       </p>
       <p aria-live="polite" className="sr-only">

@@ -67,6 +67,11 @@ const BACK_KEYCODES = new Set([27, 4, 461, 10009, 166]);
 const BACK_KEYS = new Set(["Escape", "Esc", "BrowserBack", "GoBack", "Back"]);
 
 const MODAL_SELECTOR = '[role="dialog"], [aria-modal="true"]';
+/**
+ * An element that has taken over every key for a moment (a lifted Wishlist
+ * sort handle). Opt-in and temporary: nothing carries it at rest.
+ */
+const KEYS_TAKEN_SELECTOR = '[data-tv-local-keys="true"]';
 const LOCAL_KEYBOARD_SELECTOR = [
   '[role="listbox"]',
   '[role="menu"]',
@@ -928,6 +933,7 @@ export function useKeyboardNavigation(options: TVNavigationOptions = {}) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.target instanceof HTMLElement && e.target.closest(KEYS_TAKEN_SELECTOR)) return;
 
       // Tab is native keyboard navigation, but does not call moveFocus().
       // Restore keyboard modality so its focus cues are not hidden after mouse use.

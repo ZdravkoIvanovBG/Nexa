@@ -168,3 +168,45 @@ test("the sync code sets up no polling or realtime channel", () => {
     assert.doesNotMatch(source(file), /setInterval|\.channel\(|\.subscribe\(\{/, file);
   }
 });
+
+// IGDB Stage 7: Wishlist sort handles under TV navigation. Verified with real
+// key events in headless Chrome (TV navigation on and off); these pin the shape.
+test("only a lifted sort handle takes keys away from TV navigation", () => {
+  const nav = readFileSync(new URL("../src/lib/keyboard-navigation.ts", import.meta.url), "utf8");
+  assert.match(nav, /const KEYS_TAKEN_SELECTOR = '\[data-tv-local-keys="true"\]';/);
+  // Checked first, so arrows, Back and Enter all reach the lifted handle.
+  assert.match(
+    nav,
+    /if \(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey\) return;\s+if \(e\.target instanceof HTMLElement && e\.target\.closest\(KEYS_TAKEN_SELECTOR\)\) return;/,
+  );
+  // The resting handle is not locally managed: arrows still move focus there.
+  assert.doesNotMatch(nav, /data-sort-handle/);
+
+  const parts = readFileSync(
+    new URL("../src/views/game-library/wishlist-parts.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(parts, /data-tv-local-keys=\{lifted \? "true" : undefined\}/);
+  assert.match(parts, /aria-pressed=\{lifted\}/);
+  // Escape puts a lifted game down; at rest it is left to Back.
+  assert.match(parts, /if \(e\.key === "Escape" && lifted\)/);
+
+  // Nothing else in the app opts out of TV navigation this way.
+  const users = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path);
+      else if (
+        /\.tsx?$/.test(entry.name) &&
+        readFileSync(path, "utf8").includes("data-tv-local-keys")
+      )
+        users.push(path.replace(/^.*\/src\//, "src/"));
+    }
+  };
+  walk(new URL("../src", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+  assert.deepEqual(users.sort(), [
+    "src/lib/keyboard-navigation.ts",
+    "src/views/game-library/wishlist-parts.tsx",
+  ]);
+});
