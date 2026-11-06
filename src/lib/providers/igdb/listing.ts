@@ -11,6 +11,7 @@
 // Erotic theme). Pure: no requests, no app state.
 
 import type { GameListFilter, GameSectionId } from "../../game-discovery/types.ts";
+import { titleKey } from "./catalog-match.ts";
 import {
   plainText,
   popularFilters,
@@ -289,4 +290,41 @@ export function planList(filter: GameListFilter, nowSec: number): IgdbListPlan {
     sort: sort ?? { field: "total_rating_count", dir: "desc" },
     search: null,
   };
+}
+
+/**
+ * Exact-title games first on the first page of a relevance search (Stage 7).
+ *
+ * IGDB's relevance ranks unrated namesakes ahead of the well-known game:
+ * measured live on 2026-11-06, "hades" put Hades (1995, no ratings) above Hades
+ * (2020), and "control", "journey" and "portal" put their best-known games at
+ * #9, #13 and #5. Each was within the first 20 results, so reordering the
+ * first page is enough; no extra request is made.
+ *
+ * Only games whose title matches the search exactly (ignoring case,
+ * punctuation and roman numerals) and that someone has rated move to the
+ * front, most-rated first. Everything else keeps IGDB's order, and the set of
+ * games on the page never changes, so later pages are unaffected.
+ */
+export function promoteExactTitles<T>(games: readonly T[], term: string): T[] {
+  const key = titleKey(term);
+  if (!key) return [...games];
+  // Raw API rows: read defensively; anything malformed simply isn't promoted.
+  const field = (g: T, name: string): unknown =>
+    g && typeof g === "object" ? (g as Record<string, unknown>)[name] : undefined;
+  const count = (g: T, name: string) => {
+    const n = field(g, name);
+    return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  const ratings = (g: T) => count(g, "rating_count") + count(g, "aggregated_rating_count");
+  const title = (g: T) => {
+    const name = field(g, "name");
+    return typeof name === "string" ? titleKey(name) : "";
+  };
+  const exact = games.filter((g) => ratings(g) > 0 && title(g) === key);
+  if (exact.length === 0) return [...games];
+  // Array.prototype.sort is stable, so equal counts keep IGDB's order.
+  const leading = [...exact].sort((a, b) => ratings(b) - ratings(a));
+  const promoted = new Set(leading);
+  return [...leading, ...games.filter((g) => !promoted.has(g))];
 }

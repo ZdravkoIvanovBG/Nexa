@@ -3,6 +3,7 @@
 // (built with the real query builder) and returns canned IGDB responses; no
 // network, no Tauri.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { gamesErrorKind } from "../src/lib/game-discovery/errors.ts";
 import {
@@ -11,7 +12,7 @@ import {
   gameSections,
 } from "../src/lib/game-discovery/sections.ts";
 import { IgdbError } from "../src/lib/providers/igdb/client.ts";
-import { planList } from "../src/lib/providers/igdb/listing.ts";
+import { planList, promoteExactTitles } from "../src/lib/providers/igdb/listing.ts";
 import {
   POPULARITY_POOL,
   RANKING_TTL_MS,
@@ -444,4 +445,91 @@ test("Popular narrowed by genre or name queries the ranked pool, so pages stay f
   // Unfiltered Popular keeps the ranking's own order.
   assert.equal(planList({ section: "popular" }, NOW).narrowed, false);
   assert.equal(planList({ section: "popular", search: "zelda" }, NOW).narrowed, true);
+});
+
+// ---------------------------------------------------------------------------
+// Exact-title relevance (Stage 7)
+
+const RELEVANCE = JSON.parse(
+  readFileSync(new URL("./fixtures/igdb/search-relevance.json", import.meta.url), "utf8"),
+).terms;
+
+test("search relevance: the well-known exact title leads, from live IGDB orderings", () => {
+  const expected = {
+    hades: 113112, // Hades (2020), not Hades (1995)
+    control: 103329, // was #9
+    journey: 1352, // was #13
+    portal: 71, // was #5
+    inside: 7342,
+    doom: 7351,
+    prey: 19531,
+    "god of war": 19560,
+    "tomb raider": 1164, // Tomb Raider (2013) was #8
+  };
+  for (const [term, id] of Object.entries(expected)) {
+    const ranked = promoteExactTitles(RELEVANCE[term], term);
+    assert.equal(ranked[0].id, id, term);
+    // Same games, nothing added or dropped.
+    assert.deepEqual(
+      ranked.map((g) => g.id).sort((a, b) => a - b),
+      RELEVANCE[term].map((g) => g.id).sort((a, b) => a - b),
+      term,
+    );
+  }
+  // Hades II and other near-matches keep IGDB's order behind the exact titles.
+  const hades = promoteExactTitles(RELEVANCE.hades, "Hades").map((g) => g.name);
+  assert.deepEqual(hades.slice(0, 4), ["Hades", "Hades", "Hades 2", "Hades II"]);
+  // Unrated namesakes are never promoted.
+  const journey = promoteExactTitles(RELEVANCE.journey, "journey");
+  assert.deepEqual(
+    journey.filter((g) => g.name === "Journey").map((g) => g.year),
+    [2012, 2024, 1983],
+  );
+  const unrated = journey.findIndex((g) => g.name === "Journey" && g.year === 2024);
+  assert.equal(unrated, 11, "kept in place, one behind its IGDB rank");
+});
+
+test("search relevance: no exact rated title, malformed rows or an empty term change nothing", () => {
+  const halo = RELEVANCE.halo; // no game is called just "Halo"
+  assert.deepEqual(promoteExactTitles(halo, "halo"), halo);
+  assert.deepEqual(promoteExactTitles(halo, "  "), halo);
+  const odd = [null, 7, { name: 5 }, { name: "Doom", rating_count: "9" }, { name: "Doom" }];
+  assert.deepEqual(promoteExactTitles(odd, "doom"), odd);
+  const mixed = [
+    { name: "Doom 3", rating_count: 9 },
+    { name: "DOOM!", rating_count: 1 },
+  ];
+  assert.deepEqual(
+    promoteExactTitles(mixed, "doom").map((g) => g.name),
+    ["DOOM!", "Doom 3"],
+    "case and punctuation don't matter",
+  );
+});
+
+test("search relevance: only page 1 of a relevance search is reordered, with no extra request", async () => {
+  const rows = [
+    game(1, { name: "Hades", rating_count: 0, aggregated_rating_count: 0 }),
+    game(2, { name: "Hades", rating_count: 1780, aggregated_rating_count: 17 }),
+    game(3, { name: "Hades II", rating_count: 178 }),
+  ];
+  const { client, calls } = fakeClient(({ endpoint }) => (endpoint === "games" ? rows : []));
+  const p = provider(client);
+  const first = await p.list({ search: "hades" }, 1, 3);
+  assert.deepEqual(
+    first.items.map((g) => g.id),
+    ["igdb:2", "igdb:1", "igdb:3"],
+  );
+  assert.equal(calls.length, 1);
+  const second = await p.list({ search: "hades" }, 2, 3);
+  assert.deepEqual(
+    second.items.map((g) => g.id),
+    ["igdb:1", "igdb:2", "igdb:3"],
+    "later pages keep IGDB's order",
+  );
+  // A sorted name match is the user's ordering: untouched.
+  const sorted = await p.list({ search: "hades", ordering: "-released" }, 1, 3);
+  assert.deepEqual(
+    sorted.items.map((g) => g.id),
+    ["igdb:1", "igdb:2", "igdb:3"],
+  );
 });

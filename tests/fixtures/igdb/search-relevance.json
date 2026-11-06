@@ -1,0 +1,1425 @@
+{
+  "_note": "IGDB relevance search, first 20 results per term, live 2026-11-06 (scripts/igdb search, app plan). Trimmed to the fields promoteExactTitles reads.",
+  "terms": {
+    "hades": [
+      {
+        "id": 80529,
+        "name": "Hades",
+        "year": 1995,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 113112,
+        "name": "Hades",
+        "year": 2020,
+        "rating_count": 1780,
+        "aggregated_rating_count": 17
+      },
+      {
+        "id": 134619,
+        "name": "Hades 2",
+        "year": 2001,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 228525,
+        "name": "Hades II",
+        "year": 2025,
+        "rating_count": 178,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 30655,
+        "name": "Hade",
+        "year": 2016,
+        "rating_count": 1,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 56959,
+        "name": "Hades' Star",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 346885,
+        "name": "H.A.D.E.S Zero",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 13867,
+        "name": "Hades Nebula",
+        "year": 1987,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 402009,
+        "name": "Hades Uprising",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 158772,
+        "name": "Cinders of Hades",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 96354,
+        "name": "The Road to Hades",
+        "year": 2018,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 47536,
+        "name": "The Seal of Hades",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 84434,
+        "name": "Abo Hadeed",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 231464,
+        "name": "The Garden of Hades",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 401774,
+        "name": "Orpheus: Echo of Hades",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 23113,
+        "name": "Saint Seiya: The Hades",
+        "year": 2006,
+        "rating_count": 13,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 83674,
+        "name": "Hand of Hades Chapter 1",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 208167,
+        "name": "Hades' Star: Dark Nebula",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 147121,
+        "name": "Discovery: Hades Imperium",
+        "year": 2020,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 73439,
+        "name": "Disney's Hades Challenge",
+        "year": 1998,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "doom": [
+      {
+        "id": 7351,
+        "name": "Doom",
+        "year": 2016,
+        "rating_count": 1930,
+        "aggregated_rating_count": 28
+      },
+      {
+        "id": 280,
+        "name": "Doom 3",
+        "year": 2004,
+        "rating_count": 443,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 10192,
+        "name": "The Ultimate Doom",
+        "year": 1995,
+        "rating_count": 99,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 224522,
+        "name": "Doom 64",
+        "year": 2020,
+        "rating_count": 53,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 673,
+        "name": "Doom",
+        "year": 1993,
+        "rating_count": 1008,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 165206,
+        "name": "Doom",
+        "year": 2019,
+        "rating_count": 43,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 170995,
+        "name": "Doom",
+        "year": 1995,
+        "rating_count": 12,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 312,
+        "name": "Doom II: Hell on Earth",
+        "year": 1994,
+        "rating_count": 535,
+        "aggregated_rating_count": 2
+      },
+      {
+        "id": 377730,
+        "name": "Doom",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 260019,
+        "name": "Doom",
+        "year": 2006,
+        "rating_count": 12,
+        "aggregated_rating_count": 2
+      },
+      {
+        "id": 195681,
+        "name": "Doom Tomb",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 101031,
+        "name": "Doom II RPG",
+        "year": 2009,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 13168,
+        "name": "Doom & Destiny",
+        "year": 2011,
+        "rating_count": 5,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 313164,
+        "name": "Doom II",
+        "year": 2024,
+        "rating_count": 7,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 260018,
+        "name": "Doom II",
+        "year": 2005,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 260028,
+        "name": "Doom 3",
+        "year": 2012,
+        "rating_count": 8,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 70056,
+        "name": "The Crack of Doom",
+        "year": 1989,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 16938,
+        "name": "The Forest of Doom",
+        "year": 2014,
+        "rating_count": 1,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 3471,
+        "name": "Doom 64",
+        "year": 1997,
+        "rating_count": 88,
+        "aggregated_rating_count": 2
+      },
+      {
+        "id": 195930,
+        "name": "Doom Day",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "prey": [
+      {
+        "id": 19531,
+        "name": "Prey",
+        "year": 2017,
+        "rating_count": 701,
+        "aggregated_rating_count": 16
+      },
+      {
+        "id": 546,
+        "name": "Prey",
+        "year": 2006,
+        "rating_count": 215,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 21337,
+        "name": "Prey the Stars",
+        "year": 2008,
+        "rating_count": 0,
+        "aggregated_rating_count": 2
+      },
+      {
+        "id": 525,
+        "name": "Prey 2",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 38843,
+        "name": "Prey: An Alien Encounter",
+        "year": 1993,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 261933,
+        "name": "911: Prey",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 71345,
+        "name": "Primal Prey",
+        "year": 2001,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 176458,
+        "name": "No Prey, No Pay",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 61845,
+        "name": "Man of Prey",
+        "year": 2009,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 232308,
+        "name": "Word of Prey",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 273239,
+        "name": "Birds of Prey",
+        "year": 1999,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 11962,
+        "name": "Birds of Prey",
+        "year": 1991,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 91426,
+        "name": "Prey with Gun",
+        "year": 2017,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 15673,
+        "name": "Birds of Prey",
+        "year": 1983,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 67860,
+        "name": "Prey Invasion",
+        "year": 2009,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 17382,
+        "name": "Beasts of Prey",
+        "year": 2014,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 237025,
+        "name": "The Prey's Turn",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 215826,
+        "name": "The Prey MMORPG",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 370990,
+        "name": "Stars of Prey VR",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 300360,
+        "name": "Prey at the Altar",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "halo": [
+      {
+        "id": 740,
+        "name": "Halo: Combat Evolved",
+        "year": 2001,
+        "rating_count": 933,
+        "aggregated_rating_count": 3
+      },
+      {
+        "id": 2640,
+        "name": "Halo: Combat Evolved Anniversary",
+        "year": 2011,
+        "rating_count": 236,
+        "aggregated_rating_count": 7
+      },
+      {
+        "id": 103281,
+        "name": "Halo Infinite",
+        "year": 2021,
+        "rating_count": 306,
+        "aggregated_rating_count": 9
+      },
+      {
+        "id": 986,
+        "name": "Halo 2",
+        "year": 2004,
+        "rating_count": 692,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 129018,
+        "name": "Halo Beats!",
+        "year": 2020,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 989,
+        "name": "Halo 3: ODST",
+        "year": 2009,
+        "rating_count": 406,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 392735,
+        "name": "Halo and Pixy",
+        "year": 2011,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 987,
+        "name": "Halo 3",
+        "year": 2007,
+        "rating_count": 856,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 991,
+        "name": "Halo 4",
+        "year": 2012,
+        "rating_count": 547,
+        "aggregated_rating_count": 12
+      },
+      {
+        "id": 6803,
+        "name": "Halo 5: Guardians",
+        "year": 2015,
+        "rating_count": 255,
+        "aggregated_rating_count": 19
+      },
+      {
+        "id": 228921,
+        "name": "Halo DS",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 165332,
+        "name": "Halo: Out With a Whimper",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 394021,
+        "name": "I Just Wanted to Talk About Halo",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 377558,
+        "name": "Sun Halo",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 77343,
+        "name": "Halo 4: King of the Hill Fueled by Mountain Dew",
+        "year": 2012,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 372386,
+        "name": "Hypno Halo",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 18286,
+        "name": "Halo 2600",
+        "year": 2010,
+        "rating_count": 6,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 108485,
+        "name": "Halo Roll",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 988,
+        "name": "Halo Wars",
+        "year": 2009,
+        "rating_count": 143,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 64606,
+        "name": "Halo Zero",
+        "year": 2005,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "god of war": [
+      {
+        "id": 19560,
+        "name": "God of War",
+        "year": 2018,
+        "rating_count": 3620,
+        "aggregated_rating_count": 26
+      },
+      {
+        "id": 112875,
+        "name": "God of War Ragnarök",
+        "year": 2022,
+        "rating_count": 1188,
+        "aggregated_rating_count": 13
+      },
+      {
+        "id": 1291,
+        "name": "God of War: Ascension",
+        "year": 2013,
+        "rating_count": 260,
+        "aggregated_rating_count": 11
+      },
+      {
+        "id": 551,
+        "name": "God of War II",
+        "year": 2007,
+        "rating_count": 1053,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 117882,
+        "name": "God of War II",
+        "year": 2009,
+        "rating_count": 62,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 19959,
+        "name": "God of War III: Remastered",
+        "year": 2015,
+        "rating_count": 178,
+        "aggregated_rating_count": 9
+      },
+      {
+        "id": 224438,
+        "name": "God of War: Ghost of Sparta",
+        "year": 2011,
+        "rating_count": 33,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 499,
+        "name": "God of War III",
+        "year": 2010,
+        "rating_count": 812,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 117883,
+        "name": "God of War",
+        "year": 2009,
+        "rating_count": 98,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 347325,
+        "name": "God Wars",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 3628,
+        "name": "War Gods",
+        "year": 1995,
+        "rating_count": 8,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 550,
+        "name": "God of War: Ghost of Sparta",
+        "year": 2010,
+        "rating_count": 271,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 549,
+        "name": "God of War",
+        "year": 2005,
+        "rating_count": 1066,
+        "aggregated_rating_count": 3
+      },
+      {
+        "id": 25312,
+        "name": "God Wars: Future Past",
+        "year": 2017,
+        "rating_count": 0,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 105055,
+        "name": "God Wars 2",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 368301,
+        "name": "Supreme War God",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 340909,
+        "name": "Legend of the Dark War God",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 50516,
+        "name": "The war god : The artifact",
+        "year": 2017,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 367746,
+        "name": "Dragon-Slaying War God",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 224439,
+        "name": "God of War: Chains of Olympus",
+        "year": 2011,
+        "rating_count": 41,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "tomb raider": [
+      {
+        "id": 1159,
+        "name": "Tomb Raider: The Angel of Darkness",
+        "year": 2003,
+        "rating_count": 114,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 1160,
+        "name": "Tomb Raider: Chronicles",
+        "year": 2000,
+        "rating_count": 105,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 912,
+        "name": "Tomb Raider",
+        "year": 1996,
+        "rating_count": 486,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 1158,
+        "name": "Tomb Raider: The Last Revelation",
+        "year": 1999,
+        "rating_count": 152,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 2537,
+        "name": "Tomb Raider: Gold",
+        "year": 1998,
+        "rating_count": 12,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1161,
+        "name": "Tomb Raider: Legend",
+        "year": 2006,
+        "rating_count": 301,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 1156,
+        "name": "Tomb Raider II",
+        "year": 1997,
+        "rating_count": 334,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1164,
+        "name": "Tomb Raider",
+        "year": 2013,
+        "rating_count": 2395,
+        "aggregated_rating_count": 14
+      },
+      {
+        "id": 68115,
+        "name": "Tomb Raider: The Last Revelation - The Times",
+        "year": 1999,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 49993,
+        "name": "Tomb Raider: Curse of the Sword",
+        "year": 2001,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1157,
+        "name": "Tomb Raider III: Adventures of Lara Croft",
+        "year": 1998,
+        "rating_count": 193,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 27554,
+        "name": "Tomb Raider II: Gold",
+        "year": 1999,
+        "rating_count": 13,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 319750,
+        "name": "Tomb Raider: Chronicles",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 7323,
+        "name": "Rise of the Tomb Raider",
+        "year": 2015,
+        "rating_count": 1350,
+        "aggregated_rating_count": 25
+      },
+      {
+        "id": 1163,
+        "name": "Tomb Raider: Underworld",
+        "year": 2008,
+        "rating_count": 261,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 18809,
+        "name": "Tomb Raider: The Prophecy",
+        "year": 2002,
+        "rating_count": 0,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 266697,
+        "name": "Tomb Raider",
+        "year": 2024,
+        "rating_count": 11,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 165181,
+        "name": "Tomb Raider",
+        "year": 2004,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1162,
+        "name": "Tomb Raider: Anniversary",
+        "year": 2007,
+        "rating_count": 255,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 27555,
+        "name": "Tomb Raider: The Lost Artifact",
+        "year": 2000,
+        "rating_count": 13,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "control": [
+      {
+        "id": 139615,
+        "name": "Control: Override",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 225582,
+        "name": "Control Resonant",
+        "year": 2026,
+        "rating_count": 36,
+        "aggregated_rating_count": 5
+      },
+      {
+        "id": 89823,
+        "name": "Galaxy Control: Arena Station",
+        "year": 2018,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 33685,
+        "name": "Galaxy Control",
+        "year": 2014,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 158258,
+        "name": "Roll Control",
+        "year": 2020,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 735,
+        "name": "Ground Control II: Operation Exodus",
+        "year": 2004,
+        "rating_count": 14,
+        "aggregated_rating_count": 4
+      },
+      {
+        "id": 4497,
+        "name": "Star Control",
+        "year": 1990,
+        "rating_count": 14,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 150437,
+        "name": "Control Over",
+        "year": 2020,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 103329,
+        "name": "Control",
+        "year": 2019,
+        "rating_count": 972,
+        "aggregated_rating_count": 15
+      },
+      {
+        "id": 388921,
+        "name": "Remote Control",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1046,
+        "name": "Star Control II",
+        "year": 1992,
+        "rating_count": 24,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 300497,
+        "name": "Control Monger",
+        "year": 2005,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 345902,
+        "name": "SCP: Control Error",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 379523,
+        "name": "Airport Control 27",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 181066,
+        "name": "Control Headlights!",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 176600,
+        "name": "Control(s)",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 219232,
+        "name": "Cruise Control Mode On!",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 393018,
+        "name": "M3nticid3: Control Group",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 122760,
+        "name": "Avengers: Damage Control",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 410303,
+        "name": "Pest Control in the Crypt",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "inside": [
+      {
+        "id": 139295,
+        "name": "Milk Inside a Bag of Milk Inside a Bag of Milk",
+        "year": 2020,
+        "rating_count": 100,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 80481,
+        "name": "Inside",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 7342,
+        "name": "Inside",
+        "year": 2016,
+        "rating_count": 1650,
+        "aggregated_rating_count": 39
+      },
+      {
+        "id": 266747,
+        "name": "Inside",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 218684,
+        "name": "Ink Inside",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 236846,
+        "name": "Inside Us",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 34375,
+        "name": "Inside Me",
+        "year": 2015,
+        "rating_count": 1,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 258050,
+        "name": "Inside Job",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 175936,
+        "name": "Inside Out",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 126659,
+        "name": "D3d Inside",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 120776,
+        "name": "Ded Inside",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 108343,
+        "name": "Cat Inside",
+        "year": 2018,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 377952,
+        "name": "Insiders",
+        "year": 1988,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 155024,
+        "name": "Insiders",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 335357,
+        "name": "Life Inside",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 385470,
+        "name": "Lost Inside",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 291523,
+        "name": "Look Inside",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 181368,
+        "name": "Once Inside",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 179662,
+        "name": "Deep Inside",
+        "year": 2020,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 377576,
+        "name": "Dead Inside",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "journey": [
+      {
+        "id": 27959,
+        "name": "Shin Megami Tensei: Strange Journey Redux",
+        "year": 2017,
+        "rating_count": 11,
+        "aggregated_rating_count": 6
+      },
+      {
+        "id": 286114,
+        "name": "AFK Journey",
+        "year": 2024,
+        "rating_count": 19,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 28125,
+        "name": "Layton's Mystery Journey: Katrielle and the Millionaire's Conspiracy",
+        "year": 2017,
+        "rating_count": 15,
+        "aggregated_rating_count": 5
+      },
+      {
+        "id": 265927,
+        "name": "Fuu3's Fuun Journey",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 895,
+        "name": "The Longest Journey",
+        "year": 1999,
+        "rating_count": 202,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 341818,
+        "name": "The Several Journeys of Reemus Chapter 1: The Royal Journey",
+        "year": 2008,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 383794,
+        "name": "Sorekara: End of a Journey",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 27427,
+        "name": "Journey to the Center of The Earth",
+        "year": 2015,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 284378,
+        "name": "Impasse Journey: Kaohsiung Chapter",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 15467,
+        "name": "Shin Megami Tensei: Strange Journey",
+        "year": 2009,
+        "rating_count": 34,
+        "aggregated_rating_count": 2
+      },
+      {
+        "id": 298669,
+        "name": "Journey",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 85680,
+        "name": "Journey",
+        "year": 1983,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 1352,
+        "name": "Journey",
+        "year": 2012,
+        "rating_count": 1188,
+        "aggregated_rating_count": 14
+      },
+      {
+        "id": 416980,
+        "name": "Tsuki Journey",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 86929,
+        "name": "June's Journey",
+        "year": 2017,
+        "rating_count": 5,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 428181,
+        "name": "Journey Quest",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 339378,
+        "name": "On Any Journey",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 397579,
+        "name": "Sunlit Journey",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 202295,
+        "name": "Journey Record",
+        "year": 2014,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 275859,
+        "name": "Journey's Land",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ],
+    "portal": [
+      {
+        "id": 193776,
+        "name": "Portal Maze 2",
+        "year": 2021,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 317175,
+        "name": "Brazilian Drug Dealer 3: I Opened a Portal to Hell in the Favela Trying To Revive Mit Aia I Need to Close It",
+        "year": 2025,
+        "rating_count": 6,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 14546,
+        "name": "Portal",
+        "year": 1986,
+        "rating_count": 6,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 261713,
+        "name": "Portal 64",
+        "year": 2023,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 71,
+        "name": "Portal",
+        "year": 2007,
+        "rating_count": 4065,
+        "aggregated_rating_count": 1
+      },
+      {
+        "id": 311949,
+        "name": "Portal",
+        "year": 2017,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 211999,
+        "name": "Portal Walk",
+        "year": 2025,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 59086,
+        "name": "Teenage Mutant Ninja Turtles: Portal Power",
+        "year": 2016,
+        "rating_count": 2,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 383706,
+        "name": "Portal Hopper",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 80951,
+        "name": "Exit 4: Portal",
+        "year": 2018,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 201598,
+        "name": "Portal Dungeon",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 310746,
+        "name": "Portal Brawlers",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 54733,
+        "name": "Portal Stories: VR",
+        "year": 2016,
+        "rating_count": 5,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 291710,
+        "name": "AX: Portal Slayers",
+        "year": 2024,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 212653,
+        "name": "Royal Roads 3 Portal",
+        "year": 2022,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 72,
+        "name": "Portal 2",
+        "year": 2011,
+        "rating_count": 4525,
+        "aggregated_rating_count": 9
+      },
+      {
+        "id": 390105,
+        "name": "Uknon Jones: Portal",
+        "year": 2026,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 388580,
+        "name": "LEGO Portal Racers",
+        "year": null,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 121323,
+        "name": "The Portal Dimension",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      },
+      {
+        "id": 118372,
+        "name": "Idle Portal Guardian",
+        "year": 2019,
+        "rating_count": 0,
+        "aggregated_rating_count": 0
+      }
+    ]
+  }
+}

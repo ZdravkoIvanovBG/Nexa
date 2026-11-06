@@ -28,7 +28,7 @@ import type {
   GameSummary,
 } from "../../game-discovery/types.ts";
 import { IgdbError, type IgdbClient } from "./client.ts";
-import { planList, type IgdbListPlan } from "./listing.ts";
+import { planList, promoteExactTitles, type IgdbListPlan } from "./listing.ts";
 import { isErotic, normalizeIgdbDetail, normalizeIgdbGames } from "./normalize.ts";
 import { blendPopularity, orderByRanking } from "./popularity.ts";
 import {
@@ -132,7 +132,8 @@ export function createIgdbProvider(
       counting?.then(countOf, () => null) ?? null,
     ]);
     const raw = rawList(data);
-    return { items: summaries(raw), count: total, hasMore: raw.length === pageSize };
+    const ordered = plan.search && page === 1 ? promoteExactTitles(raw, plan.search) : raw;
+    return { items: summaries(ordered), count: total, hasMore: raw.length === pageSize };
   }
 
   async function popularPage(
