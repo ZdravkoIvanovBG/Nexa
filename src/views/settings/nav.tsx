@@ -4787,10 +4787,10 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["github repo", "open source", "source", "code repository"],
   },
   {
-    label: "RAWG API key",
+    label: "IGDB credentials",
     section: "games",
-    anchorTitle: "Games discovery",
-    keywords: ["rawg", "games api key", "game discovery", "verify key"],
+    anchorTitle: "Games discovery (IGDB)",
+    keywords: ["igdb", "twitch", "client id", "client secret", "twitch developer", "game data"],
   },
   {
     label: "Enable Games",
@@ -4799,10 +4799,22 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["games tab", "show games", "games sidebar", "gaming"],
   },
   {
-    label: "IGDB credentials",
+    label: "Game data provider",
     section: "games",
-    anchorTitle: "IGDB",
-    keywords: ["igdb", "twitch", "client id", "client secret", "twitch developer", "game data"],
+    anchorTitle: "Game data provider",
+    keywords: ["igdb", "rawg", "legacy", "switch provider", "game data source"],
+  },
+  {
+    label: "Game Library sync",
+    section: "games",
+    anchorTitle: "Game Library sync",
+    keywords: ["sync now", "unsynced", "pending changes", "before updating", "downgrade"],
+  },
+  {
+    label: "RAWG API key",
+    section: "games",
+    anchorTitle: "RAWG (legacy)",
+    keywords: ["rawg", "games api key", "legacy provider", "verify key"],
   },
 ];
 

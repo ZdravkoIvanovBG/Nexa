@@ -72,7 +72,7 @@ export function useGamesGate(): GamesGate {
         rawg,
       };
     }
-    const config = igdbConfigState(igdb.status, igdbNativeAvailable);
+    const config = igdbConfigState(igdb.status, igdbNativeAvailable, igdb.failed);
     return {
       provider,
       featureEnabled: rawg.featureEnabled,

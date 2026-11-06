@@ -9,7 +9,7 @@ import { join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { activeProviderReady, gamesToggleAllowed } from "../src/lib/game-discovery/gates.ts";
-import { PRODUCTION_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
+import { DEFAULT_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), "utf8");
@@ -167,12 +167,12 @@ test("only the Games IGDB wiring creates an IGDB client (Stage 4)", () => {
   assert.deepEqual(importers, ["src/lib/game-discovery/queries.ts"]);
 });
 
-test("production builds use RAWG; only the active provider's readiness counts", () => {
-  assert.equal(PRODUCTION_GAME_PROVIDER, "rawg");
-  assert.equal(activeProviderReady(PRODUCTION_GAME_PROVIDER, { rawg: false, igdb: true }), false);
-  assert.equal(activeProviderReady(PRODUCTION_GAME_PROVIDER, { rawg: true, igdb: false }), true);
-  assert.equal(activeProviderReady("igdb", { rawg: false, igdb: true }), true);
-  assert.equal(activeProviderReady("igdb", { rawg: true, igdb: false }), false);
+test("IGDB is the default; only the active provider's readiness counts", () => {
+  assert.equal(DEFAULT_GAME_PROVIDER, "igdb");
+  assert.equal(activeProviderReady(DEFAULT_GAME_PROVIDER, { rawg: false, igdb: true }), true);
+  assert.equal(activeProviderReady(DEFAULT_GAME_PROVIDER, { rawg: true, igdb: false }), false);
+  assert.equal(activeProviderReady("rawg", { rawg: false, igdb: true }), false);
+  assert.equal(activeProviderReady("rawg", { rawg: true, igdb: false }), true);
   // The RAWG toggle rule is unchanged; IGDB uses the same rule on its own readiness.
   const gates = read("src/lib/game-discovery/gates.ts");
   assert.match(
@@ -182,12 +182,13 @@ test("production builds use RAWG; only the active provider's readiness counts", 
   assert.equal(gamesToggleAllowed(false, true), true);
   assert.equal(gamesToggleAllowed(false, false), false);
   assert.equal(gamesToggleAllowed(true, false), true, "turning Games off is always allowed");
-  // The dev switch reads import.meta.env.DEV and nothing else turns IGDB on.
+  // The provider is the device's explicit choice, the same in every build: no
+  // build flag decides it, and the choice store gets device storage only.
   const native = code(read("src/lib/game-discovery/igdb-native.ts"));
-  assert.match(native, /dev: import\.meta\.env\.DEV,/);
-  assert.match(native, /storage: import\.meta\.env\.DEV \? devStorage\(\) : null,/);
+  assert.doesNotMatch(native, /import\.meta\.env\.DEV/);
+  assert.match(native, /createProviderChoiceStore\(choiceStorage\(\)\)/);
   const panel = code(read("src/views/settings/games-panel.tsx"));
-  assert.match(panel, /\{import\.meta\.env\.DEV && <DevProviderSection \/>\}/);
+  assert.doesNotMatch(panel, /import\.meta\.env\.DEV/);
 });
 
 test("the local credentials file is never committed", () => {

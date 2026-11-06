@@ -103,6 +103,91 @@ export function gamesBackedUp(userId: string, storage: KeyValueStore = localStor
   }
 }
 
+export type GameSyncSummary = {
+  /** Profiles with any game data on this device. */
+  profiles: string[];
+  /** Of those, the ones with changes the cloud may not have yet. */
+  unsynced: string[];
+  /** Uploads waiting in the queue for this account. */
+  queued: number;
+  /** Unsynced libraries a sign-out set aside, restored when their account signs in. */
+  held: number;
+  /** Storage couldn't be read, so nothing can be called safe. */
+  unreadable: boolean;
+};
+
+/**
+ * What this device holds that the cloud may not have yet, for Settings → Games.
+ * The same questions gamesBackedUp() asks before a sign-out wipe, so "nothing
+ * unsynced" here means a wipe, update or downgrade can't lose game data. Reads
+ * localStorage only; never touches the network.
+ */
+export function gameSyncSummary(
+  userId: string | null,
+  storage: KeyValueStore = localStorage,
+): GameSyncSummary {
+  const summary: GameSyncSummary = {
+    profiles: [],
+    unsynced: [],
+    queued: 0,
+    held: 0,
+    unreadable: false,
+  };
+  try {
+    for (const profileId of libraryProfiles(storage)) {
+      const blob = parseLibraryBlob(storage.getItem(libraryKey(profileId)));
+      const hasData = Object.keys(blob.records).length > 0 || Object.keys(blob.queue).length > 0;
+      if (!hasData && !blob.unsynced) continue;
+      summary.profiles.push(profileId);
+      if (blob.unsynced) summary.unsynced.push(profileId);
+    }
+    summary.queued = readQueuedOps(storage).filter(
+      (op) => !userId || op.owner?.userId === userId,
+    ).length;
+    // Signed in, only this account's held copies are its business.
+    summary.held = keysWithPrefix(
+      storage,
+      userId ? `${HELD_PREFIX}${userId}.` : HELD_PREFIX,
+    ).length;
+  } catch {
+    summary.unreadable = true;
+  }
+  return summary;
+}
+
+export type GameSyncState =
+  /** No game data on this device: nothing to protect. */
+  | "empty"
+  /** Not signed in (or no cloud in this build): the only copy is on this device. */
+  | "local-only"
+  | "unreadable"
+  /** The cloud can't store game data this session (tables or policies missing). */
+  | "blocked"
+  /** Changes are waiting and this device is offline. */
+  | "offline"
+  | "pending"
+  /** The cloud has everything this device holds. */
+  | "synced";
+
+export function gameSyncState(input: {
+  cloud: boolean;
+  signedIn: boolean;
+  offline: boolean;
+  blocked: boolean;
+  summary: GameSyncSummary;
+}): GameSyncState {
+  const { summary } = input;
+  if (summary.unreadable) return "unreadable";
+  if (summary.profiles.length === 0 && summary.queued === 0 && summary.held === 0) return "empty";
+  if (!input.cloud || !input.signedIn) return "local-only";
+  // Signed in, a held copy is restored before anything reads the library, so
+  // one still here means it hasn't been put back and uploaded yet.
+  if (summary.held > 0) return input.offline ? "offline" : "pending";
+  if (input.blocked) return "blocked";
+  if (summary.unsynced.length === 0 && summary.queued === 0) return "synced";
+  return input.offline ? "offline" : "pending";
+}
+
 /**
  * Reads what a wipe is about to destroy that the cloud doesn't have yet, and
  * returns the step that stores it, to run once the wipe has freed the space.

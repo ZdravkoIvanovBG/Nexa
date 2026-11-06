@@ -6,9 +6,9 @@
 // profile or account, aren't part of Settings, cloud sync or backups, and are
 // shared by every profile on this device (kid profiles can't open Settings).
 //
-// Stage 4: Games Discovery uses IGDB only when the development switch selects
-// it (see dev-provider.ts); production builds stay on RAWG. The IGDB client and
-// provider live in igdb-discovery.ts, loaded with the Games views.
+// Games uses IGDB unless this device has chosen the RAWG legacy provider (see
+// provider-choice.ts). The IGDB client and provider live in igdb-discovery.ts,
+// loaded with the Games views.
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import {
@@ -17,8 +17,8 @@ import {
   IgdbNativeError,
   type IgdbNative,
 } from "@/lib/providers/igdb/native";
-import { createDevProviderStore } from "./dev-provider";
 import { createIgdbStatusStore } from "./igdb-status";
+import { createProviderChoiceStore } from "./provider-choice";
 
 export const igdbNativeAvailable = isTauri();
 
@@ -42,7 +42,7 @@ export const igdbNative: IgdbNative = igdbNativeAvailable
 /** Credential status shared by the Games gate and Settings → Games. */
 export const igdbStatus = createIgdbStatusStore(() => igdbNative.status());
 
-function devStorage(): Storage | null {
+function choiceStorage(): Storage | null {
   try {
     return typeof localStorage === "undefined" ? null : localStorage;
   } catch {
@@ -50,8 +50,5 @@ function devStorage(): Storage | null {
   }
 }
 
-/** The active Games provider: RAWG in production, switchable in development. */
-export const devGamesProvider = createDevProviderStore({
-  dev: import.meta.env.DEV,
-  storage: import.meta.env.DEV ? devStorage() : null,
-});
+/** The active Games provider on this device: IGDB unless RAWG legacy was chosen. */
+export const gamesProviderChoice = createProviderChoiceStore(choiceStorage());

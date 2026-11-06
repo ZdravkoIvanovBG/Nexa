@@ -1,13 +1,12 @@
 import { Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { canToggleGames, gamesToggleAllowed, keyFingerprint } from "@/lib/game-discovery/gates";
+import { keyFingerprint } from "@/lib/game-discovery/gates";
 import { rawgSessionStatus } from "@/lib/game-discovery/status";
-import { useGamesGate } from "@/lib/game-discovery/use-games-gate";
 import { useRawgGate } from "@/lib/game-discovery/use-rawg";
 import { useT } from "@/lib/i18n";
 import { rawg, type RawgKeyCheck } from "@/lib/providers/rawg";
 import { useSettings } from "@/lib/settings";
-import { ExtLink, KeyField, Section, ToggleRow } from "../shared";
+import { ExtLink, KeyField, Section } from "../shared";
 
 type CheckState = "idle" | "verifying" | RawgKeyCheck;
 
@@ -35,8 +34,6 @@ export function RawgSection() {
   const t = useT();
   const { settings, update } = useSettings();
   const gate = useRawgGate();
-  const games = useGamesGate();
-  const igdbActive = games.provider === "igdb";
   const [draft, setDraft] = useState(settings.rawgApiKey);
   const [saved, setSaved] = useState(false);
   const [check, setCheck] = useState<CheckState>("idle");
@@ -133,99 +130,59 @@ export function RawgSection() {
               ? t("RAWG rejected this key while browsing. Verify it again or replace it.")
               : null;
 
-  // The toggle needs the *active* provider ready: a RAWG key while RAWG is
-  // active, verified IGDB credentials while IGDB is (development builds).
-  const toggleLocked = igdbActive
-    ? !gamesToggleAllowed(settings.gamesEnabled, games.ready)
-    : !canToggleGames(
-        {
-          gamesEnabled: settings.gamesEnabled,
-          rawgApiKey: settings.rawgApiKey,
-          rawgKeyVerifiedFor: settings.rawgKeyVerifiedFor,
-        },
-        rawgSessionStatus.isRejected,
-      );
-
   return (
-    <>
-      <Section
-        title={t("Games discovery")}
-        subtitle={t("Browse games, franchises and details from RAWG using your own free API key.")}
-      >
-        <KeyField
-          label={t("RAWG API key")}
-          placeholder={t("rawg api key")}
-          value={draft}
-          onChange={setDraft}
-          onSave={onSave}
-          saved={saved}
-          headerExtra={badge ? <StatusBadge badge={badge} /> : undefined}
-          help={
-            <>
-              {t("Get a free key at")}{" "}
-              <ExtLink href="https://rawg.io/apidocs">rawg.io/apidocs</ExtLink>
-              {". "}
-              {t(
-                "The free tier is for non-commercial use and allows 20,000 requests a month. The key is stored in your Nexa settings on this device and, when you're signed in, synced to your account. It is sent to RAWG only with RAWG requests.",
-              )}
-            </>
-          }
-        />
-        {detail && <p className="text-[12.5px] leading-relaxed text-ink-muted">{detail}</p>}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => void verify(settings.rawgApiKey)}
-            disabled={!hasKey || check === "verifying"}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge px-3 text-[12.5px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:opacity-60"
-          >
-            {check === "verifying" ? (
-              <Loader2 size={13} strokeWidth={1.9} className="animate-spin" />
-            ) : (
-              <ShieldCheck size={13} strokeWidth={1.9} />
+    <Section
+      title={t("RAWG (legacy)")}
+      subtitle={t(
+        "The legacy RAWG provider, used only while RAWG is chosen above. Your key is kept so you can switch back, and you can remove it here.",
+      )}
+    >
+      <KeyField
+        label={t("RAWG API key")}
+        placeholder={t("rawg api key")}
+        value={draft}
+        onChange={setDraft}
+        onSave={onSave}
+        saved={saved}
+        headerExtra={badge ? <StatusBadge badge={badge} /> : undefined}
+        help={
+          <>
+            {t("Get a free key at")}{" "}
+            <ExtLink href="https://rawg.io/apidocs">rawg.io/apidocs</ExtLink>
+            {". "}
+            {t(
+              "The free tier is for non-commercial use and allows 20,000 requests a month. The key is stored in your Nexa settings on this device and, when you're signed in, synced to your account. It is sent to RAWG only with RAWG requests.",
             )}
-            {check === "verifying" ? t("Verifying…") : t("Verify")}
-          </button>
-          <button
-            onClick={removeKey}
-            disabled={!hasKey}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12.5px] transition-colors disabled:opacity-60 ${
-              confirmRemove
-                ? "border-danger/60 text-danger hover:bg-danger/10"
-                : "border-edge text-ink-muted hover:bg-elevated hover:text-ink"
-            }`}
-          >
-            <Trash2 size={13} strokeWidth={1.9} />
-            {confirmRemove ? t("Click again to remove") : t("Remove key")}
-          </button>
-        </div>
-      </Section>
-
-      <Section title={t("Games")}>
-        <ToggleRow
-          label={t("Enable Games")}
-          sub={t(
-            "Adds Games to the sidebar and a Game Library to My Library. Turning it off hides them and keeps your RAWG key and saved games.",
-          )}
-          value={settings.gamesEnabled}
-          onChange={(v) => update({ gamesEnabled: v })}
-          lockReason={
-            toggleLocked
-              ? igdbActive
-                ? t("Verify your IGDB credentials first")
-                : t("Verify a RAWG API key first")
-              : undefined
-          }
-        />
-        <p className="text-[12px] leading-relaxed text-ink-subtle">
-          {t("Game data and images are provided by")}{" "}
-          {igdbActive ? (
-            <ExtLink href="https://www.igdb.com/">IGDB</ExtLink>
+          </>
+        }
+      />
+      {detail && <p className="text-[12.5px] leading-relaxed text-ink-muted">{detail}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void verify(settings.rawgApiKey)}
+          disabled={!hasKey || check === "verifying"}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-edge px-3 text-[12.5px] text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:opacity-60"
+        >
+          {check === "verifying" ? (
+            <Loader2 size={13} strokeWidth={1.9} className="animate-spin" />
           ) : (
-            <ExtLink href="https://rawg.io/">RAWG</ExtLink>
+            <ShieldCheck size={13} strokeWidth={1.9} />
           )}
-          .
-        </p>
-      </Section>
-    </>
+          {check === "verifying" ? t("Verifying…") : t("Verify")}
+        </button>
+        <button
+          onClick={removeKey}
+          disabled={!hasKey}
+          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12.5px] transition-colors disabled:opacity-60 ${
+            confirmRemove
+              ? "border-danger/60 text-danger hover:bg-danger/10"
+              : "border-edge text-ink-muted hover:bg-elevated hover:text-ink"
+          }`}
+        >
+          <Trash2 size={13} strokeWidth={1.9} />
+          {confirmRemove ? t("Click again to remove") : t("Remove key")}
+        </button>
+      </div>
+    </Section>
   );
 }

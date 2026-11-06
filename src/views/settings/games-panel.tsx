@@ -1,16 +1,26 @@
-import { DevProviderSection } from "./games/dev-provider-section";
+import { useActiveGameProvider } from "@/lib/game-discovery/use-games-gate";
+import { useSettings } from "@/lib/settings";
+import { GamesToggleSection } from "./games/games-toggle-section";
 import { IgdbSection } from "./games/igdb-section";
+import { LibrarySyncSection } from "./games/library-sync-section";
+import { ProviderSection } from "./games/provider-section";
 import { RawgSection } from "./games/rawg-section";
 
-// Settings → Games. One section per integration; launcher settings slot in here later.
+// Settings → Games. IGDB is the provider unless this device has chosen RAWG
+// legacy (see lib/game-discovery/provider-choice.ts). The RAWG key section is
+// shown only while RAWG is chosen or a key is still stored, so it can always
+// be removed. Launcher settings slot in here later.
 export function GamesPanel() {
-  // RAWG is the Games provider in production. Development builds can switch
-  // Discovery to IGDB (Stage 4); the IGDB section manages device-local credentials.
+  const provider = useActiveGameProvider();
+  const { settings } = useSettings();
+  const showRawg = provider === "rawg" || settings.rawgApiKey.trim() !== "";
   return (
     <>
-      {import.meta.env.DEV && <DevProviderSection />}
-      <RawgSection />
       <IgdbSection />
+      <GamesToggleSection />
+      <LibrarySyncSection />
+      <ProviderSection />
+      {showRawg && <RawgSection />}
     </>
   );
 }

@@ -98,9 +98,11 @@ export type GamesConfigState = Exclude<RawgConfigState | IgdbConfigState, "ready
 export function igdbConfigState(
   status: IgdbStatusLike | null,
   nativeAvailable: boolean,
+  /** The first status read failed: say so rather than "checking" forever. */
+  readFailed = false,
 ): IgdbConfigState {
   if (!nativeAvailable) return "igdb_unsupported";
-  if (!status) return "igdb_checking";
+  if (!status) return readFailed ? "igdb_unavailable" : "igdb_checking";
   if (status.storage === "unsupported") return "igdb_unsupported";
   if (status.storage === "unavailable" || status.state === "unavailable") return "igdb_unavailable";
   switch (status.state) {

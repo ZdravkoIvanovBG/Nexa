@@ -1,5 +1,6 @@
 // @ts-nocheck -- Node's test modules are not included in the application tsconfig.
-// Stage 4: the development-only provider switch, the IGDB gate, cache
+// Stage 4, updated for Stage 7: the device's provider choice (IGDB by
+// default, RAWG legacy only by explicit choice), the IGDB gate, cache
 // isolation between providers, provider-dependent presentation, and the
 // Stage 4/5/6 boundaries (no IGDB saves, no IGDB franchises). Pure modules and
 // source-shape checks; no React, no Tauri, no network.
@@ -7,15 +8,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
-  DEV_PROVIDER_KEY,
-  createDevProviderStore,
-  resolveActiveGameProvider,
-} from "../src/lib/game-discovery/dev-provider.ts";
+  LEGACY_DEV_PROVIDER_KEY,
+  PROVIDER_CHOICE_KEY,
+  createProviderChoiceStore,
+  resolveGameProvider,
+} from "../src/lib/game-discovery/provider-choice.ts";
 import { providerPageUrl, safeExternalUrl } from "../src/lib/game-discovery/external-url.ts";
 import { gameImage } from "../src/lib/game-discovery/game-image.ts";
 import { gamesSearchAvailable, igdbConfigState } from "../src/lib/game-discovery/gates.ts";
 import { createIgdbStatusStore } from "../src/lib/game-discovery/igdb-status.ts";
-import { PRODUCTION_GAME_PROVIDER, providerFeatures } from "../src/lib/game-discovery/provider.ts";
+import { DEFAULT_GAME_PROVIDER, providerFeatures } from "../src/lib/game-discovery/provider.ts";
 import { isStaleGamesQuery } from "../src/lib/game-discovery/query-root.ts";
 import { gameSections } from "../src/lib/game-discovery/sections.ts";
 import { rawgImage } from "../src/lib/providers/rawg/image.ts";
@@ -35,47 +37,72 @@ function memoryStorage(initial = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Development-only switch
+// Provider choice (Stage 7)
 
-test("production builds are always RAWG, whatever is stored", () => {
-  assert.equal(PRODUCTION_GAME_PROVIDER, "rawg");
-  assert.equal(resolveActiveGameProvider(false, "igdb"), "rawg");
-  const storage = memoryStorage({ [DEV_PROVIDER_KEY]: "igdb" });
-  const store = createDevProviderStore({ dev: false, storage });
-  assert.equal(store.switchable, false);
-  assert.equal(store.get(), "rawg");
-  store.set("igdb");
-  assert.equal(store.get(), "rawg", "set is a no-op in production");
-});
-
-test("development builds switch explicitly and only to exactly 'igdb'", () => {
-  for (const junk of [null, "", "IGDB", "igdb ", "steam", "rawg", 1]) {
-    assert.equal(resolveActiveGameProvider(true, junk), "rawg", String(junk));
+test("every build defaults to IGDB; only an explicit 'rawg' selects RAWG legacy", () => {
+  assert.equal(DEFAULT_GAME_PROVIDER, "igdb");
+  for (const junk of [null, undefined, "", "igdb", "IGDB", "RAWG", "rawg ", "steam", 1, true]) {
+    assert.equal(resolveGameProvider(junk), "igdb", String(junk));
   }
-  const storage = memoryStorage();
-  const store = createDevProviderStore({ dev: true, storage });
-  let heard = 0;
-  store.subscribe(() => heard++);
-  assert.equal(store.get(), "rawg");
-  store.set("igdb");
-  assert.equal(store.get(), "igdb");
-  assert.equal(storage.data.get(DEV_PROVIDER_KEY), "igdb");
-  store.set("igdb");
-  store.set("rawg");
-  assert.equal(heard, 2, "one notice per real change");
-  assert.equal(storage.data.has(DEV_PROVIDER_KEY), false, "RAWG clears the key");
+  assert.equal(resolveGameProvider("rawg"), "rawg");
+  assert.equal(createProviderChoiceStore(null).get(), "igdb", "no storage means IGDB");
+  assert.equal(createProviderChoiceStore(memoryStorage()).get(), "igdb");
   assert.equal(
-    createDevProviderStore({
-      dev: true,
-      storage: memoryStorage({ [DEV_PROVIDER_KEY]: "igdb" }),
-    }).get(),
-    "igdb",
+    createProviderChoiceStore(memoryStorage({ [PROVIDER_CHOICE_KEY]: "rawg" })).get(),
+    "rawg",
   );
 });
 
-test("the switch key stays out of backups, cloud side-stores, settings and Supabase", () => {
+test("switching is explicit, persisted and announced once per change", () => {
+  const storage = memoryStorage();
+  const store = createProviderChoiceStore(storage);
+  let heard = 0;
+  store.subscribe(() => heard++);
+  store.set("rawg");
+  assert.equal(store.get(), "rawg");
+  assert.equal(storage.data.get(PROVIDER_CHOICE_KEY), "rawg");
+  store.set("rawg");
+  store.set("igdb");
+  assert.equal(heard, 2, "one notice per real change");
+  assert.equal(storage.data.has(PROVIDER_CHOICE_KEY), false, "the default stores nothing");
+  store.set("nonsense");
+  assert.equal(store.get(), "igdb");
+  assert.equal(heard, 2);
+});
+
+test("the Stage 4 development switch is retired: never read, removed on start", () => {
+  // Under Stage 4 a missing dev key meant RAWG. It must not keep anyone on RAWG,
+  // and its "igdb" value must not be needed to reach IGDB.
+  for (const value of ["igdb", "rawg"]) {
+    const storage = memoryStorage({ [LEGACY_DEV_PROVIDER_KEY]: value });
+    assert.equal(createProviderChoiceStore(storage).get(), "igdb", value);
+    assert.equal(storage.data.has(LEGACY_DEV_PROVIDER_KEY), false, value);
+  }
+});
+
+test("existing RAWG settings never select RAWG by themselves", () => {
+  // The choice reads one device key only; a synced RAWG key, gamesEnabled or
+  // saved RAWG games can't change it, and nothing switches on a failure.
+  const choice = code(src("lib/game-discovery/provider-choice.ts"));
+  assert.doesNotMatch(choice, /rawgApiKey|gamesEnabled|settings|records|onError|catch \(e/);
+  const active = code(src("lib/game-discovery/use-active-provider.ts"));
+  assert.match(active, /gamesProviderChoice\.subscribe, gamesProviderChoice\.get/);
+  // Only Settings → Games writes the choice.
+  const writers = [
+    "views/settings/games/provider-section.tsx",
+    "views/game-discovery/games-frame.tsx",
+    "views/game-discovery/games-state.tsx",
+    "lib/game-discovery/use-games-gate.ts",
+    "lib/game-discovery/queries.ts",
+  ].filter((path) => /gamesProviderChoice\.set\(/.test(code(src(path))));
+  assert.deepEqual(writers, ["views/settings/games/provider-section.tsx"]);
+});
+
+test("the choice key stays out of backups, cloud side-stores, settings and Supabase", () => {
   // Backups and side-stores sweep the `harbor.` namespace; the key is outside it.
-  assert.ok(!DEV_PROVIDER_KEY.startsWith("harbor."));
+  for (const key of [PROVIDER_CHOICE_KEY, LEGACY_DEV_PROVIDER_KEY]) {
+    assert.ok(!key.startsWith("harbor."), key);
+  }
   for (const path of [
     "lib/backup.ts",
     "lib/cloud/side-stores.ts",
@@ -87,7 +114,21 @@ test("the switch key stays out of backups, cloud side-stores, settings and Supab
   }
 });
 
-test("unreadable or unwritable storage falls back to RAWG / this session", () => {
+test("Settings → Games offers the choice in every build, RAWG clearly labelled legacy", () => {
+  const panel = code(src("views/settings/games-panel.tsx"));
+  assert.doesNotMatch(panel, /import\.meta\.env\.DEV/);
+  assert.match(panel, /<ProviderSection \/>/);
+  assert.match(panel, /<IgdbSection \/>/);
+  assert.match(panel, /<GamesToggleSection \/>/);
+  // The RAWG key section stays reachable while RAWG is chosen or a key is stored.
+  assert.match(panel, /provider === "rawg" \|\| settings\.rawgApiKey\.trim\(\) !== ""/);
+  const section = src("views/settings/games/provider-section.tsx");
+  assert.match(section, /"IGDB \(recommended\)"/);
+  assert.match(section, /"RAWG \(legacy\)"/);
+  assert.match(src("views/settings/games/rawg-section.tsx"), /t\("RAWG \(legacy\)"\)/);
+});
+
+test("unreadable or unwritable storage falls back to IGDB / this session", () => {
   const throwing = {
     getItem() {
       throw new Error("denied");
@@ -95,12 +136,14 @@ test("unreadable or unwritable storage falls back to RAWG / this session", () =>
     setItem() {
       throw new Error("full");
     },
-    removeItem() {},
+    removeItem() {
+      throw new Error("denied");
+    },
   };
-  const store = createDevProviderStore({ dev: true, storage: throwing });
-  assert.equal(store.get(), "rawg");
-  store.set("igdb");
-  assert.equal(store.get(), "igdb", "kept for the session");
+  const store = createProviderChoiceStore(throwing);
+  assert.equal(store.get(), "igdb");
+  store.set("rawg");
+  assert.equal(store.get(), "rawg", "kept for the session");
 });
 
 // ---------------------------------------------------------------------------
@@ -407,4 +450,16 @@ test("kid profiles still can't open any Games frame", () => {
   );
   assert.ok(block.length > 0);
   assert.doesNotMatch(block, /game/);
+});
+
+test("a failed first credential read explains itself instead of loading forever", () => {
+  assert.equal(igdbConfigState(null, true), "igdb_checking");
+  assert.equal(igdbConfigState(null, true, true), "igdb_unavailable");
+  // A later failure keeps the last known status.
+  assert.equal(igdbConfigState(status("verified"), true, true), "ready");
+  assert.equal(igdbConfigState(null, false, true), "igdb_unsupported");
+  assert.match(
+    code(src("lib/game-discovery/use-games-gate.ts")),
+    /igdbConfigState\(igdb\.status, igdbNativeAvailable, igdb\.failed\)/,
+  );
 });

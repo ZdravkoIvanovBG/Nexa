@@ -126,6 +126,11 @@ export type GameSyncOptions = {
   isCurrent: () => boolean;
   /** Bypasses the throttle: a new session or profile has never been pulled. */
   force?: boolean;
+  /**
+   * Moves placeholder-profile games into this profile first (the default). Only
+   * the active profile may adopt them, so "Sync now" passes false for others.
+   */
+  adoptPlaceholders?: boolean;
 };
 
 export async function syncGameLibrary(owner: GameOwner, options: GameSyncOptions): Promise<void> {
@@ -134,7 +139,7 @@ export async function syncGameLibrary(owner: GameOwner, options: GameSyncOptions
   if (!options.force && (pulling || now - lastPullAt < PULL_THROTTLE_MS)) return;
   lastPullAt = now;
 
-  adoptPlaceholderLibraries(owner);
+  if (options.adoptPlaceholders !== false) adoptPlaceholderLibraries(owner);
   const run = hydrateGameLibrary({
     owner,
     pull,

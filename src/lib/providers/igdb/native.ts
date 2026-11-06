@@ -261,7 +261,7 @@ export const TAURI_TRANSPORT_TIMEOUT_MS = 35_000;
 
 /**
  * An IGDB client backed by the Rust transport. Games Discovery uses one when
- * IGDB is the active provider (development builds, Stage 4).
+ * IGDB is the active provider (the default; see provider-choice.ts).
  */
 export function createNativeIgdbClient(
   invoke: Invoke,

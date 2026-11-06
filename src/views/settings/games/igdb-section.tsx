@@ -337,14 +337,14 @@ export function IgdbSection() {
 
   return (
     <Section
-      title={t("IGDB")}
+      title={t("Games discovery (IGDB)")}
       subtitle={
         igdbActive
           ? t(
-              "Connect your own Twitch developer application for IGDB game data. Games on this device is using IGDB (development builds only).",
+              "Nexa gets game data from IGDB. Connect your own free Twitch developer application to browse games, franchises and details on this device.",
             )
           : t(
-              "Connect your own Twitch developer application to prepare Nexa's upcoming IGDB game data. Games still use RAWG for now: saving credentials here doesn't change what you see in Games.",
+              "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.",
             )
       }
     >

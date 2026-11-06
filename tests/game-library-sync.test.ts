@@ -5,6 +5,8 @@ import test, { afterEach, beforeEach } from "node:test";
 import {
   GAME_QUEUE_KEY,
   forgetGameProfile,
+  gameSyncState,
+  gameSyncSummary,
   gamesBackedUp,
   hasQueuedGameOps,
   libraryKey,
@@ -1324,4 +1326,130 @@ test("undoing a collection's removal brings back its games on every device", asy
   await settle(a, b);
   assert.deepEqual(order(b), ["c:ac"]);
   assert.deepEqual(members(b, "c:ac"), ["rawg:12", "rawg:10", "rawg:11"]);
+});
+
+// ---------------------------------------------------------------------------
+// Settings → Games sync status (IGDB Stage 7): the pre-update / pre-downgrade check
+
+const igdbRef = (igdbId) => ({
+  provider: "igdb",
+  igdbId,
+  slug: `igdb-${igdbId}`,
+  name: `IGDB ${igdbId}`,
+  released: "2020-01-01",
+  image: null,
+});
+
+const stateOf = (storage, overrides = {}) =>
+  gameSyncState({
+    cloud: true,
+    signedIn: true,
+    offline: false,
+    blocked: false,
+    summary: gameSyncSummary(USER, storage),
+    ...overrides,
+  });
+
+test("sync status: nothing on the device is 'empty', whoever is signed in", () => {
+  assert.equal(stateOf(fakeStorage()), "empty");
+  assert.equal(stateOf(fakeStorage(), { signedIn: false }), "empty");
+  const emptyBlob = JSON.stringify({ v: 1, records: {}, queue: {} });
+  assert.equal(stateOf(fakeStorage({ [libraryKey("p1")]: emptyBlob })), "empty");
+});
+
+test("sync status says 'synced' exactly when a sign-out wipe would be allowed", () => {
+  for (const [entries, expected] of [
+    [{ [libraryKey("p1")]: blob(false) }, "synced"],
+    [{ [libraryKey("p1")]: blob(true) }, "pending"],
+    [{ [libraryKey("p1")]: blob(false), [libraryKey("p2")]: blob(true) }, "pending"],
+    [
+      {
+        [libraryKey("p1")]: blob(false),
+        [GAME_QUEUE_KEY]: JSON.stringify([{ owner: { userId: USER, profileId: "p1" } }]),
+      },
+      "pending",
+    ],
+    [
+      {
+        [libraryKey("p1")]: blob(false),
+        [GAME_QUEUE_KEY]: JSON.stringify([{ owner: { userId: "someone-else", profileId: "p1" } }]),
+      },
+      "synced",
+    ],
+  ]) {
+    const storage = fakeStorage(entries);
+    assert.equal(stateOf(storage), expected, JSON.stringify(Object.keys(entries)));
+    assert.equal(stateOf(storage) === "synced", gamesBackedUp(USER, storage));
+  }
+  const summary = gameSyncSummary(
+    USER,
+    fakeStorage({ [libraryKey("p1")]: blob(false), [libraryKey("p2")]: blob(true) }),
+  );
+  assert.deepEqual(summary.profiles, ["p1", "p2"]);
+  assert.deepEqual(summary.unsynced, ["p2"]);
+});
+
+test("sync status never calls unsafe data safe", () => {
+  const pending = fakeStorage({ [libraryKey("p1")]: blob(true) });
+  assert.equal(stateOf(pending, { signedIn: false }), "local-only");
+  assert.equal(stateOf(pending, { cloud: false }), "local-only");
+  assert.equal(stateOf(pending, { offline: true }), "offline");
+  assert.equal(stateOf(pending, { blocked: true }), "blocked");
+  // Synced stays synced offline: the cloud already has it.
+  assert.equal(
+    stateOf(fakeStorage({ [libraryKey("p1")]: blob(false) }), { offline: true }),
+    "synced",
+  );
+  // Signed out with a synced library: still only on this device as far as a wipe goes.
+  assert.equal(
+    stateOf(fakeStorage({ [libraryKey("p1")]: blob(false) }), { signedIn: false }),
+    "local-only",
+  );
+  const broken = {
+    get length() {
+      throw new Error("denied");
+    },
+    key: () => null,
+    getItem: () => null,
+  };
+  assert.equal(gameSyncSummary(USER, broken).unreadable, true);
+  assert.equal(stateOf(broken), "unreadable");
+});
+
+test("sync status counts held copies: this account's while signed in, any while signed out", () => {
+  const held = (userId) => fakeStorage({ [`harbor.cloud.games.held.v1.${userId}.p1`]: blob(true) });
+  assert.equal(stateOf(held(USER)), "pending");
+  assert.equal(stateOf(held("someone-else")), "empty", "another account's copy isn't ours");
+  assert.equal(
+    gameSyncState({
+      cloud: true,
+      signedIn: false,
+      offline: false,
+      blocked: false,
+      summary: gameSyncSummary(null, held("someone-else")),
+    }),
+    "local-only",
+  );
+});
+
+test("downgrade drill: once synced, losing the local copy loses nothing, IGDB rows included", async () => {
+  const cloud = fakeCloud();
+  const storage = fakeStorage();
+  const a = device(cloud, { storage });
+  a.change(saveGame, ref(1));
+  a.change(saveGame, igdbRef(119171));
+  a.change(setNotes, "igdb:119171", "keep me");
+  assert.equal(stateOf(storage), "pending");
+  await a.sync();
+  assert.equal(stateOf(storage), "synced");
+
+  // An older Nexa then wipes this device's game data without asking (0.9.28's
+  // sign-out does, and pre-IGDB builds drop igdb: rows when they read).
+  for (const profileId of libraryProfiles(storage)) storage.removeItem(libraryKey(profileId));
+
+  // Back on this build, or on any other device: everything comes back.
+  const back = device(cloud, { storage: fakeStorage() });
+  await back.sync();
+  assert.deepEqual(Object.keys(back.data.records).sort(), ["igdb:119171", "rawg:1"]);
+  assert.equal(back.data.records["igdb:119171"].notes, "keep me");
 });

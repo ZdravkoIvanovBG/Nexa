@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { keyFingerprint } from "../src/lib/game-discovery/gates.ts";
-import { PRODUCTION_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
+import { DEFAULT_GAME_PROVIDER } from "../src/lib/game-discovery/provider.ts";
 import { createRawgSessionStatus } from "../src/lib/game-discovery/status.ts";
 import { createRawgClient } from "../src/lib/providers/rawg/client.ts";
 import {
@@ -72,8 +72,8 @@ const WITCHER = {
   ],
 };
 
-test("production builds keep RAWG as the provider", () => {
-  assert.equal(PRODUCTION_GAME_PROVIDER, "rawg");
+test("IGDB is the default provider; RAWG is legacy, chosen per device (Stage 7)", () => {
+  assert.equal(DEFAULT_GAME_PROVIDER, "igdb");
 });
 
 test("list: one request with exactly the pre-seam path and params", async () => {

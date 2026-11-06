@@ -1,5 +1,5 @@
-// Domain types for Games discovery. Metadata providers (RAWG, and IGDB behind
-// the development switch) normalize into these shapes; the UI consumes nothing
+// Domain types for Games discovery. Metadata providers (IGDB, and the RAWG
+// legacy provider) normalize into these shapes; the UI consumes nothing
 // else. Game identity is always
 // provider-qualified (see game-id.ts), so no view depends on a provider's ids.
 

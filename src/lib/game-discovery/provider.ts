@@ -14,10 +14,10 @@ import type { GameId, GameProvider } from "./game-id.ts";
 import type { GameDetail, GameListFilter, GamePage, GameSummary } from "./types.ts";
 
 /**
- * The provider every production build uses. IGDB can be made active only in
- * development builds, through the switch in dev-provider.ts (Stage 4).
+ * The provider every build uses unless the device has explicitly chosen the
+ * RAWG legacy provider in Settings → Games (see provider-choice.ts).
  */
-export const PRODUCTION_GAME_PROVIDER: GameProvider = "rawg";
+export const DEFAULT_GAME_PROVIDER: GameProvider = "igdb";
 
 /**
  * Related-game rows. RAWG serves the first three; IGDB serves additions,
