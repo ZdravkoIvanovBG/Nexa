@@ -4,7 +4,7 @@ import { useGameDetail } from "@/lib/game-discovery/queries";
 import { gameImage } from "@/lib/game-discovery/game-image";
 import type { GameSummary } from "@/lib/game-discovery/types";
 import type { GamesGate } from "@/lib/game-discovery/use-games-gate";
-import { useWindowMinimized } from "@/lib/game-discovery/use-window-minimized";
+import { windowHidden } from "@/lib/game-discovery/window-hidden";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { observe, usePageVisible } from "@/lib/visibility";
@@ -44,8 +44,6 @@ export function GamesHero({
   const [offset, setOffset] = useState(0);
   const [inViewport, setInViewport] = useState(true);
   const pageVisible = usePageVisible();
-  // WebView2 stays "visible" while minimised, so ask the window too.
-  const minimized = useWindowMinimized();
   const ref = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
@@ -62,10 +60,20 @@ export function GamesHero({
   }, []);
 
   useEffect(() => {
-    if (paused || dragging || !inViewport || !pageVisible || minimized || slides.length < 2) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % slides.length), ROTATE_MS);
-    return () => clearInterval(id);
-  }, [paused, dragging, inViewport, pageVisible, minimized, slides.length]);
+    if (paused || dragging || !inViewport || !pageVisible || slides.length < 2) return;
+    let live = true;
+    // WebView2 stays "visible" while minimised, so ask the window before each
+    // slide: a minimised or tray-hidden window keeps its slide.
+    const id = setInterval(() => {
+      void windowHidden().then((hidden) => {
+        if (live && !hidden) setActive((a) => (a + 1) % slides.length);
+      });
+    }, ROTATE_MS);
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [paused, dragging, inViewport, pageVisible, slides.length]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 || slides.length < 2) return;

@@ -465,19 +465,35 @@ test("a failed first credential read explains itself instead of loading forever"
 });
 
 test("the Games hero stops rotating while the window is minimised (Stage 7)", () => {
-  // WebView2 keeps document.hidden false when minimised, so the hero also asks
-  // the window. Measured in the release build: ~8.6% of one core before.
+  // WebView2 keeps document.hidden false when minimised. Measured in the
+  // release build: ~8.6% of one core before. The hero asks the window directly
+  // before each slide (verified with real Win32 minimise/restore, focused and
+  // not), so no event state can leave it paused on screen.
   const hero = code(src("views/game-discovery/games-hero.tsx"));
-  assert.match(hero, /const minimized = useWindowMinimized\(\);/);
-  assert.match(hero, /!pageVisible \|\| minimized \|\| slides\.length < 2\) return;/);
-  const hook = code(src("lib/game-discovery/use-window-minimized.ts"));
-  // The shell's existing focus event: no new window permission.
-  // Raw source: code() strips the "//" inside the event name as a comment.
-  assert.match(src("lib/game-discovery/use-window-minimized.ts"), /"harbor:\/\/window-activity"/);
-  assert.match(hook, /setMinimized\(!e\.payload\.focused && e\.payload\.minimized\)/);
-  assert.doesNotMatch(hook, /isMinimized|plugin:window/);
-  // The Movies hero is untouched.
-  assert.doesNotMatch(src("components/cinema-hero.tsx"), /useWindowMinimized/);
+  assert.match(
+    hero,
+    /void windowHidden\(\)\.then\(\(hidden\) => \{\s+if \(live && !hidden\) setActive/,
+  );
+  assert.match(hero, /\}, ROTATE_MS\);/);
+  const helper = code(src("lib/game-discovery/window-hidden.ts"));
+  assert.match(helper, /invoke<boolean>\("harbor_window_hidden"\)/);
+  // Fails open: outside the desktop app or on error, rotation is as before.
+  assert.match(helper, /if \(!isTauri\) return false;/);
+  assert.match(helper, /catch \{\s+return false;/);
+  const rust = readFileSync(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+  assert.match(rust, /async fn harbor_window_hidden\(app: tauri::AppHandle\) -> bool \{/);
+  // Windows: ask the OS about the main window's handle.
+  assert.match(
+    rust,
+    /unsafe \{ IsIconic\(hwnd\)\.as_bool\(\) \|\| !IsWindowVisible\(hwnd\)\.as_bool\(\) \}/,
+  );
+  assert.match(rust, /harbor_window_hidden,/);
+  // The player's window event is unchanged, and the Movies hero is untouched.
+  assert.match(
+    rust,
+    /"harbor:\/\/window-activity",\s+serde_json::json!\(\{ "focused": \*focused, "minimized": minimized \}\),/,
+  );
+  assert.doesNotMatch(src("components/cinema-hero.tsx"), /windowHidden/);
 });
 
 test("off-screen Games placeholders don't animate while waiting (Stage 7)", () => {
@@ -486,4 +502,19 @@ test("off-screen Games placeholders don't animate while waiting (Stage 7)", () =
   const near = src("views/game-discovery/when-near.tsx");
   assert.match(near, /aria-hidden className="\[&_\*\]:animate-none"/);
   assert.match(src("views/game-discovery/game-card.tsx"), /animate-pulse/);
+});
+
+test("IGDB is credited as IGDB.com in a static footer on every Games page (Stage 7)", () => {
+  const footer = src("views/game-discovery/rawg-attribution.tsx");
+  assert.match(footer, /igdb: \{ name: "IGDB\.com", url: "https:\/\/www\.igdb\.com\/" \}/);
+  // Rendered by the Games frame (Discovery, Browse, details, franchises) and the
+  // Game Library, which credits every provider its saved games came from.
+  assert.match(
+    code(src("views/game-discovery/games-frame.tsx")),
+    /<GamesAttribution provider=\{gate\.provider\} \/>/,
+  );
+  assert.match(
+    code(src("views/game-library.tsx")),
+    /<GamesAttribution key=\{provider\} provider=\{provider\} \/>/,
+  );
 });

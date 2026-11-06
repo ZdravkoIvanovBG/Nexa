@@ -79,6 +79,33 @@ static SHUTDOWN_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicB
 #[cfg(windows)]
 static WEBVIEW_SUSPENDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+/// Whether the main window is minimised or hidden to the tray right now.
+/// WebView2 keeps `document.hidden` false in both cases, so the Games hero
+/// asks before each slide change. Asking at the moment it matters needs no
+/// event bookkeeping, so a missed or reordered window event can never leave
+/// the hero paused on screen. Read-only.
+///
+/// On Windows it asks the OS directly about the main window's handle.
+#[tauri::command]
+async fn harbor_window_hidden(app: tauri::AppHandle) -> bool {
+    use tauri::Manager;
+    let Some(window) = app.get_webview_window("main") else {
+        return false;
+    };
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{IsIconic, IsWindowVisible};
+        let Ok(hwnd) = window.hwnd() else {
+            return false;
+        };
+        unsafe { IsIconic(hwnd).as_bool() || !IsWindowVisible(hwnd).as_bool() }
+    }
+    #[cfg(not(windows))]
+    {
+        window.is_minimized().unwrap_or(false) || !window.is_visible().unwrap_or(true)
+    }
+}
+
 #[tauri::command]
 fn harbor_flush_done() {
     CLOSE_FLUSH_DONE.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -702,6 +729,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             crash_report::take_startup_crash_report,
             harbor_flush_done,
+            harbor_window_hidden,
             harbor_startup_ready,
             close_aux_windows,
             power::power_inhibit,

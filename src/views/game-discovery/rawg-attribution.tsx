@@ -5,12 +5,14 @@ import { openUrl } from "@/lib/window";
 
 const SOURCES: Record<GameProvider, { name: string; url: string }> = {
   rawg: { name: "RAWG", url: "https://rawg.io/" },
-  igdb: { name: "IGDB", url: "https://www.igdb.com/" },
+  igdb: { name: "IGDB.com", url: "https://www.igdb.com/" },
 };
 
 // RAWG's terms require an active hyperlink to RAWG on every page that shows its
-// data; IGDB data is credited the same way. The footer also makes the active
-// provider plain on every Games page.
+// data; IGDB data is credited the same way. IGDB's FAQ asks for fair attribution
+// "to IGDB.com" that is "visible to your users and located in a static location",
+// which this footer is: it sits on every Games and Game Library page. It also
+// makes the active provider plain.
 export function GamesAttribution({
   provider,
   className = "",

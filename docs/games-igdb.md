@@ -118,51 +118,88 @@ local copy, and recovers every row, IGDB rows included, on a fresh device.
 
 ## Licensing and distribution
 
-Checked on 2026-11-06 against IGDB's API documentation (api-docs.igdb.com)
-and the Twitch Developer Services Agreement (last modified 2024-12-04).
+Checked on 2026-11-06 against IGDB's API documentation and its Business FAQ
+(api-docs.igdb.com), and the Twitch Developer Services Agreement (DSA, last
+modified 2024-12-04). This is a reading of the published terms, not legal
+advice. Bring-your-own credentials don't remove Nexa's own obligations as the
+app that displays the data.
 
-**Confirmed**
+**What the terms say**
 
-- IGDB says the API is "free for non-commercial usage under the terms of the
-  Twitch Developer Service Agreement".
-- IGDB "offer[s] commercial partnership for users with a commercial need" and
-  asks for contact at partner@igdb.com. Its FAQ says "the API is free for both
-  non-commercial and commercial projects".
-- As part of the commercial partnership, IGDB asks for "user facing
-  attribution to IGDB.com … visible to your users and located in a static
-  location (e.g. not in a change log)".
-- The IGDB FAQ says local storing and caching is allowed and preferred.
-- Rate limit: 4 requests per second, 8 open requests.
-- **Twitch agreement:**
+- **Access:** "The IGDB.com API is free for non-commercial usage under the
+  terms of the Twitch Developer Service Agreement." IGDB "offer[s] commercial
+  partnership for users with a commercial need" (partner@igdb.com).
+- **IGDB Business FAQ:**
+  - 1: commercial use is allowed through a partnership, and "as part of the
+    partnership, we ask for user facing attribution to IGDB.com".
+  - 2: "The API is free for both non-commercial and commercial projects."
+  - 3: "Am I allowed to store/cache the data locally? Yes. In fact, we prefer
+    if you store and serve the data to your end users."
+  - 4: attribution should be "visible to your users and located in a static
+    location (e.g. not in a change log)".
+  - 5: on partnership termination, "You are allowed to keep all data you
+    retrieve."
+- **Twitch DSA:**
   - **Keys:** "Keep them secret. Also, you may not sell, transfer, or
-    sub-license them." That is why Nexa must never ship shared credentials.
-  - **Source and attribution:** apps must give "a clear path to the source
-    from displays of Program Materials" and "appropriately attribute" them.
-  - **Re-distribution:** re-syndication and re-distribution of API data is
-    prohibited.
-- **Where Nexa stands today:**
-  - Each user is the developer of their own Twitch application.
-  - Game pages link to IGDB ("View on IGDB").
-  - Settings → Games credits IGDB.com.
+    sub-license them."
+  - **Storage:** "Do not store copies of Twitch Content or Program Materials,
+    unless you: (a) obtain prior written authorization from Twitch (through
+    these terms or otherwise); (b) control the rights associated with such
+    content; or (c) cache such information for only a twenty-four hour time
+    period without further sharing it with third parties."
+  - **Re-distribution:** "Re-syndication and re-distribution of Program
+    Materials or data as available from a Twitch API is prohibited."
+  - **Attribution:** apps must ensure "a clear path to the source from
+    displays of Program Materials" and "Appropriately attribute" them.
+  - **Commercial use:** a separate agreement is needed for the listed
+    prohibited or restricted commercial uses (marketing, data brokering,
+    selling metadata).
+- **Rate limit:** 4 requests per second, 8 open requests.
 
-**Needs clarification before distributing to others**
+**The apparent difference**
 
-- **Commercial status.** If Nexa is or becomes monetized (paid tiers,
-  donations tied to features), contact partner@igdb.com. Bring-your-own
-  credentials put each user under the Twitch terms, but don't settle Nexa's
-  own position as a distributed product that displays IGDB data.
-- **Storage beyond 24 hours.** The Twitch agreement allows caching Program
-  Materials "for only a twenty-four hour time period" unless Twitch authorizes
-  more "through these terms or otherwise". IGDB's FAQ permits local storage,
-  but whether that FAQ counts as the authorization isn't stated.
-  - What Nexa keeps longer than 24 h is the user's own Wishlist snapshot (name,
-    release date, image URL) and the copy synced to their own Nexa account.
-  - Discovery data lives only in memory.
-- **Static attribution.** Discovery screens credit IGDB only through game-page
-  links and the Settings line. If a partnership is needed, a static "Game data
-  by IGDB.com" credit on the Games screens would meet IGDB's guidance.
-- **The web build** can't use IGDB (no CORS and no secure store), so Games
-  there is desktop-only unless a proxy is added.
+IGDB's FAQ explicitly allows, and prefers, storing and caching its data
+locally. The DSA, which IGDB names as the terms for non-commercial use,
+allows storing "Program Materials" for only 24 hours unless Twitch authorizes
+more "through these terms or otherwise".
+
+The FAQ is plausibly that authorization for IGDB data, but neither document
+says so. The FAQ's storage answer also sits in a section about commercial
+partnerships, so it's unclear whether it covers free non-commercial use.
+
+What Nexa keeps longer than 24 hours:
+
+- each saved game's snapshot: name, slug, release date and the IGDB image
+  URL (not the image), plus the user's own notes and order;
+- the copy of that snapshot synced to the user's own Nexa account.
+
+Discovery results live only in memory, for one session. Image files are
+cached by the WebView's ordinary HTTP cache.
+
+**Where Nexa stands**
+
+- Each user registers and uses their own Twitch application. Nexa ships no
+  shared key.
+- A static, linked "Game data and images provided by IGDB.com" footer is on
+  every Games screen (Discovery, Browse, game and franchise pages) and in the
+  Game Library. Game pages also link to the game on IGDB ("View on IGDB"), and
+  Settings → Games credits IGDB.com.
+- Nothing re-distributes IGDB data. Synced snapshots go only to the same
+  user's own account.
+
+**To clarify with IGDB (partner@igdb.com) before distributing Nexa to others**
+
+1. Whether the FAQ's "store/cache the data locally" permission applies to
+   free, non-commercial use under the DSA. In particular, whether keeping a
+   user's own saved-game snapshots (name, date, image URL) beyond 24 hours,
+   including in their own cloud account, is allowed.
+2. Whether a free, open-source desktop client where every user brings their
+   own Twitch application counts as non-commercial. Also, what changes if
+   Nexa ever takes donations or offers paid features.
+3. Whether the current footer attribution is sufficient.
+
+The web build can't use IGDB (no CORS and no secure store), so Games there is
+desktop-only unless a proxy is added.
 
 ## Known limitations
 
@@ -172,7 +209,6 @@ and the Twitch Developer Services Agreement (last modified 2024-12-04).
   there is no secure store backend yet.
 - The RAWG legacy provider still depends on RAWG being reachable for
   Discovery. Saved RAWG games always open from their snapshots.
-- The Games hero pauses when the window is minimised by listening for the
-  shell's focus-change event. Minimising a window that already lost focus
-  (for example, from the taskbar preview) isn't reported, so the hero keeps
-  rotating there, as it did before Stage 7.
+- The Games hero holds its slide while the window is minimised or hidden to
+  the tray. It asks Windows before each slide change. The Movies Home hero is
+  unchanged and keeps rotating underneath, as it always has.
