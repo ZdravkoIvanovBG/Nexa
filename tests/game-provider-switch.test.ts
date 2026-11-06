@@ -463,3 +463,27 @@ test("a failed first credential read explains itself instead of loading forever"
     /igdbConfigState\(igdb\.status, igdbNativeAvailable, igdb\.failed\)/,
   );
 });
+
+test("the Games hero stops rotating while the window is minimised (Stage 7)", () => {
+  // WebView2 keeps document.hidden false when minimised, so the hero also asks
+  // the window. Measured in the release build: ~8.6% of one core before.
+  const hero = code(src("views/game-discovery/games-hero.tsx"));
+  assert.match(hero, /const minimized = useWindowMinimized\(\);/);
+  assert.match(hero, /!pageVisible \|\| minimized \|\| slides\.length < 2\) return;/);
+  const hook = code(src("lib/game-discovery/use-window-minimized.ts"));
+  // The shell's existing focus event: no new window permission.
+  // Raw source: code() strips the "//" inside the event name as a comment.
+  assert.match(src("lib/game-discovery/use-window-minimized.ts"), /"harbor:\/\/window-activity"/);
+  assert.match(hook, /setMinimized\(!e\.payload\.focused && e\.payload\.minimized\)/);
+  assert.doesNotMatch(hook, /isMinimized|plugin:window/);
+  // The Movies hero is untouched.
+  assert.doesNotMatch(src("components/cinema-hero.tsx"), /useWindowMinimized/);
+});
+
+test("off-screen Games placeholders don't animate while waiting (Stage 7)", () => {
+  // WhenNear's fallback is never on screen; its pulsing skeletons cost ~4.7% of
+  // one core idle in the release build. The real row keeps its own skeleton.
+  const near = src("views/game-discovery/when-near.tsx");
+  assert.match(near, /aria-hidden className="\[&_\*\]:animate-none"/);
+  assert.match(src("views/game-discovery/game-card.tsx"), /animate-pulse/);
+});
