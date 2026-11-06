@@ -165,7 +165,7 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   },
   games: {
     label: "Games",
-    sub: "Game discovery powered by RAWG. Add your API key, then turn Games on.",
+    sub: "Game discovery powered by IGDB. Connect your Twitch developer application, then turn Games on.",
   },
 };
 

@@ -4451,7 +4451,6 @@
   "Debrid tokens and metadata & ratings keys, all in one place. Keys are saved in your Nexa settings and sync to your account when you're signed in.": "Debrid tokens and metadata & ratings keys, all in one place. Keys are saved in your Nexa settings and sync to your account when you're signed in.",
   "Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link. Cached streams play direct. Keys sync with your settings when signed in.": "Real-Debrid, TorBox, AllDebrid, Premiumize, Debrid-Link. Cached streams play direct. Keys sync with your settings when signed in.",
   "Games": "Games",
-  "Game discovery powered by RAWG. Add your API key, then turn Games on.": "Game discovery powered by RAWG. Add your API key, then turn Games on.",
   "Games discovery": "Games discovery",
   "RAWG API key": "RAWG API key",
   "rawg api key": "rawg api key",
@@ -4752,5 +4751,6 @@
   "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.": "Connect your own free Twitch developer application for IGDB game data. This device is using the RAWG legacy provider: IGDB is used once you choose it under Game data provider.",
   "Picked up {name}": "Picked up {name}",
   "Put down {name}": "Put down {name}",
-  "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom.": "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom."
+  "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom.": "Drag to reorder. With the keyboard, press Enter or Space to pick a game up, move it with the up and down arrow keys, then press Enter, Space or Escape to put it down. Home and End move it to the top or bottom.",
+  "Game discovery powered by IGDB. Connect your Twitch developer application, then turn Games on.": "Game discovery powered by IGDB. Connect your Twitch developer application, then turn Games on."
 }
