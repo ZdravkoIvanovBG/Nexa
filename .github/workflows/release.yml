@@ -72,10 +72,16 @@ jobs:
             exit 1
           fi
 
+      # Pinned official mpv 0.42.0 builds, verified by archive and file SHA-256
+      # (scripts/lib/mpv-pins.mjs, docs/mpv-binaries.md).
       - name: Fetch libmpv (Windows x64)
+        env:
+          HARBOR_MPV_ARCH: x64
         run: pnpm run setup:libmpv
 
       - name: Fetch mpv (Windows x64)
+        env:
+          HARBOR_MPV_ARCH: x64
         run: pnpm run setup:mpv
 
       - name: Fetch external binaries
@@ -100,7 +106,11 @@ jobs:
           cargo check
           cargo test --all-targets
 
-      - name: Build, sign, and publish
+      # Publishes a DRAFT release: the installer, its updater signature and
+      # latest.json are uploaded but invisible to users and to the updater
+      # (releases/latest only resolves published releases) until a maintainer
+      # verifies them and publishes the draft.
+      - name: Build, sign, and upload draft release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -113,9 +123,23 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Nexa ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install this version."
-          releaseDraft: false
+          releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           args: --target x86_64-pc-windows-msvc
+
+      - name: Verify bundled mpv binaries
+        run: node scripts/verify-mpv-bundle.mjs src-tauri/target/x86_64-pc-windows-msvc/release x64
+
+      - name: Record installer hashes
+        shell: bash
+        run: |
+          cd src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis
+          {
+            echo "### Windows x64 installer"
+            echo '```'
+            sha256sum *.exe *.sig
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Verify updater manifest
         shell: bash

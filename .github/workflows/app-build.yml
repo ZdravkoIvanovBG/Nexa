@@ -90,7 +90,7 @@ jobs:
             src-tauri/binaries
             src-tauri/libmpv/libmpv-2.dll
             src-tauri/fonts/*.otf
-          key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/fetch-binaries.mjs', 'scripts/fetch-mpv.mjs', 'scripts/fetch-libmpv.mjs', 'scripts/fetch-fonts.mjs', 'scripts/lib/download.mjs') }}-${{ steps.sidecar-key.outputs.week }}
+          key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/fetch-binaries.mjs', 'scripts/fetch-mpv.mjs', 'scripts/fetch-libmpv.mjs', 'scripts/fetch-fonts.mjs', 'scripts/lib/*.mjs') }}-${{ steps.sidecar-key.outputs.week }}
 
       - name: Prepare build assets
         run: pnpm run setup
@@ -107,3 +107,7 @@ jobs:
 
       - name: Build app without installers
         run: pnpm tauri build --no-bundle
+
+      - name: Verify bundled mpv binaries
+        if: matrix.platform.name == 'Windows'
+        run: node scripts/verify-mpv-bundle.mjs src-tauri/target/release x64
