@@ -1,44 +1,52 @@
-import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+/*
+ * fetch-libmpv.mjs
+ *
+ * Puts the pinned official mpv 0.42.0 LGPL libmpv-2.dll (embedded player) in
+ * src-tauri/libmpv/. See scripts/lib/mpv-pins.mjs for the exact archives and
+ * hashes, and docs/mpv-binaries.md for provenance and licensing.
+ *
+ * Besides the hash pins it checks that every mpv_* entry point of the
+ * committed import library (src-tauri/libmpv/libmpv.def -> mpv.lib) is
+ * exported by the DLL, so the link-time API and the shipped DLL agree.
+ *
+ * Env: HARBOR_MPV_ARCH=x64|arm64 picks the architecture (default: this Node's);
+ * HARBOR_MPV_RELEASE_URL points at a mirror of the same release assets (the
+ * hashes are still enforced); HARBOR_LIBMPV_FORCE runs it on non-Windows hosts.
+ */
+
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { downloadWithRetry } from "./lib/download.mjs";
-
-const SHA256 = "e9c87d19055bc5a82771b2b48e9fbae047bd5180603f5a1aaae10c90ca690467";
-const TAG = process.env.HARBOR_LIBMPV_TAG ?? "mpvdll";
-const url =
-  process.env.HARBOR_LIBMPV_URL ??
-  `https://github.com/harborstremio/harbor/releases/download/${TAG}/libmpv-2.dll`;
-
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const dest = join(root, "src-tauri", "libmpv", "libmpv-2.dll");
-const digest = (buf) => createHash("sha256").update(buf).digest("hex");
+import { ensurePinnedMpvFile, libmpvApi } from "./lib/mpv-fetch.mjs";
+import { mpvArch } from "./lib/mpv-pins.mjs";
 
 if (process.platform !== "win32" && !process.env.HARBOR_LIBMPV_FORCE) {
   console.log("[libmpv] not Windows, skipping (mac and linux link system libmpv)");
   process.exit(0);
 }
 
-if (existsSync(dest) && digest(readFileSync(dest)) === SHA256) {
-  console.log("[libmpv] libmpv-2.dll already present and verified");
-  process.exit(0);
-}
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const libmpvDir = join(root, "src-tauri", "libmpv");
+const api = libmpvApi(join(libmpvDir, "libmpv.def"));
 
-let buf;
 try {
-  buf = await downloadWithRetry(url, { label: "[libmpv]" });
+  await ensurePinnedMpvFile({
+    kind: "libmpv",
+    arch: mpvArch(),
+    dest: join(libmpvDir, "libmpv-2.dll"),
+    licenseCopy: join(root, "src-tauri", "licenses", "mpv", "LICENSE.LGPL"),
+    label: "[libmpv]",
+    verify: (_buf, pe) => {
+      const exported = new Set(pe.exports);
+      const missing = api.filter((name) => !exported.has(name));
+      if (missing.length) {
+        throw new Error(`[libmpv] libmpv-2.dll lacks mpv API entry points: ${missing.join(", ")}`);
+      }
+    },
+  });
 } catch (err) {
-  console.error(`[libmpv] ${err.message}`);
+  console.error(err.message);
   console.error(
-    "[libmpv] set HARBOR_LIBMPV_URL to a mirror, or drop libmpv-2.dll into src-tauri/libmpv/ by hand",
+    "[libmpv] the pinned official mpv release could not be verified; nothing was written",
   );
   process.exit(1);
 }
-const got = digest(buf);
-if (got !== SHA256) {
-  console.error(`[libmpv] checksum mismatch (expected ${SHA256}, got ${got})`);
-  process.exit(1);
-}
-mkdirSync(dirname(dest), { recursive: true });
-writeFileSync(dest, buf);
-console.log(`[libmpv] wrote ${dest} (${(buf.length / 1048576).toFixed(1)} MB)`);

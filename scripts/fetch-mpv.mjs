@@ -1,95 +1,35 @@
-import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+/*
+ * fetch-mpv.mjs
+ *
+ * Puts the pinned official mpv 0.42.0 "full" mpv.exe in src-tauri/binaries/
+ * as mpv-x86_64-pc-windows-msvc.exe (tauri.windows.conf.json bundles it as
+ * mpv.exe for external playback, seek-bar thumbnails, Save clip and DVR).
+ * The resource name is the same on ARM64; the contents follow HARBOR_MPV_ARCH.
+ * See scripts/lib/mpv-pins.mjs and docs/mpv-binaries.md.
+ */
+
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { downloadWithRetry, isValidBinary } from "./lib/download.mjs";
+import { ensurePinnedMpvFile } from "./lib/mpv-fetch.mjs";
+import { mpvArch } from "./lib/mpv-pins.mjs";
 
 if (process.platform !== "win32") {
   console.log("[mpv] not Windows, skipping bundled mpv.exe");
   process.exit(0);
 }
 
-const RELEASE = "20260610";
-const SPECS = {
-  x64: {
-    asset: "mpv-x86_64-20260610-git-304426c.7z",
-    sha256: "facac536baa73c7b925771af5e39a3c9cb16b8d75b59a6e9800de89799dffca7",
-  },
-  arm64: {
-    asset: "mpv-aarch64-20260610-git-304426c.7z",
-    sha256: "0781fdffeef27a40a7f266631d1ca9e5c1d0f82868a1678c58d23e0b1bd1eb98",
-  },
-};
-
-const spec = SPECS[process.arch];
-if (!spec) {
-  throw new Error(`[mpv] unsupported Windows architecture: ${process.arch}`);
-}
-
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const destination = join(root, "src-tauri", "binaries", "mpv-x86_64-pc-windows-msvc.exe");
-
-if (existsSync(destination)) {
-  if (isValidBinary(destination)) {
-    console.log(`[mpv] ${destination} already present`);
-    process.exit(0);
-  }
-  console.warn(`[mpv] ${destination} present but invalid; re-downloading`);
-  unlinkSync(destination);
-}
-
-function findFile(dir, name) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const found = findFile(path, name);
-      if (found) return found;
-    } else if (entry.name === name) {
-      return path;
-    }
-  }
-  return null;
-}
-
-const url = `https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/${RELEASE}/${spec.asset}`;
-const temp = mkdtempSync(join(tmpdir(), "harbor-mpv-"));
 
 try {
-  const bytes = await downloadWithRetry(url, { label: "[mpv]" });
-  const archive = join(temp, spec.asset);
-  const digest = createHash("sha256").update(bytes).digest("hex");
-  if (digest !== spec.sha256)
-    throw new Error(`[mpv] checksum mismatch (expected ${spec.sha256}, got ${digest})`);
-  writeFileSync(archive, bytes);
-
-  const extracted = join(temp, "extracted");
-  mkdirSync(extracted);
-  try {
-    execFileSync("7z", ["x", "-y", archive, `-o${extracted}`], { stdio: "inherit" });
-  } catch {
-    throw new Error("[mpv] extraction failed; install 7-Zip and ensure `7z` is on PATH");
-  }
-
-  const mpv = findFile(extracted, "mpv.exe");
-  if (!mpv) throw new Error("[mpv] mpv.exe was not found in the archive");
-  mkdirSync(dirname(destination), { recursive: true });
-  copyFileSync(mpv, destination);
-  if (!isValidBinary(destination)) {
-    unlinkSync(destination);
-    throw new Error("[mpv] extracted mpv.exe failed validation (too small or not a native binary)");
-  }
-  console.log(`[mpv] wrote ${destination}`);
-} finally {
-  rmSync(temp, { recursive: true, force: true });
+  await ensurePinnedMpvFile({
+    kind: "mpv",
+    arch: mpvArch(),
+    dest: join(root, "src-tauri", "binaries", "mpv-x86_64-pc-windows-msvc.exe"),
+    licenseCopy: join(root, "src-tauri", "licenses", "mpv", "LICENSE.GPL"),
+    label: "[mpv]",
+  });
+} catch (err) {
+  console.error(err.message);
+  console.error("[mpv] the pinned official mpv release could not be verified; nothing was written");
+  process.exit(1);
 }

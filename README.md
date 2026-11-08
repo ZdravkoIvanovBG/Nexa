@@ -402,6 +402,8 @@ Nexa is distributed under the **MIT License**.
 
 See [`LICENSE`](./LICENSE) for the complete license text and retained copyright notices.
 
+The Windows installer also ships third-party programs under their own licenses: mpv 0.42.0 (`libmpv-2.dll`, LGPL-3.0-or-later; `mpv.exe`, GPL-3.0-or-later), FFmpeg, yt-dlp and the Noto Sans JP fonts. Their notices, license texts and source locations are installed in the `licenses` folder next to Nexa and kept in [`src-tauri/licenses/`](./src-tauri/licenses/THIRD-PARTY-NOTICES.txt); provenance and verification of the mpv builds are documented in [`docs/mpv-binaries.md`](./docs/mpv-binaries.md).
+
 ---
 
 <div align="center">
