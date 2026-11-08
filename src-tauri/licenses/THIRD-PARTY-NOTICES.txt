@@ -1,0 +1,98 @@
+Nexa for Windows - third-party software notices
+================================================
+
+Nexa itself is distributed under the MIT License (see LICENSE in the Nexa
+source repository: https://github.com/ZdravkoIvanovBG/Nexa). The Windows
+installer also contains the separately licensed programs and libraries listed
+below. They are unmodified official builds; Nexa does not change them. Each
+remains under its own license, and nothing in Nexa's license restricts your
+rights under those licenses.
+
+
+1. libmpv-2.dll  (embedded video player)
+-----------------------------------------
+Software: mpv 0.42.0, official release build "libmpv-v0.42.0-x86_64-w64-mingw32-lgpl"
+          from https://github.com/mpv-player/mpv/releases/tag/v0.42.0
+          SHA-256 of libmpv-2.dll:
+          94fb87247732c59915cd59808bc582e843a71c22214b7b6c1e5563aa8149cef4
+License:  GNU Lesser General Public License, version 3 or later (LGPL-3.0-or-later).
+          mpv is built with -Dgpl=false (LGPLv2.1+); the statically linked
+          FFmpeg is configured with --enable-version3, which makes the whole
+          library LGPLv3+. Texts: licenses/ffmpeg/COPYING.LGPLv3 together with
+          licenses/ffmpeg/COPYING.GPLv3, licenses/mpv/LICENSE.LGPL (LGPLv2.1,
+          as shipped by mpv) and licenses/mpv/Copyright.
+Linking:  Nexa loads libmpv-2.dll dynamically. You may replace it with your own
+          compatible build of libmpv (same file name, in the Nexa install
+          folder); Nexa uses only the public mpv client API.
+
+2. mpv.exe  (external player, seek-bar thumbnails, clip saving, recording)
+--------------------------------------------------------------------------
+Software: mpv 0.42.0, official release build "mpv-v0.42.0-x86_64-w64-mingw32-full"
+          from https://github.com/mpv-player/mpv/releases/tag/v0.42.0
+          SHA-256 of mpv.exe:
+          dd3e3adb8987bf88fc26d5f7d9cf9b5b096980f86b63698c3b1e2f34c654fe3b
+License:  GNU General Public License, version 3 or later (GPL-3.0-or-later).
+          FFmpeg is configured with --enable-gpl --enable-version3 and includes
+          GPL components (x264, x265, among others). Texts:
+          licenses/ffmpeg/COPYING.GPLv3, licenses/mpv/LICENSE.GPL (GPLv2, as
+          shipped by mpv) and licenses/mpv/Copyright.
+          mpv.exe is a separate program that Nexa starts as a child process.
+
+Components statically linked into the files above
+-------------------------------------------------
+FFmpeg (git commit baa68e68b34e2de912eb7e94342cebd2545f05ed), libplacebo
+7.387.0, libass, FreeType, HarfBuzz, FriBidi, LuaJIT 2.1, mujs, libarchive,
+libcurl, OpenSSL, zimg, Little CMS 2, uchardet, libbluray, shaderc,
+SPIRV-Cross, libsixel, subrandr, dav1d, libaom, SVT-AV1, libvpx, libwebp,
+libjxl, OpenJPEG, Opus, Vorbis, Theora, LAME, TwoLAME, libopenmpt, Game Music
+Emu, soxr, libxml2, zlib, xz/liblzma, Snappy, libssh, SRT, librist, ZeroMQ,
+libzvbi, ARIB (aribb24, libaribcaption), kvazaar, OpenH264, uavs3d, VVenC,
+oapv, LCEVC, OpenCORE AMR, Chromaprint, libvmaf, libvpl, AMF and nv-codec
+headers, OpenCL and Vulkan headers/loader shims, VapourSynth headers, LV2, SDL2
+and the mingw-w64 runtime. mpv.exe additionally contains x264, x265, xavs2,
+davs2, Xvid, Rubber Band, vid.stab, frei0r headers, AviSynth headers,
+libdvdnav and libdvdread. Each component keeps its own copyright and license
+(LGPL, GPL, BSD, MIT, ISC, zlib, Apache-2.0 and similar); these notices are
+reproduced in the corresponding source.
+
+Source code for items 1 and 2
+-----------------------------
+The complete corresponding source code is the source used by mpv's official
+build of release 0.42.0:
+  - mpv 0.42.0:  https://github.com/mpv-player/mpv/tree/v0.42.0
+                 (commit b0841e8c4d156b8403dc1876c4cbd9011eb583f3)
+  - build recipe: ci/build-mingw64-full.sh and .github/workflows/build.yml in
+                 that tree, built in CI run
+                 https://github.com/mpv-player/mpv/actions/runs/41936479105
+  - FFmpeg:      https://github.com/FFmpeg/FFmpeg/tree/baa68e68b34e2de912eb7e94342cebd2545f05ed
+  - other libraries: the ghcr.io/btbn/ffmpeg-builds/win64-lgpl and win64-gpl
+                 images built from https://github.com/BtbN/FFmpeg-Builds at
+                 commit c63bb308a1de656b425c132a8102f8fd5389afc5, whose scripts
+                 name every library's source repository and version.
+
+Written offer: for at least three years after Nexa last distributes this
+version, anyone may request a complete machine-readable copy of the
+corresponding source code of items 1 and 2, at no charge beyond the cost of
+physically performing the transfer, by opening an issue at
+https://github.com/ZdravkoIvanovBG/Nexa/issues.
+
+3. ffmpeg.exe and ffprobe.exe  (media probing and conversion helpers)
+--------------------------------------------------------------------
+Software: FFmpeg command-line tools, GPL "win64-gpl" build from
+          https://github.com/BtbN/FFmpeg-Builds (local developer builds may use
+          the https://www.gyan.dev/ffmpeg/builds/ "release essentials" build).
+          Run "ffmpeg -version" in the install folder for the exact version.
+License:  GNU General Public License, version 3 or later. Texts:
+          licenses/ffmpeg/COPYING.GPLv3, licenses/ffmpeg/LICENSE.txt.
+Source:   https://ffmpeg.org/download.html and the build pages above. The same
+          written offer as for items 1 and 2 applies.
+
+4. yt-dlp.exe
+-------------
+Software: yt-dlp, https://github.com/yt-dlp/yt-dlp
+License:  The Unlicense (public domain dedication); its bundled Python
+          runtime and libraries carry their own permissive licenses.
+
+5. Noto Sans JP fonts (fonts/)
+------------------------------
+License:  SIL Open Font License 1.1, see fonts/LICENSE-OFL-NotoSansJP.txt.
