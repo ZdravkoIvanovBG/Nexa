@@ -12,10 +12,10 @@
  *   `pnpm run setup`) before building.
  *
  * ----------------------------------------------------------------------------
- * SOURCES - PLEASE VERIFY THESE URLS. They are "latest/rolling" upstream builds,
- * so they are intentionally NOT checksum pinned (unlike fetch-libmpv/fetch-fonts,
- * which pin a fixed asset). They also could NOT be test-downloaded in the
- * environment that wrote this script. VERIFY EACH ONE AT RUNTIME.
+ * SOURCES. yt-dlp and the Linux/Windows FFmpeg builds are "latest/rolling"
+ * upstream builds and are NOT checksum pinned. The macOS FFmpeg builds ARE
+ * pinned (archive + binary SHA-256): a cached macOS binary that does not match
+ * is rejected and re-downloaded.
  * ----------------------------------------------------------------------------
  *
  * yt-dlp  (single self-contained binary, no archive)
@@ -28,9 +28,10 @@
  * ffmpeg + ffprobe  (extracted from an archive)
  *   linux  x86_64 : johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
  *   linux  aarch64: johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz
- *   macOS  (both) : evermeet.cx/ffmpeg/getrelease/ffmpeg/zip  and  .../ffprobe/zip
- *                   (evermeet ships x86_64; on Apple Silicon it runs under Rosetta.
- *                   For a native arm64 static build use osxexperts.net instead.)
+ *   macOS  arm64  : ffmpeg.martin-riedl.de FFmpeg 9.0.2 static release builds,
+ *   macOS  x86_64 : native per architecture, pinned by build id AND SHA-256
+ *                   (archive and extracted binary). The publisher's .sha256
+ *                   files matched these pins when they were set.
  *   windows x86_64: gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
  *                   (falls back to github.com/BtbN/FFmpeg-Builds latest win64-gpl zip
  *                   if gyan.dev fails after retries -- same asset release.yml ships)
@@ -52,6 +53,7 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   copyFileSync,
@@ -59,6 +61,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   unlinkSync,
@@ -81,11 +84,12 @@ function targetTriple() {
 
 const EXE = process.platform === "win32" ? ".exe" : "";
 const triple = targetTriple();
+const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 const mb = (p) => (statSync(p).size / 1048576).toFixed(0);
 
 const YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
 const JVS = "https://johnvansickle.com/ffmpeg/releases";
-const EVERMEET = "https://evermeet.cx/ffmpeg/getrelease";
+const RIEDL = "https://ffmpeg.martin-riedl.de/download/macos";
 const GYAN = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
 const BTBN =
   "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
@@ -111,8 +115,20 @@ const SOURCES = {
       url: `${JVS}/ffmpeg-release-arm64-static.tar.xz`,
       member: "ffmpeg",
     },
-    "x86_64-apple-darwin": { kind: "zip", url: `${EVERMEET}/ffmpeg/zip`, member: "ffmpeg" },
-    "aarch64-apple-darwin": { kind: "zip", url: `${EVERMEET}/ffmpeg/zip`, member: "ffmpeg" },
+    "x86_64-apple-darwin": {
+      kind: "zip",
+      url: `${RIEDL}/amd64/1789931006_9.0.2/ffmpeg.zip`,
+      sha256: "7c6b4125b191cbf773832dc51f424cf2b6bb7da43007d1e066f95909e47cacd4",
+      member: "ffmpeg",
+      memberSha256: "b25689cf2211c0582d317e849912769a1f1c93904fe102c485b5364a425633d1",
+    },
+    "aarch64-apple-darwin": {
+      kind: "zip",
+      url: `${RIEDL}/arm64/1789931890_9.0.2/ffmpeg.zip`,
+      sha256: "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924",
+      member: "ffmpeg",
+      memberSha256: "2e11c6f90993cdb79fff84d3f90044d28316b310e75b3e030cfc9a54f2c9d384",
+    },
     "x86_64-pc-windows-msvc": {
       kind: "zip",
       url: GYAN,
@@ -131,8 +147,20 @@ const SOURCES = {
       url: `${JVS}/ffmpeg-release-arm64-static.tar.xz`,
       member: "ffprobe",
     },
-    "x86_64-apple-darwin": { kind: "zip", url: `${EVERMEET}/ffprobe/zip`, member: "ffprobe" },
-    "aarch64-apple-darwin": { kind: "zip", url: `${EVERMEET}/ffprobe/zip`, member: "ffprobe" },
+    "x86_64-apple-darwin": {
+      kind: "zip",
+      url: `${RIEDL}/amd64/1789931006_9.0.2/ffprobe.zip`,
+      sha256: "2322438ed2f6319a691291b247d09c69dcaa3a982460d1f269a7e1af335cfdfd",
+      member: "ffprobe",
+      memberSha256: "b5df9964b0c2048318fafedcd4e3bbafbc561033cee77de8da1840685d8a9d0d",
+    },
+    "aarch64-apple-darwin": {
+      kind: "zip",
+      url: `${RIEDL}/arm64/1789931890_9.0.2/ffprobe.zip`,
+      sha256: "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6",
+      member: "ffprobe",
+      memberSha256: "2738aa46a7f9acbc8ab09a6715554c90f7de603171ac403726765685df6a0059",
+    },
     "x86_64-pc-windows-msvc": {
       kind: "zip",
       url: GYAN,
@@ -236,10 +264,24 @@ async function acquireArchiveMember(name, spec, dest) {
     url = spec.fallbackUrl;
     buf = await download(url);
   }
+  if (spec.sha256 && !override) {
+    const got = sha256(buf);
+    if (got !== spec.sha256)
+      throw new Error(`archive checksum mismatch (expected ${spec.sha256}, got ${got})`);
+  }
   const { outDir } = extractArchive(url, buf, spec.kind);
   const found = findMember(outDir, spec.member);
   if (!found) throw new Error(`could not find ${spec.member} inside archive`);
   copyFileSync(found, dest);
+  if (spec.memberSha256 && !override) {
+    const got = sha256(readFileSync(dest));
+    if (got !== spec.memberSha256) {
+      unlinkSync(dest);
+      throw new Error(
+        `${spec.member} checksum mismatch (expected ${spec.memberSha256}, got ${got})`,
+      );
+    }
+  }
 }
 
 function hint(name) {
@@ -251,7 +293,7 @@ function hint(name) {
     lines.push("[binaries]      source: github.com/yt-dlp/yt-dlp/releases/latest");
   else
     lines.push(
-      "[binaries]      static builds: johnvansickle.com (linux), evermeet.cx / osxexperts.net (macOS), gyan.dev or BtbN (windows)",
+      "[binaries]      static builds: johnvansickle.com (linux), ffmpeg.martin-riedl.de (macOS), gyan.dev or BtbN (windows)",
     );
   return lines.join("\n");
 }
@@ -261,6 +303,13 @@ if (!existsSync(binDir)) mkdirSync(binDir, { recursive: true });
 let ok = true;
 for (const name of ["yt-dlp", "ffmpeg", "ffprobe"]) {
   const dest = join(binDir, `${name}-${triple}${EXE}`);
+  const pinned = SOURCES[name][triple]?.memberSha256;
+  if (existsSync(dest) && pinned && !OVERRIDE[name] && sha256(readFileSync(dest)) !== pinned) {
+    console.warn(
+      `[binaries] ${name}-${triple}${EXE} does not match its pinned SHA-256; replacing it`,
+    );
+    unlinkSync(dest);
+  }
   if (existsSync(dest)) {
     if (isValidBinary(dest)) {
       console.log(`[binaries] ${name}-${triple}${EXE} already present (${mb(dest)} MB)`);

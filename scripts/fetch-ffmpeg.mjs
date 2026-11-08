@@ -28,7 +28,7 @@ for (const name of ["ffmpeg", "ffprobe"]) {
     console.error(`[ffmpeg] missing ${src}`);
     console.error(`[ffmpeg] Drop a STATIC ${name}${ext} into src-tauri/binaries/ then re-run.`);
     console.error(`[ffmpeg]   Windows: github.com/BtbN/FFmpeg-Builds (gpl, static).`);
-    console.error(`[ffmpeg]   macOS arm64: osxexperts.net (static, NOT brew/dynamic).`);
+    console.error(`[ffmpeg]   macOS: ffmpeg.martin-riedl.de (static, NOT brew/dynamic).`);
     ok = false;
     continue;
   }
