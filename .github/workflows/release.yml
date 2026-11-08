@@ -84,21 +84,12 @@ jobs:
           HARBOR_MPV_ARCH: x64
         run: pnpm run setup:mpv
 
-      - name: Fetch external binaries
-        shell: bash
-        run: |
-          mkdir -p src-tauri/binaries
-          cd src-tauri/binaries
-          TARGET="x86_64-pc-windows-msvc"
-
-          echo "Downloading yt-dlp..."
-          curl --fail --location --retry 3 --retry-all-errors "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -o "yt-dlp-${TARGET}.exe"
-
-          echo "Fetching ffmpeg and ffprobe..."
-          curl --fail --location --retry 3 --retry-all-errors "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -o ffmpeg.zip
-          unzip -j ffmpeg.zip "*/bin/ffmpeg.exe" "*/bin/ffprobe.exe"
-          mv ffmpeg.exe "ffmpeg-${TARGET}.exe"
-          mv ffprobe.exe "ffprobe-${TARGET}.exe"
+      # Pinned yt-dlp and BtbN FFmpeg builds, verified by SHA-256
+      # (scripts/lib/sidecar-pins.mjs). Their Corresponding Source is the
+      # third-party source bundle attached to the release
+      # (docs/third-party-source.md).
+      - name: Fetch external binaries (pinned)
+        run: node scripts/fetch-binaries.mjs
 
       - name: harbor-core check
         working-directory: harbor-core
@@ -147,7 +138,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           rm -f latest.json
-          gh release download "$GITHUB_REF_NAME" -p latest.json --repo "$GITHUB_REPOSITORY" --clobber
+          # The release is a draft, and GitHub's "release by tag" lookup only
+          # returns published releases, so find the draft in the release list.
+          ASSET_URL=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .assets[] | select(.name == \"latest.json\") | .url | sub(\"^https://api.github.com/\"; \"\")" | head -n 1)
+          if [ -z "$ASSET_URL" ]; then
+            echo "::error::latest.json not found on the $GITHUB_REF_NAME release"
+            exit 1
+          fi
+          DRAFT=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .draft" | head -n 1)
+          if [ "$DRAFT" != "true" ]; then
+            echo "::error::release $GITHUB_REF_NAME is not a draft; it must stay unpublished until verified"
+            exit 1
+          fi
+          gh api -H "Accept: application/octet-stream" "$ASSET_URL" > latest.json
 
           TAG_VERSION="${GITHUB_REF_NAME#v}" node -e "
             const fs = require('fs');

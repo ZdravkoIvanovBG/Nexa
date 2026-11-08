@@ -12,18 +12,19 @@
  *   `pnpm run setup`) before building.
  *
  * ----------------------------------------------------------------------------
- * SOURCES. yt-dlp and the Linux/Windows FFmpeg builds are "latest/rolling"
- * upstream builds and are NOT checksum pinned. The macOS FFmpeg builds ARE
- * pinned (archive + binary SHA-256): a cached macOS binary that does not match
- * is rejected and re-downloaded.
+ * SOURCES. yt-dlp (all platforms) and the macOS and Windows FFmpeg builds are
+ * pinned to exact versions by SHA-256 (archive and extracted binary): a cached
+ * binary that does not match is rejected and re-downloaded. Only the Linux
+ * FFmpeg builds (CI artifacts, not released) are still "latest/rolling".
+ * Pins: scripts/lib/sidecar-pins.mjs and the macOS entries below.
  * ----------------------------------------------------------------------------
  *
- * yt-dlp  (single self-contained binary, no archive)
- *   linux  x86_64 : github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
- *   linux  aarch64: github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64
- *   macOS  (both) : github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
+ * yt-dlp  (single self-contained binary, no archive), release 2026.10.26
+ *   linux  x86_64 : github.com/yt-dlp/yt-dlp/releases/download/<version>/yt-dlp_linux
+ *   linux  aarch64: github.com/yt-dlp/yt-dlp/releases/download/<version>/yt-dlp_linux_aarch64
+ *   macOS  (both) : github.com/yt-dlp/yt-dlp/releases/download/<version>/yt-dlp_macos
  *                   (universal2; needs macOS 12+. For macOS 11 use yt-dlp_macos_legacy.)
- *   windows x86_64: github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe
+ *   windows x86_64: github.com/yt-dlp/yt-dlp/releases/download/<version>/yt-dlp.exe
  *
  * ffmpeg + ffprobe  (extracted from an archive)
  *   linux  x86_64 : johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
@@ -32,9 +33,11 @@
  *   macOS  x86_64 : native per architecture, pinned by build id AND SHA-256
  *                   (archive and extracted binary). The publisher's .sha256
  *                   files matched these pins when they were set.
- *   windows x86_64: gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
- *                   (falls back to github.com/BtbN/FFmpeg-Builds latest win64-gpl zip
- *                   if gyan.dev fails after retries -- same asset release.yml ships)
+ *   windows x86_64: github.com/BtbN/FFmpeg-Builds month-end autobuild
+ *                   (autobuild-2026-10-31-12-59, master N-128227-g4811625b5f,
+ *                   win64-gpl static) -- the same binaries release.yml ships;
+ *                   their Corresponding Source is in the third-party source
+ *                   bundle (docs/third-party-source.md)
  *
  * Extraction tools (documented external dependency):
  *   .tar.xz -> `tar -xJf`  (linux; GNU tar + xz-utils)
@@ -71,6 +74,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { downloadWithRetry, isValidBinary } from "./lib/download.mjs";
+import { WIN64_FFMPEG, YTDLP_BASE, YTDLP_SHA256 } from "./lib/sidecar-pins.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const binDir = join(root, "src-tauri", "binaries");
@@ -87,22 +91,24 @@ const triple = targetTriple();
 const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 const mb = (p) => (statSync(p).size / 1048576).toFixed(0);
 
-const YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
 const JVS = "https://johnvansickle.com/ffmpeg/releases";
 const RIEDL = "https://ffmpeg.martin-riedl.de/download/macos";
-const GYAN = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
-const BTBN =
-  "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+const ytdlp = (asset) => ({
+  kind: "raw",
+  url: `${YTDLP_BASE}/${asset}`,
+  memberSha256: YTDLP_SHA256[asset],
+});
+
 const SOURCES = {
   "yt-dlp": {
-    "x86_64-unknown-linux-gnu": { kind: "raw", url: `${YTDLP}/yt-dlp_linux` },
-    "aarch64-unknown-linux-gnu": { kind: "raw", url: `${YTDLP}/yt-dlp_linux_aarch64` },
-    "x86_64-apple-darwin": { kind: "raw", url: `${YTDLP}/yt-dlp_macos` },
-    "aarch64-apple-darwin": { kind: "raw", url: `${YTDLP}/yt-dlp_macos` },
-    "x86_64-pc-windows-msvc": { kind: "raw", url: `${YTDLP}/yt-dlp.exe` },
+    "x86_64-unknown-linux-gnu": ytdlp("yt-dlp_linux"),
+    "aarch64-unknown-linux-gnu": ytdlp("yt-dlp_linux_aarch64"),
+    "x86_64-apple-darwin": ytdlp("yt-dlp_macos"),
+    "aarch64-apple-darwin": ytdlp("yt-dlp_macos"),
+    "x86_64-pc-windows-msvc": ytdlp("yt-dlp.exe"),
   },
   ffmpeg: {
     "x86_64-unknown-linux-gnu": {
@@ -131,9 +137,10 @@ const SOURCES = {
     },
     "x86_64-pc-windows-msvc": {
       kind: "zip",
-      url: GYAN,
-      fallbackUrl: BTBN,
+      url: WIN64_FFMPEG.url,
+      sha256: WIN64_FFMPEG.sha256,
       member: "ffmpeg.exe",
+      memberSha256: WIN64_FFMPEG.ffmpegSha256,
     },
   },
   ffprobe: {
@@ -163,9 +170,10 @@ const SOURCES = {
     },
     "x86_64-pc-windows-msvc": {
       kind: "zip",
-      url: GYAN,
-      fallbackUrl: BTBN,
+      url: WIN64_FFMPEG.url,
+      sha256: WIN64_FFMPEG.sha256,
       member: "ffprobe.exe",
+      memberSha256: WIN64_FFMPEG.ffprobeSha256,
     },
   },
 };
@@ -183,7 +191,7 @@ const ENVVAR = {
 };
 
 // Memoized by resolved URL (not by name), so ffmpeg and ffprobe -- which share
-// the same GYAN/BtbN archive on Windows -- only trigger one actual download
+// one archive on Windows and Linux -- only trigger one actual download
 // and one extraction, even though each is fetched via a separate loop iteration.
 // A failed download is cached too (as a rejected promise), so a dead primary is
 // never retried a second time just because two sidecars reference it.
@@ -289,11 +297,10 @@ function hint(name) {
     `[binaries] fix: set ${ENVVAR[name]} to a mirror URL, or drop a working`,
     `[binaries]      ${name}-${triple}${EXE} into src-tauri/binaries/ by hand.`,
   ];
-  if (name === "yt-dlp")
-    lines.push("[binaries]      source: github.com/yt-dlp/yt-dlp/releases/latest");
+  if (name === "yt-dlp") lines.push(`[binaries]      source: ${YTDLP_BASE}`);
   else
     lines.push(
-      "[binaries]      static builds: johnvansickle.com (linux), ffmpeg.martin-riedl.de (macOS), gyan.dev or BtbN (windows)",
+      "[binaries]      static builds: johnvansickle.com (linux), ffmpeg.martin-riedl.de (macOS), BtbN autobuild (windows)",
     );
   return lines.join("\n");
 }
@@ -328,6 +335,11 @@ for (const name of ["yt-dlp", "ffmpeg", "ffprobe"]) {
   try {
     if (spec.kind === "raw") {
       const buf = await download(OVERRIDE[name] ?? spec.url);
+      if (spec.memberSha256 && !OVERRIDE[name]) {
+        const got = sha256(buf);
+        if (got !== spec.memberSha256)
+          throw new Error(`checksum mismatch (expected ${spec.memberSha256}, got ${got})`);
+      }
       writeFileSync(dest, buf);
     } else {
       await acquireArchiveMember(name, spec, dest);

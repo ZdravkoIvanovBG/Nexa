@@ -3,9 +3,10 @@
  *
  * After `tauri build`, checks the staged Windows bundle directory (the files
  * NSIS packs, e.g. src-tauri/target/x86_64-pc-windows-msvc/release) for the
- * exact pinned mpv files, the license texts, and that harbor.exe imports only
- * libmpv entry points the shipped libmpv-2.dll exports. Exits non-zero on any
- * mismatch. Read-only.
+ * exact pinned mpv files, the pinned ffmpeg/ffprobe/yt-dlp sidecars (x64), the
+ * license texts and notices, and that harbor.exe imports only libmpv entry
+ * points the shipped libmpv-2.dll exports. Exits non-zero on any mismatch.
+ * Read-only.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -13,6 +14,7 @@ import { join } from "node:path";
 import { sha256 } from "./lib/mpv-fetch.mjs";
 import { MPV_LICENSE_MEMBERS, MPV_PINS, MPV_VERSION } from "./lib/mpv-pins.mjs";
 import { inspectPe, nonSystemImports } from "./lib/pe.mjs";
+import { WIN64_FFMPEG, YTDLP_SHA256 } from "./lib/sidecar-pins.mjs";
 
 const dir = process.argv[2];
 const arch = process.argv[3] ?? "x64";
@@ -39,11 +41,20 @@ const dll = check("libmpv-2.dll", MPV_PINS[arch].libmpv.memberSha256);
 check("mpv.exe", MPV_PINS[arch].mpv.memberSha256);
 check("licenses/mpv/LICENSE.LGPL", MPV_LICENSE_MEMBERS.libmpv.sha256);
 check("licenses/mpv/LICENSE.GPL", MPV_LICENSE_MEMBERS.mpv.sha256);
+if (arch === "x64") {
+  // Sidecars are pinned for the released x64 build only.
+  check("ffmpeg.exe", WIN64_FFMPEG.ffmpegSha256);
+  check("ffprobe.exe", WIN64_FFMPEG.ffprobeSha256);
+  check("yt-dlp.exe", YTDLP_SHA256["yt-dlp.exe"]);
+}
 for (const f of [
   "licenses/THIRD-PARTY-NOTICES.txt",
+  "licenses/COMPONENT-LICENSES.txt",
   "licenses/ffmpeg/COPYING.GPLv3",
   "licenses/ffmpeg/COPYING.LGPLv3",
   "licenses/mpv/Copyright",
+  "licenses/yt-dlp/LICENSE",
+  "licenses/yt-dlp/THIRD_PARTY_LICENSES.txt",
 ]) {
   if (!existsSync(join(dir, f))) problems.push(`${f} is missing`);
 }
@@ -69,4 +80,6 @@ if (problems.length) {
   for (const p of problems) console.error(`FAIL ${p}`);
   process.exit(1);
 }
-console.log(`bundle in ${dir} carries the pinned mpv ${MPV_VERSION} (${arch}) binaries`);
+console.log(
+  `bundle in ${dir} carries the pinned mpv ${MPV_VERSION} (${arch}) binaries${arch === "x64" ? ", sidecars" : ""} and notices`,
+);
