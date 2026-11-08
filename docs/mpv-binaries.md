@@ -71,35 +71,24 @@ runs `mpv.exe` as a separate process, so Nexa's own license is unaffected.
 Shipped with the installer (from `src-tauri/licenses/`, bundled by
 `tauri.windows.conf.json` into `licenses\` in the install folder):
 
-- `THIRD-PARTY-NOTICES.txt` — components, licenses, source locations, written offer;
+- `THIRD-PARTY-NOTICES.txt` — components, licenses, where to download the source;
+- `COMPONENT-LICENSES.txt` — the license files of every component built into
+  the mpv and FFmpeg binaries (generated with the source bundle);
 - `mpv/LICENSE.LGPL`, `mpv/LICENSE.GPL` — the archives' own license files;
 - `mpv/Copyright` — mpv's licensing notes at `v0.42.0`;
 - `ffmpeg/COPYING.{GPLv2,GPLv3,LGPLv2.1,LGPLv3}`, `ffmpeg/LICENSE.txt` (FFmpeg's `LICENSE.md`) — from
   FFmpeg commit `baa68e68`. The GPLv3/LGPLv3 texts are needed because the
-  official archives only include the v2/v2.1 texts.
+  official archives only include the v2/v2.1 texts;
+- `yt-dlp/LICENSE`, `yt-dlp/THIRD_PARTY_LICENSES.txt` — yt-dlp's license and
+  the third-party license file embedded in the shipped `yt-dlp.exe`.
 
-### Corresponding source — open item
+### Corresponding source
 
-Distributing these binaries makes Nexa responsible for offering their complete
-corresponding source (GPLv3 §6 / LGPLv3 §4). The notices carry a three-year
-written offer. Exactly identifiable today:
-
-- mpv (tag `v0.42.0`), FFmpeg (`baa68e68`), the build scripts, and every
-  library the FFmpeg-Builds scripts at `c63bb308` pin to a fixed commit or
-  release.
-
-Not exactly identifiable from public, unauthenticated data:
-
-- libraries that `ci/build-mingw64-full.sh` clones at their branch HEAD
-  (LuaJIT `v2.1`, libsixel, libarchive, and the others in that script), and the
-  FFmpeg-Builds scripts that also follow a branch HEAD. Their commits can be
-  reconstructed from the build timestamps and confirmed from the CI job logs
-  (which need a signed-in GitHub account), but this has not been done yet.
-
-Until that source set is assembled (or the mpv build is reproduced from fully
-pinned sources), the written offer cannot be fulfilled exactly for those
-components. This must be resolved, or explicitly accepted, before public
-release.
+Nexa provides the complete Corresponding Source of `libmpv-2.dll`, `mpv.exe`,
+`ffmpeg.exe` and `ffprobe.exe` itself, as a release asset next to the installer
+(GPLv3 §6(d)). Every revision in it was identified from build records, without
+guessing. How it was established, how it is built, and how it must be kept
+available: [third-party-source.md](third-party-source.md).
 
 ## Updating mpv
 
@@ -110,3 +99,5 @@ release.
 3. Run `node scripts/fetch-libmpv.mjs && node scripts/fetch-mpv.mjs` from a clean
    checkout, build, and repeat the manual playback acceptance.
 4. Update this document, `src-tauri/licenses/`, and the provenance section.
+5. Identify the new build's sources and rebuild the source bundle before
+   releasing (see [third-party-source.md](third-party-source.md), "Updating").

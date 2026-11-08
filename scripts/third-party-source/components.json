@@ -1,0 +1,1616 @@
+{
+  "schema": 1,
+  "components": [
+    {
+      "id": "mpv",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": ["mpv tag v0.42.0"],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/mpv-player/mpv.git",
+        "commit": "b0841e8c4d156b8403dc1876c4cbd9011eb583f3"
+      }
+    },
+    {
+      "id": "ffmpeg-for-mpv",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of FFmpeg master; build prints 'FFmpeg version: git-2026-11-04-baa68e6'; master head 23:44:56Z-01:49:39Z"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFmpeg/FFmpeg.git",
+        "commit": "baa68e68b34e2de912eb7e94342cebd2545f05ed"
+      }
+    },
+    {
+      "id": "luajit",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of branch v2.1; build prints 'LuaJIT 2.1.1793383622' (= commit time of ea9eb7ed)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/LuaJIT/LuaJIT.git",
+        "commit": "ea9eb7edb5eac4a9d175d74523db34fac0fa5180"
+      }
+    },
+    {
+      "id": "libsixel",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of master; master head 2026-10-13T07:15:49Z-2026-11-05T11:18:34Z"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/saitoha/libsixel.git",
+        "commit": "f0b705a365563c56f977afaca73997ca68669c62"
+      }
+    },
+    {
+      "id": "libarchive",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of master; master head 2026-11-03T07:34:03Z-2026-11-05T15:48:49Z"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libarchive/libarchive.git",
+        "commit": "2774b74cb7269c9b5fa89e7d876b11d5a729c421"
+      }
+    },
+    {
+      "id": "uchardet",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of tag v0.0.8; log 'switching to ae6302a0'"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.freedesktop.org/uchardet/uchardet.git",
+        "commit": "ae6302a016088ad07177f86d417b20010053632b"
+      }
+    },
+    {
+      "id": "subrandr",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): clone of master; master head 2026-11-03T15:24:27Z until after the build; crates per Cargo.lock (versions logged)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/afishhh/subrandr.git",
+        "commit": "a41311bb5e382abcc47ef141e2ea1098d22a8d58"
+      },
+      "extras": ["cargo-vendor"]
+    },
+    {
+      "id": "mujs",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): 'meson wrap install mujs' (1.3.8 revision 1)"
+      ],
+      "source": {
+        "type": "url",
+        "url": "https://github.com/ArtifexSoftware/mujs/archive/refs/tags/1.3.8.tar.gz",
+        "file": "mujs-1.3.8.tar.gz"
+      }
+    },
+    {
+      "id": "mujs-wrap-patch",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): meson WrapDB patch for mujs 1.3.8-1"
+      ],
+      "source": {
+        "type": "url",
+        "url": "https://wrapdb.mesonbuild.com/v2/mujs_1.3.8-1/get_patch",
+        "file": "mujs_1.3.8-1_patch.zip"
+      }
+    },
+    {
+      "id": "cppwinrt",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): header generator (build tool) cppwinrt 2.0.250303.1"
+      ],
+      "source": {
+        "type": "url",
+        "url": "https://github.com/microsoft/cppwinrt/archive/2.0.250303.1.tar.gz",
+        "file": "cppwinrt-2.0.250303.1.tar.gz"
+      }
+    },
+    {
+      "id": "winmd",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): fetched by the cppwinrt CMake build ('HEAD is now at 0f1eae3')"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/microsoft/winmd.git",
+        "commit": "0f1eae3bfa63fa2ba3c2912cbfe72a01db94cc5a"
+      }
+    },
+    {
+      "id": "windows-rs-metadata",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "mpv CI run 41936479105, jobs 126946096816 (lgpl) / 126946096969 (gpl): tag 73, sparse crates/libs/bindgen/default (log 'switching to 65c0c07b')"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/microsoft/windows-rs.git",
+        "commit": "65c0c07b5b88ac031cf56acddd9f892efee1634a",
+        "paths": ["crates/libs/bindgen/default"],
+        "filter": "blob:none"
+      }
+    },
+    {
+      "id": "ffmpeg-builds-c63bb308",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": [
+        "BtbN run 41885603216 pushed win64-lgpl@sha256:d2290020... and win64-gpl@sha256:146dd9a9... (build scripts, patches, toolchain config)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/BtbN/FFmpeg-Builds.git",
+        "commit": "c63bb308a1de656b425c132a8102f8fd5389afc5"
+      }
+    },
+    {
+      "id": "ffmpeg-for-ffmpeg-exe",
+      "usedBy": ["ffmpeg.exe", "ffprobe.exe"],
+      "origins": ["BtbN autobuild-2026-10-31-12-59, ffmpeg-N-128227-g4811625b5f-win64-gpl.zip"],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFmpeg/FFmpeg.git",
+        "commit": "4811625b5f4e5aed528aed9225d0ca868a8e6e96"
+      }
+    },
+    {
+      "id": "ffmpeg-builds-5031c6f1",
+      "usedBy": ["ffmpeg.exe", "ffprobe.exe"],
+      "origins": ["BtbN scheduled run 41199749965 (published autobuild-2026-10-31-12-59)"],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/BtbN/FFmpeg-Builds.git",
+        "commit": "5031c6f1082414e53688d39e521849905071070d"
+      }
+    },
+    {
+      "id": "mingw-std-threads",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/10-mingw-std-threads.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/10-mingw-std-threads.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/meganz/mingw-std-threads.git",
+        "commit": "c931bac289dd431f1dd30fc4a5d1a7be36668073"
+      }
+    },
+    {
+      "id": "mingw",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/10-mingw.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/10-mingw.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://git.code.sf.net/p/mingw-w64/mingw-w64.git",
+        "commit": "7213d719fe344553aa24fef7cc7dedee4940d594"
+      }
+    },
+    {
+      "id": "libiconv",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/20-libiconv.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/20-libiconv.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://git.savannah.gnu.org/git/libiconv.git",
+        "commit": "b5a1735e02bf43ee6e490fcf9395e8abc8d32432",
+        "mirrors": ["git://git.git.savannah.gnu.org/libiconv.git"]
+      }
+    },
+    {
+      "id": "libiconv-2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/20-libiconv.sh (SCRIPT_REPO2)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/20-libiconv.sh (SCRIPT_REPO2)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://git.savannah.gnu.org/git/gnulib.git",
+        "commit": "5df606bbd0ef54a8f150c3303c870b9381a661f0",
+        "mirrors": ["https://github.com/coreutils/gnulib.git"]
+      }
+    },
+    {
+      "id": "zlib",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/20-zlib.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/20-zlib.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/madler/zlib.git",
+        "commit": "9d314c341b2ce16e01ae44e27ec3dd2f32aa58fd"
+      }
+    },
+    {
+      "id": "fftw3",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-fftw3.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-fftw3.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFTW/fftw3.git",
+        "commit": "a7b679c528330cf6258253d6dcf5ec90552e6c93"
+      }
+    },
+    {
+      "id": "fribidi",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-fribidi.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-fribidi.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/fribidi/fribidi.git",
+        "commit": "d2f3e1f4946e7cef9789e1c3ebdb4a60d4314c7f"
+      }
+    },
+    {
+      "id": "gmp",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-gmp.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-gmp.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/BtbN/gmplib.git",
+        "commit": "5c3e9a9d52b697cab7b7d26a53972a3bf922d59a"
+      }
+    },
+    {
+      "id": "libogg",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-libogg.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-libogg.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xiph/ogg.git",
+        "commit": "06a5e0262cdc28aa4ae6797627a783b5010440f0"
+      }
+    },
+    {
+      "id": "libpng",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-libpng.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-libpng.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/glennrp/libpng.git",
+        "commit": "0b0876829d77db0827a8cc2c4326f63be22b2aa1"
+      }
+    },
+    {
+      "id": "libxml2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-libxml2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-libxml2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/GNOME/libxml2.git",
+        "commit": "c79c9612fcc77b06b0d16f35fd363d938bdbbf5e"
+      }
+    },
+    {
+      "id": "openssl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-openssl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-openssl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/openssl/openssl.git",
+        "tag": "openssl-3.6.5",
+        "submodules": true
+      }
+    },
+    {
+      "id": "xz",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/25-xz.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/25-xz.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/tukaani-project/xz.git",
+        "commit": "299eb5c3f597f107fd6019bf156885ac8bfaa5ea"
+      }
+    },
+    {
+      "id": "brotli",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-brotli.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-brotli.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/google/brotli.git",
+        "commit": "2e2bcf17ae7115d84ef6588d9a3651cc987d73e7"
+      }
+    },
+    {
+      "id": "fonts-freetype",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-fonts/25-freetype.sh",
+        "FFmpeg-Builds c63bb308 scripts.d/45-fonts/50-freetype.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-fonts/25-freetype.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-fonts/50-freetype.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.freedesktop.org/freetype/freetype.git",
+        "commit": "4ba7c3d82ab8b3cc80b869337d2c2b1913c5e415"
+      }
+    },
+    {
+      "id": "fonts-fontconfig",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-fonts/35-fontconfig.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-fonts/35-fontconfig.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.freedesktop.org/fontconfig/fontconfig.git",
+        "commit": "b25ffeabd15b76f86c0c6736f6df2f1b89858010"
+      }
+    },
+    {
+      "id": "fonts-harfbuzz",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-fonts/45-harfbuzz.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-fonts/45-harfbuzz.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/harfbuzz/harfbuzz.git",
+        "commit": "75d8ac5d2313842550174eaab0cbaf653c8f2f77"
+      }
+    },
+    {
+      "id": "lcms2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-lcms2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-lcms2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/mm2/Little-CMS.git",
+        "commit": "1112313b3784ced9297d8c0ee076aba17499827a"
+      }
+    },
+    {
+      "id": "libffi",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-libffi.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-libffi.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libffi/libffi.git",
+        "commit": "bc553867367246d140cd156f060bd0409f57f157"
+      }
+    },
+    {
+      "id": "libsamplerate",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-libsamplerate.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-libsamplerate.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libsndfile/libsamplerate.git",
+        "commit": "0844c208f683527c08ea8a80acc13b398aa9c8bf"
+      }
+    },
+    {
+      "id": "libudfread",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-libudfread.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-libudfread.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libudfread.git",
+        "commit": "b0bc6957e7e07d5f35391f210596d9eb71cffdd9"
+      }
+    },
+    {
+      "id": "libunibreak",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-libunibreak.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-libunibreak.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/adah1972/libunibreak.git",
+        "commit": "f8172fe771ef620112247cadfb876aecaa4f769e"
+      }
+    },
+    {
+      "id": "libvorbis",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-libvorbis.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-libvorbis.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xiph/vorbis.git",
+        "commit": "1b75110b5a2754ba1931d82dd83cb822b266a21d"
+      }
+    },
+    {
+      "id": "opencl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-opencl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-opencl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/OpenCL-Headers.git",
+        "commit": "82f60316cc142e7b21dc1d8983b26de18858fbd9"
+      }
+    },
+    {
+      "id": "opencl-2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-opencl.sh (SCRIPT_REPO2)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-opencl.sh (SCRIPT_REPO2)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/OpenCL-ICD-Loader.git",
+        "commit": "5192c84f8059e5f703e5452929b613f9487f6e4c"
+      }
+    },
+    {
+      "id": "pcre2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-pcre2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-pcre2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/PCRE2Project/pcre2.git",
+        "commit": "be940c4eaec0bc4117e06e8f14e56bf82089be6b"
+      }
+    },
+    {
+      "id": "pixman",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-pixman.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-pixman.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.freedesktop.org/pixman/pixman.git",
+        "commit": "e7fd44140fe6edef507d54bdbc25c09543ffc936"
+      }
+    },
+    {
+      "id": "vmaf",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-vmaf.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-vmaf.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Netflix/vmaf.git",
+        "commit": "f712fa7564fe49b12991d83920b83573af2ae063"
+      }
+    },
+    {
+      "id": "xxhash",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-xxhash.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-xxhash.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Cyan4973/xxHash.git",
+        "commit": "61fd0fece2ebafc5bd9b573050e0c046c4e48d28"
+      }
+    },
+    {
+      "id": "zstd",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/45-zstd.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/45-zstd.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/facebook/zstd.git",
+        "commit": "49cf51799ea051457f57243527aa2058f999f005"
+      }
+    },
+    {
+      "id": "vulkan-vulkan-headers",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/40-vulkan-headers.sh",
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/45-vulkan-loader.sh (SCRIPT_REPO2)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/40-vulkan-headers.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/45-vulkan-loader.sh (SCRIPT_REPO2)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/Vulkan-Headers.git",
+        "tag": "v1.4.366"
+      }
+    },
+    {
+      "id": "vulkan-vulkan-loader",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/45-vulkan-loader.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/45-vulkan-loader.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/BtbN/Vulkan-Shim-Loader.git",
+        "commit": "65b3936528cd92eb4ea3de485d03f858a3850484"
+      }
+    },
+    {
+      "id": "vulkan-shaderc",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/50-shaderc.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/50-shaderc.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/google/shaderc.git",
+        "commit": "2737994b552137a85545f956e303d620e6ff232c"
+      },
+      "extras": ["shaderc-deps"]
+    },
+    {
+      "id": "vulkan-spirv-cross",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/55-spirv-cross.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/55-spirv-cross.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/SPIRV-Cross.git",
+        "commit": "300681bbcb8365a8d1eacdacdbdd0249bbf1d6b1"
+      }
+    },
+    {
+      "id": "vulkan-spirv-headers",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/47-vulkan/60-spirv-headers.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/47-vulkan/60-spirv-headers.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/KhronosGroup/SPIRV-Headers.git",
+        "commit": "fbf86836a9b1966586faf7be7bb8a6440e156d62"
+      }
+    },
+    {
+      "id": "amf",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-amf.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-amf.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git",
+        "commit": "57ee0cfb0e1a08d9041f77435653794c1b012be0",
+        "exclude": ["Thirdparty"]
+      }
+    },
+    {
+      "id": "aom",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-aom.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-aom.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://aomedia.googlesource.com/aom",
+        "commit": "9ace39e02a34992b83fc7f7f2bfbbd2e79348c74"
+      }
+    },
+    {
+      "id": "avisynth",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-avisynth.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-avisynth.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/AviSynth/AviSynthPlus.git",
+        "commit": "523370a39933e2f9c208a5d74c1d35d43d177a76"
+      },
+      "licensePaths": ["distrib/gpl.txt", "distrib/docs/english/source/avisynthdoc/license.rst"]
+    },
+    {
+      "id": "chromaprint",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-chromaprint.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-chromaprint.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/acoustid/chromaprint.git",
+        "commit": "3b38c100022bdfb49be7797c4828a476f1621d55"
+      }
+    },
+    {
+      "id": "dav1d",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-dav1d.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-dav1d.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/dav1d.git",
+        "commit": "b8b2d726b4b78a2fb174cb45baff441b5969672c"
+      }
+    },
+    {
+      "id": "davs2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-davs2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-davs2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/pkuvcl/davs2.git",
+        "commit": "b41cf117452e2d73d827f02d3e30aa20f1c721ac"
+      }
+    },
+    {
+      "id": "dvd-libdvdcss",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-dvd/30-libdvdcss.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-dvd/30-libdvdcss.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libdvdcss.git",
+        "commit": "811ce97a1d4d1c9d936f4b2707f533a9ef768251"
+      }
+    },
+    {
+      "id": "dvd-libdvdread",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-dvd/40-libdvdread.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-dvd/40-libdvdread.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libdvdread.git",
+        "commit": "0f30df53125b564ef45903714403ce0a1e6c5e9e"
+      }
+    },
+    {
+      "id": "dvd-libdvdnav",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-dvd/50-libdvdnav.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-dvd/50-libdvdnav.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libdvdnav.git",
+        "commit": "8147ccd35e5aae4afdd21171cf7b6b4d8f179d28"
+      }
+    },
+    {
+      "id": "ffnvcodec",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-ffnvcodec.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-ffnvcodec.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFmpeg/nv-codec-headers.git",
+        "commit": "f2053071ea93137255b6dcf42e9b4c9e0965a44e"
+      },
+      "licenseHeaderOf": "include/ffnvcodec/nvEncodeAPI.h"
+    },
+    {
+      "id": "ffnvcodec-2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-ffnvcodec.sh (SCRIPT_REPO2)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-ffnvcodec.sh (SCRIPT_REPO2)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFmpeg/nv-codec-headers.git",
+        "commit": "ced4f8eba3ba5dd431932cba17928f0dffdaeb2b"
+      },
+      "licenseHeaderOf": "include/ffnvcodec/nvEncodeAPI.h"
+    },
+    {
+      "id": "ffnvcodec-3",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-ffnvcodec.sh (SCRIPT_REPO3)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-ffnvcodec.sh (SCRIPT_REPO3)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/FFmpeg/nv-codec-headers.git",
+        "commit": "833faee5f7b8d3f56444347c587f4aed11ee213f"
+      },
+      "licenseHeaderOf": "include/ffnvcodec/nvEncodeAPI.h"
+    },
+    {
+      "id": "frei0r",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-frei0r.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-frei0r.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/dyne/frei0r.git",
+        "commit": "618dde79716fab4e428a05e6476325b9e6f5b063"
+      }
+    },
+    {
+      "id": "gme",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-gme.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-gme.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libgme/game-music-emu.git",
+        "commit": "f68963b1de0633149b05732113d3c3113c6f63a1"
+      }
+    },
+    {
+      "id": "kvazaar",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-kvazaar.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-kvazaar.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/ultravideo/kvazaar.git",
+        "commit": "1f11f9ae33ef0cbe48a7d335b7144af1ecfe8092"
+      }
+    },
+    {
+      "id": "lcevcdec",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lcevcdec.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lcevcdec.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/v-novaltd/LCEVCdec.git",
+        "commit": "741fb7c869cf61012f7dcebfcd9e56981198c78b"
+      }
+    },
+    {
+      "id": "libaribb24",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libaribb24.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libaribb24.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/nkoriyama/aribb24.git",
+        "commit": "5e9be272f96e00f15a2f3c5f8ba7e124862aec38"
+      }
+    },
+    {
+      "id": "libaribcaption",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libaribcaption.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libaribcaption.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xqq/libaribcaption.git",
+        "commit": "37dde0f32652c32aa98bf92278944d1cfb2e7354"
+      }
+    },
+    {
+      "id": "libass",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libass.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libass.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libass/libass.git",
+        "commit": "f61db567e6593df3470e91594bcd4ad2d0473aff"
+      }
+    },
+    {
+      "id": "libbluray",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libbluray.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libbluray.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libbluray.git",
+        "commit": "f33a738fd7bb8b5e1148b0a5424778db7342450b"
+      }
+    },
+    {
+      "id": "libcurl-libpsl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/40-libpsl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/40-libpsl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/rockdaboot/libpsl.git",
+        "commit": "620d51d13351e8f3cb724471032246592c9bbd69"
+      }
+    },
+    {
+      "id": "libcurl-libpsl-2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/40-libpsl.sh (SCRIPT_REPO2)",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/40-libpsl.sh (SCRIPT_REPO2)"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/publicsuffix/list.git",
+        "commit": "8437e5262f13305f94087abe699b4fe2be1d1de8"
+      }
+    },
+    {
+      "id": "libcurl-nghttp2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/40-nghttp2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/40-nghttp2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/nghttp2/nghttp2.git",
+        "commit": "3baf9561e09f7ac8b0dce6e84132ce3909309ef0"
+      }
+    },
+    {
+      "id": "libcurl-nghttp3",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/40-nghttp3.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/40-nghttp3.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/ngtcp2/nghttp3.git",
+        "commit": "ac11a456eb9d76e55fd6c1626727111cd29d5459",
+        "submodules": ["lib/sfparse"]
+      }
+    },
+    {
+      "id": "libcurl-ngtcp2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/40-ngtcp2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/40-ngtcp2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/ngtcp2/ngtcp2.git",
+        "commit": "20da63db12a3e7fd2a3ae1a9f15be3cadd3f2695"
+      }
+    },
+    {
+      "id": "libcurl-libcurl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libcurl/50-libcurl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libcurl/50-libcurl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/curl/curl.git",
+        "commit": "bc677a8f16a51e728136eff130509cfac57aad19"
+      }
+    },
+    {
+      "id": "libjxl-libjxl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libjxl/50-libjxl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libjxl/50-libjxl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libjxl/libjxl.git",
+        "commit": "e47d2a2b5bb418f2947ce07f36cb048861db3820",
+        "submodules": ["third_party/highway"]
+      }
+    },
+    {
+      "id": "libmp3lame",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libmp3lame.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libmp3lame.sh"
+      ],
+      "source": {
+        "type": "svn",
+        "url": "https://svn.code.sf.net/p/lame/svn/trunk/lame",
+        "revision": 7113
+      }
+    },
+    {
+      "id": "libopus",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libopus.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libopus.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xiph/opus.git",
+        "commit": "a8b2545eec71e0f53ecead2d583e7b6baa42684d"
+      },
+      "extras": ["opus-model"]
+    },
+    {
+      "id": "libplacebo",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libplacebo.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libplacebo.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/libplacebo.git",
+        "commit": "275f7dea27924cdd34ab2e6c20e448b6bc4fab65",
+        "submodules": true
+      }
+    },
+    {
+      "id": "librist-mbedtls",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librist/40-mbedtls.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librist/40-mbedtls.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/ARMmbed/mbedtls.git",
+        "tag": "v4.2.0",
+        "submodules": true
+      }
+    },
+    {
+      "id": "librist-librist",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librist/50-librist.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librist/50-librist.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/rist/librist.git",
+        "commit": "47ad5513d1aa0adb692d78f635512e7fa123f06e"
+      }
+    },
+    {
+      "id": "librsvg-glib",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librsvg/10-glib.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librsvg/10-glib.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/GNOME/glib.git",
+        "commit": "50b938a3e8f5154a25b5af3dd8b9dd8b2ccba7c3",
+        "submodules": true
+      },
+      "extras": ["meson-wrap:proxy-libintl"]
+    },
+    {
+      "id": "librsvg-cairo",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librsvg/20-cairo.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librsvg/20-cairo.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.freedesktop.org/cairo/cairo.git",
+        "commit": "74755964edef651691d5cd36ff140108298e4e6e"
+      }
+    },
+    {
+      "id": "librsvg-pango",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librsvg/30-pango.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librsvg/30-pango.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/GNOME/pango.git",
+        "commit": "68e981d243d50e03f3df12fb400f31647ef570d2"
+      }
+    },
+    {
+      "id": "librsvg-librsvg",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-librsvg/99-librsvg.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-librsvg/99-librsvg.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/GNOME/librsvg.git",
+        "commit": "0c074d0a25adefd65843067306f9bc1fb609f68f"
+      },
+      "extras": ["cargo-vendor"]
+    },
+    {
+      "id": "libssh",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libssh.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libssh.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.com/libssh/libssh-mirror.git",
+        "commit": "9de02f3d01ba16d06f46c0c4d27aa08d8deeecee"
+      }
+    },
+    {
+      "id": "libtheora",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libtheora.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libtheora.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xiph/theora.git",
+        "commit": "28fd5ec77f0ad0e07a371cef1047828116f6bd8a"
+      }
+    },
+    {
+      "id": "libvpx",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libvpx.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libvpx.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://chromium.googlesource.com/webm/libvpx",
+        "commit": "900b2a52b69e9d4ab72eb855c365da1100c50eb1"
+      }
+    },
+    {
+      "id": "libwebp",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libwebp.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libwebp.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://chromium.googlesource.com/webm/libwebp",
+        "commit": "1844042d1ca751e62e61df7617dba19c98588339"
+      }
+    },
+    {
+      "id": "libzmq",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-libzmq.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-libzmq.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/zeromq/libzmq.git",
+        "commit": "46493370217ac135246617fa2f6ac819d8b61bfc"
+      }
+    },
+    {
+      "id": "lilv-lv2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/96-lv2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/96-lv2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/lv2/lv2.git",
+        "commit": "3c57dae600a5ad8d05acd53ee3490f7d91cb7be6"
+      }
+    },
+    {
+      "id": "lilv-serd",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/96-serd.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/96-serd.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/drobilla/serd.git",
+        "commit": "b621b0bc790d1e8102d3138ead16b974ddda8432"
+      }
+    },
+    {
+      "id": "lilv-zix",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/96-zix.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/96-zix.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/drobilla/zix.git",
+        "commit": "17d632393f5addb6fa24dda2927b96515407cca7"
+      }
+    },
+    {
+      "id": "lilv-sord",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/97-sord.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/97-sord.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/drobilla/sord.git",
+        "commit": "4b5232bb91e7f2f1b84df384494d073fabbcd312"
+      }
+    },
+    {
+      "id": "lilv-sratom",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/98-sratom.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/98-sratom.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/lv2/sratom.git",
+        "commit": "9e8ee84eed502e6030ce8bb49694fd28542b08fc"
+      }
+    },
+    {
+      "id": "lilv-lilv",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-lilv/99-lilv.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-lilv/99-lilv.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/lv2/lilv.git",
+        "commit": "4b8f30055fa5cb4134a2eb45fc1555bc04289314"
+      }
+    },
+    {
+      "id": "onevpl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-onevpl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-onevpl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/intel/libvpl.git",
+        "commit": "674d015bcb294bc39fa276e99a652ea045423e82"
+      }
+    },
+    {
+      "id": "openal",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-openal.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-openal.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/kcat/openal-soft.git",
+        "commit": "4a52288b772d1722713675f71bb30f321e78fd80"
+      }
+    },
+    {
+      "id": "openapv",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-openapv.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-openapv.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/AcademySoftwareFoundation/openapv.git",
+        "commit": "b4ff69856b4c3e8849df431ee3db54fd535f9bf3"
+      }
+    },
+    {
+      "id": "opencore-amr",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-opencore-amr.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-opencore-amr.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://git.code.sf.net/p/opencore-amr/code",
+        "commit": "7dba8c32238418ce0b316a852b2224df586ca896"
+      }
+    },
+    {
+      "id": "openh264",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-openh264.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-openh264.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/cisco/openh264.git",
+        "commit": "1bca62311e447fd9c39fc93de2c4b96cd5ce971c"
+      }
+    },
+    {
+      "id": "openjpeg",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-openjpeg.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-openjpeg.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/uclouvain/openjpeg.git",
+        "commit": "8314119b067c0fc77834731168daaebd379fdb12"
+      }
+    },
+    {
+      "id": "openmpt",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-openmpt.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-openmpt.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/OpenMPT/openmpt.git",
+        "commit": "3ee3c8000b45886703816fd027369ab6ad6fc6cb"
+      }
+    },
+    {
+      "id": "rav1e",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-rav1e.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-rav1e.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/xiph/rav1e.git",
+        "commit": "31435de9d76fddd38f6dcc31d4014574cebb2092"
+      },
+      "extras": ["cargo-vendor"]
+    },
+    {
+      "id": "rubberband",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-rubberband.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-rubberband.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/breakfastquay/rubberband.git",
+        "commit": "e4296ac80b1170018a110bc326fd0d45a0eb27d6"
+      }
+    },
+    {
+      "id": "sdl",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-sdl.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-sdl.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/libsdl-org/SDL.git",
+        "commit": "8acf7cfc0f88717e5c036f60f0314bfcafe39189"
+      }
+    },
+    {
+      "id": "snappy",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-snappy.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-snappy.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/google/snappy.git",
+        "commit": "946606459314e55d029c85f9a8c46f8809467f0f"
+      }
+    },
+    {
+      "id": "soxr",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-soxr.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-soxr.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://git.code.sf.net/p/soxr/code",
+        "commit": "945b592b70470e29f917f4de89b4281fbbd540c0"
+      }
+    },
+    {
+      "id": "srt",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-srt.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-srt.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Haivision/srt.git",
+        "commit": "9f2390232a8256ed4c72a5418c2b2777c49ad737"
+      }
+    },
+    {
+      "id": "svtav1",
+      "usedBy": ["libmpv-2.dll", "mpv.exe"],
+      "origins": ["FFmpeg-Builds c63bb308 scripts.d/50-svtav1.sh"],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/AOMediaCodec/SVT-AV1.git",
+        "commit": "ad11d76a6c9cb05ec49d166cf20ec5d286715dc1"
+      }
+    },
+    {
+      "id": "twolame",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-twolame.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-twolame.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/njh/twolame.git",
+        "commit": "6fced852d4d5cfad58cf9dbe3ea619b08e87d398"
+      }
+    },
+    {
+      "id": "uavs3d",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-uavs3d.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-uavs3d.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/uavs3/uavs3d.git",
+        "commit": "0e20d2c291853f196c68922a264bcd8471d75b68"
+      }
+    },
+    {
+      "id": "vaapi-libva",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-vaapi/50-libva.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-vaapi/50-libva.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/intel/libva.git",
+        "commit": "f052e984e0c8bf10784198cc311b23c567b1367f"
+      }
+    },
+    {
+      "id": "vapoursynth",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-vapoursynth.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-vapoursynth.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/vapoursynth/vapoursynth.git",
+        "tag": "R81"
+      }
+    },
+    {
+      "id": "vidstab",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-vidstab.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-vidstab.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/georgmartius/vid.stab.git",
+        "commit": "e2445c4081658318223762a696eb1c645c2d7168"
+      }
+    },
+    {
+      "id": "vvenc",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-vvenc.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-vvenc.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/fraunhoferhhi/vvenc.git",
+        "commit": "0e7508b811bbea3cd510956ddb3193f3a4c93684"
+      }
+    },
+    {
+      "id": "x264",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-x264.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-x264.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://code.videolan.org/videolan/x264.git",
+        "commit": "0480cb05fa188d37ae87e8f4fd8f1aea3711f7ee"
+      }
+    },
+    {
+      "id": "x265",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-x265.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-x265.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Multicorewareinc/x265.git",
+        "commit": "5143a2a00ad0cc600831654a248b96ec7307eb4a"
+      }
+    },
+    {
+      "id": "xavs2",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-xavs2.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-xavs2.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/pkuvcl/xavs2.git",
+        "commit": "eae1e8b9d12468059bdd7dee893508e470fa83d8"
+      }
+    },
+    {
+      "id": "xvid",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-xvid.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-xvid.sh"
+      ],
+      "source": {
+        "type": "svn",
+        "url": "https://svn.xvid.org/trunk/xvidcore",
+        "revision": 2204
+      }
+    },
+    {
+      "id": "zimg",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-zimg.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-zimg.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/sekrit-twc/zimg.git",
+        "commit": "67e0603271c080e22c8429856dd4a8a56587e61e",
+        "submodules": true
+      }
+    },
+    {
+      "id": "zvbi",
+      "usedBy": ["libmpv-2.dll", "mpv.exe", "ffmpeg.exe", "ffprobe.exe"],
+      "origins": [
+        "FFmpeg-Builds c63bb308 scripts.d/50-zvbi.sh",
+        "FFmpeg-Builds 5031c6f1 scripts.d/50-zvbi.sh"
+      ],
+      "source": {
+        "type": "git",
+        "url": "https://github.com/zapping-vbi/zvbi",
+        "commit": "34bb6f660c5c1bacd4a66cc7b22311e4ca3c1ab5"
+      }
+    },
+    {
+      "id": "svtav1-b",
+      "usedBy": ["ffmpeg.exe", "ffprobe.exe"],
+      "origins": ["FFmpeg-Builds 5031c6f1 scripts.d/50-svtav1.sh"],
+      "source": {
+        "type": "git",
+        "url": "https://gitlab.com/AOMediaCodec/SVT-AV1.git",
+        "commit": "f2c3fb78611d542b12b11c6d10d3744b31b754a0"
+      }
+    }
+  ]
+}

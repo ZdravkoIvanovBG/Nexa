@@ -5,8 +5,10 @@
       "binaries/mpv-x86_64-pc-windows-msvc.exe": "mpv.exe",
       "fonts/*": "fonts/",
       "licenses/THIRD-PARTY-NOTICES.txt": "licenses/THIRD-PARTY-NOTICES.txt",
+      "licenses/COMPONENT-LICENSES.txt": "licenses/COMPONENT-LICENSES.txt",
       "licenses/mpv/*": "licenses/mpv/",
-      "licenses/ffmpeg/*": "licenses/ffmpeg/"
+      "licenses/ffmpeg/*": "licenses/ffmpeg/",
+      "licenses/yt-dlp/*": "licenses/yt-dlp/"
     }
   }
 }

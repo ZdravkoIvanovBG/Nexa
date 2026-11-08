@@ -4,9 +4,27 @@ Nexa for Windows - third-party software notices
 Nexa itself is distributed under the MIT License (see LICENSE in the Nexa
 source repository: https://github.com/ZdravkoIvanovBG/Nexa). The Windows
 installer also contains the separately licensed programs and libraries listed
-below. They are unmodified official builds; Nexa does not change them. Each
+below. They are unmodified upstream builds; Nexa does not change them. Each
 remains under its own license, and nothing in Nexa's license restricts your
 rights under those licenses.
+
+
+Source code (items 1-3)
+-----------------------
+The complete Corresponding Source of libmpv-2.dll, mpv.exe, ffmpeg.exe and
+ffprobe.exe -- mpv, FFmpeg and every library built into them, at the exact
+revisions used, with the build scripts -- is available at no charge from the
+same place as this installer:
+
+  https://github.com/ZdravkoIvanovBG/Nexa/releases/download/v0.10.0/Nexa-0.10.0-third-party-source.tar
+  SHA-256: 268c03af608b2578f7076c6872b3f95f7f89055e1e0914e3ebcc0b96d0563c64
+  Size:    1,132,759,040 bytes
+
+Its README.txt explains how each revision was identified and how the binaries
+were built. If that download is ever unavailable, open an issue at
+https://github.com/ZdravkoIvanovBG/Nexa/issues and the same archive will be
+provided. The license files of all those components are collected in
+licenses/COMPONENT-LICENSES.txt.
 
 
 1. libmpv-2.dll  (embedded video player)
@@ -38,8 +56,8 @@ License:  GNU General Public License, version 3 or later (GPL-3.0-or-later).
           shipped by mpv) and licenses/mpv/Copyright.
           mpv.exe is a separate program that Nexa starts as a child process.
 
-Components statically linked into the files above
--------------------------------------------------
+Components statically linked into items 1 and 2
+------------------------------------------------
 FFmpeg (git commit baa68e68b34e2de912eb7e94342cebd2545f05ed), libplacebo
 7.387.0, libass, FreeType, HarfBuzz, FriBidi, LuaJIT 2.1, mujs, libarchive,
 libcurl, OpenSSL, zimg, Little CMS 2, uchardet, libbluray, shaderc,
@@ -52,46 +70,36 @@ headers, OpenCL and Vulkan headers/loader shims, VapourSynth headers, LV2, SDL2
 and the mingw-w64 runtime. mpv.exe additionally contains x264, x265, xavs2,
 davs2, Xvid, Rubber Band, vid.stab, frei0r headers, AviSynth headers,
 libdvdnav and libdvdread. Each component keeps its own copyright and license
-(LGPL, GPL, BSD, MIT, ISC, zlib, Apache-2.0 and similar); these notices are
-reproduced in the corresponding source.
-
-Source code for items 1 and 2
------------------------------
-The complete corresponding source code is the source used by mpv's official
-build of release 0.42.0:
-  - mpv 0.42.0:  https://github.com/mpv-player/mpv/tree/v0.42.0
-                 (commit b0841e8c4d156b8403dc1876c4cbd9011eb583f3)
-  - build recipe: ci/build-mingw64-full.sh and .github/workflows/build.yml in
-                 that tree, built in CI run
-                 https://github.com/mpv-player/mpv/actions/runs/41936479105
-  - FFmpeg:      https://github.com/FFmpeg/FFmpeg/tree/baa68e68b34e2de912eb7e94342cebd2545f05ed
-  - other libraries: the ghcr.io/btbn/ffmpeg-builds/win64-lgpl and win64-gpl
-                 images built from https://github.com/BtbN/FFmpeg-Builds at
-                 commit c63bb308a1de656b425c132a8102f8fd5389afc5, whose scripts
-                 name every library's source repository and version.
-
-Written offer: for at least three years after Nexa last distributes this
-version, anyone may request a complete machine-readable copy of the
-corresponding source code of items 1 and 2, at no charge beyond the cost of
-physically performing the transfer, by opening an issue at
-https://github.com/ZdravkoIvanovBG/Nexa/issues.
+(LGPL, GPL, BSD, MIT, ISC, zlib, Apache-2.0 and similar); see
+licenses/COMPONENT-LICENSES.txt.
 
 3. ffmpeg.exe and ffprobe.exe  (media probing and conversion helpers)
 --------------------------------------------------------------------
-Software: FFmpeg command-line tools, GPL "win64-gpl" build from
-          https://github.com/BtbN/FFmpeg-Builds (local developer builds may use
-          the https://www.gyan.dev/ffmpeg/builds/ "release essentials" build).
-          Run "ffmpeg -version" in the install folder for the exact version.
-License:  GNU General Public License, version 3 or later. Texts:
+Software: FFmpeg N-128227-g4811625b5f (git commit
+          4811625b5f4e5aed528aed9225d0ca868a8e6e96), "win64-gpl" static build
+          ffmpeg-N-128227-g4811625b5f-win64-gpl.zip from release
+          autobuild-2026-10-31-12-59 of https://github.com/BtbN/FFmpeg-Builds
+          SHA-256 of ffmpeg.exe:
+          63f7cad2da68519366eee578ee2bcebb09b2bde58b06a410ef4bbf4fc00e2d2c
+          SHA-256 of ffprobe.exe:
+          0e55ac2608a4d6af40070d9b526693221a07ab2f13629ba1c2adbf2c775370c9
+License:  GNU General Public License, version 3 or later (GPL-3.0-or-later),
+          with the same kinds of statically linked components as item 2. Texts:
           licenses/ffmpeg/COPYING.GPLv3, licenses/ffmpeg/LICENSE.txt.
-Source:   https://ffmpeg.org/download.html and the build pages above. The same
-          written offer as for items 1 and 2 applies.
+          ffmpeg.exe and ffprobe.exe are separate programs that Nexa starts as
+          child processes.
 
 4. yt-dlp.exe
 -------------
-Software: yt-dlp, https://github.com/yt-dlp/yt-dlp
-License:  The Unlicense (public domain dedication); its bundled Python
-          runtime and libraries carry their own permissive licenses.
+Software: yt-dlp 2026.10.26, official Windows build from
+          https://github.com/yt-dlp/yt-dlp/releases/tag/2026.10.26
+          SHA-256 of yt-dlp.exe:
+          f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d
+License:  The Unlicense (licenses/yt-dlp/LICENSE). The executable bundles
+          Python and libraries under their own permissive licenses, listed in
+          licenses/yt-dlp/THIRD_PARTY_LICENSES.txt (the copy embedded in this
+          yt-dlp.exe; the GPL/LGPL entries in it apply to yt-dlp's Linux
+          builds, not to this Windows build).
 
 5. Noto Sans JP fonts (fonts/)
 ------------------------------
