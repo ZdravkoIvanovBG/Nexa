@@ -473,16 +473,83 @@ export function setStatus(
   );
 }
 
+/** The state group's values, so a change can be put back exactly (Undo). */
+export type PlayState = Pick<GameRecord, "status" | "startedAt" | "completedAt">;
+
+export function playStateOf(record: GameRecord): PlayState {
+  return { status: record.status, startedAt: record.startedAt, completedAt: record.completedAt };
+}
+
+/**
+ * Starts a game the user isn't playing, or resumes one they are. A start from
+ * nothing is a new playthrough, so it starts now; a finish from an earlier
+ * playthrough stays in completedAt as history (see playDates).
+ */
+export function beginPlaying(
+  data: GameLibraryData,
+  gameId: GameId,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const record = data.records[gameId];
+  if (!record) return emptyPatch();
+  if (record.status !== null) return setStatus(data, gameId, "playing", ctx);
+  return changeState(record, { status: "playing", startedAt: ctx.now }, ctx);
+}
+
 /** Starts a game from anywhere, including one that was never saved. */
 export function startGame(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
   const gameId = gameIdOfRef(ref);
   const record = data.records[gameId] ?? newRecord(ref, ctx.now);
-  return setStatus(
-    { ...data, records: { ...data.records, [gameId]: record } },
-    gameId,
-    "playing",
-    ctx,
-  );
+  return beginPlaying({ ...data, records: { ...data.records, [gameId]: record } }, gameId, ctx);
+}
+
+/**
+ * A new playthrough of a finished game. It starts now, so the card never shows
+ * the earlier run's dates as this one's; the last finish is kept as history.
+ */
+export function playAgain(data: GameLibraryData, gameId: GameId, ctx: ChangeContext): LibraryPatch {
+  const record = data.records[gameId];
+  if (!record || record.status !== "completed") return emptyPatch();
+  return changeState(record, { status: "playing", startedAt: ctx.now }, ctx);
+}
+
+/**
+ * Undo for a status change: writes back exactly the values it replaced, dates
+ * included, under a fresh stamp. Restoring the old stamp would lose to the
+ * change it undoes, here and on every other device.
+ */
+export function restoreState(
+  data: GameLibraryData,
+  gameId: GameId,
+  previous: PlayState,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const record = data.records[gameId];
+  if (!record) return emptyPatch();
+  const current = playStateOf(record);
+  if (
+    current.status === previous.status &&
+    current.startedAt === previous.startedAt &&
+    current.completedAt === previous.completedAt
+  ) {
+    return emptyPatch();
+  }
+  return changeState(record, { ...previous }, ctx);
+}
+
+/**
+ * The dates that describe the current playthrough. A finish recorded before a
+ * replay is history, never this run's completion.
+ */
+export function playDates(record: GameRecord): {
+  started: number | null;
+  completed: number | null;
+  lastCompleted: number | null;
+} {
+  if (record.status === "completed") {
+    return { started: record.startedAt, completed: record.completedAt, lastCompleted: null };
+  }
+  return { started: record.startedAt, completed: null, lastCompleted: record.completedAt };
 }
 
 /** Leaves Currently Playing. The record stays, so notes return if the game is saved again. */
@@ -737,6 +804,21 @@ export function placementsOf(
     if (parent) collections.push(parent);
   }
   return { standalone: data.queue[rootEntryId(gameId)]?.deletedAt === null, collections };
+}
+
+/** Whether the game is on the Wishlist or in a collection, so leaving Currently Playing keeps it listed. */
+export function isPlaced(data: GameLibraryData, gameId: GameId): boolean {
+  const placed = placementsOf(data, gameId);
+  return placed.standalone || placed.collections.length > 0;
+}
+
+/** The game the Wishlist would have the user play next: its first game, or a collection's next up. */
+export function wishlistNextUp(data: GameLibraryData): GameRecord | null {
+  for (const item of wishlistView(data)) {
+    if (item.kind === "game") return item.record;
+    if (item.nextUp) return item.nextUp;
+  }
+  return null;
 }
 
 export function gameStage(data: GameLibraryData, gameId: GameId): GameStage {

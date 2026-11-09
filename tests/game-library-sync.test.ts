@@ -887,12 +887,15 @@ test("the shell loads only leaf helpers, so Games adds nothing to startup", () =
     new URL("../src/lib/game-library/backup-state.ts", import.meta.url),
     "utf8",
   );
-  const imports = leaf.split(/\r?\n/).filter((line) => /^import /.test(line));
-  assert.deepEqual(imports, [
-    'import { mergeLibrary } from "./merge.ts";',
-    'import { emptyLibrary, sanitizeLibrary } from "./sanitize.ts";',
-    'import type { GameLibraryData } from "./types.ts";',
-  ]);
+  const from = (source) =>
+    [...source.matchAll(/^import [\s\S]*? from "([^"]+)";/gm)].map((m) => m[1]);
+  assert.deepEqual(from(leaf), ["./merge.ts", "./note-drafts.ts", "./sanitize.ts", "./types.ts"]);
+  // Note drafts are held through a sign-out wipe from here, so they must stay a leaf too.
+  const drafts = readFileSync(
+    new URL("../src/lib/game-library/note-drafts.ts", import.meta.url),
+    "utf8",
+  );
+  assert.deepEqual(from(drafts), ["./types.ts"]);
   const sync = readFileSync(
     new URL("../src/lib/game-library/cloud/sync.tsx", import.meta.url),
     "utf8",

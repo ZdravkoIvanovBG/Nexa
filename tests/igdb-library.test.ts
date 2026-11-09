@@ -56,6 +56,7 @@ import {
   savedCollection,
   setNotes,
   shiftEntry,
+  startGame,
   wishlistView,
 } from "../src/lib/game-library/rules.ts";
 import { emptyLibrary, sanitizeEntry, sanitizeRecord } from "../src/lib/game-library/sanitize.ts";
@@ -405,6 +406,20 @@ test("saving a game already saved from RAWG reuses that record and adds no dupli
   assert.deepEqual(data, before, "snapshot, notes and order untouched");
   // A game the catalog doesn't link is saved under its own id, as usual.
   assert.deepEqual(libraryRef(data, igdb(999)), igdb(999));
+});
+
+test("starting an IGDB game already saved from RAWG plays that record, adding none", () => {
+  let data = run(emptyLibrary(), (d, c) =>
+    saveGame(d, rawg(4200, "assassins-creed-ii", "Assassin's Creed II"), c),
+  );
+  data = run(data, (d, c) => setNotes(d, "rawg:4200", "Ezio first", c));
+  data = run(data, (d, c) => startGame(d, libraryRef(d, igdb(127, "Assassin's Creed II")), c));
+  assert.deepEqual(Object.keys(data.records), ["rawg:4200"], "one record, the saved one");
+  assert.equal(data.records["rawg:4200"].status, "playing");
+  assert.equal(data.records["rawg:4200"].notes, "Ezio first");
+  // An IGDB game the catalog doesn't link starts under its own id.
+  data = run(data, (d, c) => startGame(d, libraryRef(d, igdb(999)), c));
+  assert.equal(data.records["igdb:999"].status, "playing");
 });
 
 test("adding an IGDB game to a collection that holds its RAWG version is a no-op", () => {

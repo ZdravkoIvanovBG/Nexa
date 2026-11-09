@@ -1,11 +1,17 @@
 import {
+  Ban,
   Check,
+  CircleCheckBig,
   CircleHelp,
   ExternalLink,
   FolderPlus,
+  Gamepad2,
   Layers,
   ListOrdered,
+  Pause,
+  Play,
   Plus,
+  RotateCcw,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -27,6 +33,7 @@ import {
   addMember,
   catalogAdditions,
   gameStage,
+  isPlaced,
   liveCollections,
   placementsOf,
   refreshSnapshot,
@@ -36,12 +43,28 @@ import {
 } from "@/lib/game-library/rules";
 import { snapshotSummary } from "@/lib/game-library/snapshot";
 import { changeGameLibrary, useGameLibrary } from "@/lib/game-library/store";
-import { memberEntryId, rootEntryId, type GameRecord } from "@/lib/game-library/types";
+import {
+  memberEntryId,
+  rootEntryId,
+  type GameId,
+  type GameRecord,
+  type GameStatus,
+} from "@/lib/game-library/types";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { useActionMenu, type MenuItem } from "../game-library/action-menu";
-import { requestTab } from "../game-library/tab";
+import {
+  completeGame,
+  dropGame,
+  pauseGame,
+  removeFromPlaying,
+  replayGame,
+  resumeGame,
+  sendBackToWishlist,
+  startPlaying,
+} from "../game-library/play-actions";
+import { requestPlayingGame, requestTab } from "../game-library/tab";
 import { removeWithUndo } from "../game-library/wishlist-actions";
 
 // Saving from Discovery. Everything saved is what's already on screen, so these
@@ -86,6 +109,107 @@ function useOpenWishlist(): () => void {
   };
 }
 
+function useOpenPlaying(): (gameId: GameId) => void {
+  const { openLibrarySection } = useView();
+  return (gameId) => {
+    requestPlayingGame(gameId);
+    requestTab("playing");
+    openLibrarySection("games");
+  };
+}
+
+const STATUS_LABEL: Record<GameStatus, string> = {
+  playing: "Playing",
+  paused: "Paused",
+  completed: "Completed",
+  dropped: "Dropped",
+};
+
+const STATUS_ICON = {
+  playing: Gamepad2,
+  paused: Pause,
+  completed: CircleCheckBig,
+  dropped: Ban,
+} as const;
+
+/** Where a started game can go from the status it has. Mirrors the Currently Playing menu. */
+function statusItems(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  gameId: GameId,
+  name: string,
+  status: GameStatus,
+  placed: boolean,
+  openPlaying: () => void,
+): MenuItem[] {
+  const items: MenuItem[] = [
+    {
+      id: "view-playing",
+      label: t("View in Currently Playing"),
+      icon: <Gamepad2 {...ICON} />,
+      run: openPlaying,
+    },
+    { id: "sep-status", separator: true },
+  ];
+  if (status === "playing") {
+    items.push({
+      id: "pause",
+      label: t("Pause"),
+      icon: <Pause {...ICON} />,
+      run: () => pauseGame(gameId, name, t),
+    });
+  }
+  if (status === "paused" || status === "dropped") {
+    items.push({
+      id: "resume",
+      label: t("Resume"),
+      icon: <Play {...ICON} />,
+      run: () => resumeGame(gameId, name, t),
+    });
+  }
+  if (status === "completed") {
+    items.push({
+      id: "again",
+      label: t("Play again"),
+      icon: <RotateCcw {...ICON} />,
+      run: () => replayGame(gameId, name, t),
+    });
+  } else {
+    items.push({
+      id: "complete",
+      label: t("Mark completed"),
+      icon: <CircleCheckBig {...ICON} />,
+      run: () => completeGame(gameId, name, t),
+    });
+  }
+  if (status === "playing" || status === "paused") {
+    items.push({
+      id: "drop",
+      label: t("Drop"),
+      icon: <Ban {...ICON} />,
+      run: () => dropGame(gameId, name, t),
+    });
+  }
+  items.push(
+    { id: "sep-wishlist", separator: true },
+    {
+      id: "wishlist",
+      label: t("Back to Wishlist"),
+      icon: <ListOrdered {...ICON} />,
+      run: () => sendBackToWishlist(gameId, name, t),
+    },
+  );
+  if (!placed) {
+    items.push({
+      id: "remove-playing",
+      label: t("Remove from Playing"),
+      icon: <Trash2 {...ICON} />,
+      danger: true,
+      run: () => removeFromPlaying(gameId, name, t),
+    });
+  }
+  return items;
+}
+
 /**
  * Keeps a saved game's name and art current while its page is open anyway.
  * Only the record saved under this exact id: a record from another provider
@@ -120,6 +244,7 @@ export function SaveGameButton({
   const canSave = useCanSave();
   const menu = useActionMenu();
   const openWishlist = useOpenWishlist();
+  const openPlaying = useOpenPlaying();
   const own = useMemo(() => savableRef(game), [game]);
   // The same game already saved from another provider, by the curated catalog.
   const equivalent = own ? savedEquivalent(data, { gameId: game.id, slug: own.slug }) : null;
@@ -130,6 +255,13 @@ export function SaveGameButton({
   if (!canSave || !own) return null;
 
   const view = { label: t("View in Wishlist"), run: openWishlist };
+  // Through libraryRef inside the change, like a save: a game already saved
+  // from the other provider is started on that record, never a second one.
+  const start = () =>
+    startPlaying(own, name, t, {
+      label: t("View in Currently Playing"),
+      run: () => openPlaying(gameId),
+    });
   const savedFrom = equivalent && (
     <span
       className={NOTE}
@@ -212,6 +344,12 @@ export function SaveGameButton({
             {t("Add to {name}", { name: ownCollection.title })}
           </button>
         )}
+        {!match && (
+          <button type="button" onClick={start} className={SECONDARY}>
+            <Play size={16} strokeWidth={2.2} />
+            {t("Start playing")}
+          </button>
+        )}
         {match && (
           <span className={NOTE}>
             <CircleHelp size={14} strokeWidth={2.2} />
@@ -228,14 +366,25 @@ export function SaveGameButton({
   }
 
   if (stage !== "wishlist" && stage !== "collection") {
-    // Started from Currently Playing, which arrives in a later stage.
+    const status: GameStatus = stage;
+    const Icon = STATUS_ICON[status];
+    const dropped = status === "dropped";
+    const items = statusItems(t, gameId, name, status, isPlaced(data, gameId), () =>
+      openPlaying(gameId),
+    );
     return (
       <>
-        <span className={`${BUTTON} border border-edge bg-canvas/50 text-ink-muted`}>
-          <Check size={16} strokeWidth={2.4} />
-          {t("In your Game Library")}
-        </span>
+        <button
+          type="button"
+          aria-haspopup="menu"
+          onClick={(e) => menu.openFromButton(e.currentTarget, items)}
+          className={dropped ? SECONDARY : SAVED}
+        >
+          <Icon size={17} strokeWidth={2.4} className={dropped ? "" : "text-accent"} />
+          {t(STATUS_LABEL[status])}
+        </button>
         {savedFrom}
+        {menu.element}
       </>
     );
   }
@@ -246,6 +395,12 @@ export function SaveGameButton({
       ? t("In Wishlist")
       : t("In {name}", { name: inCollection?.title ?? t("a collection") });
   const items: MenuItem[] = [
+    {
+      id: "start",
+      label: t("Start playing"),
+      icon: <Play {...ICON} />,
+      run: start,
+    },
     {
       id: "view",
       label: t("View in Wishlist"),

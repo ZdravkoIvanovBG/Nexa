@@ -1,4 +1,4 @@
-import { Compass, Search } from "lucide-react";
+import { Compass, ListOrdered, Play, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -168,13 +168,54 @@ export function WishlistEmpty({ onSearch }: { onSearch: () => void }) {
   );
 }
 
-export function PlayingEmpty() {
+export function PlayingEmpty({
+  nextUp,
+  onStartNext,
+  onOpenWishlist,
+}: {
+  /** The Wishlist's next game, offered as a one-click start. */
+  nextUp: string | null;
+  onStartNext: (() => void) | null;
+  onOpenWishlist: () => void;
+}) {
+  const t = useT();
+  const { setView } = useView();
   return (
     <EmptyState
-      comingSoon
       sketch={<PlayingSketch />}
       title="Pick up right where you left off"
-      body="Keep track of what you're playing, how far you've got, and the notes you'd want before your next session."
+      body="Start a game from your Wishlist or from its page in Games. Pause it, finish it or set it aside, and keep notes and progress for your next session."
+      actions={
+        <>
+          {nextUp && onStartNext ? (
+            <button
+              type="button"
+              onClick={onStartNext}
+              className="flex h-11 max-w-full items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
+            >
+              <Play size={15} strokeWidth={2.4} className="shrink-0" />
+              <span className="truncate">{t("Start {name}", { name: nextUp })}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setView("games")}
+              className="flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
+            >
+              <Compass size={15} strokeWidth={2.2} />
+              {t("Explore Games")}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onOpenWishlist}
+            className="flex h-11 items-center gap-2 rounded-full border border-edge px-5 text-[14px] font-medium text-ink transition-colors hover:bg-raised"
+          >
+            <ListOrdered size={15} strokeWidth={2.2} />
+            {t("Open Wishlist")}
+          </button>
+        </>
+      }
     />
   );
 }

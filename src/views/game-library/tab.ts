@@ -31,3 +31,31 @@ export function onTabRequest(listener: (tab: GameLibraryTab) => void): () => voi
   window.addEventListener(TAB_REQUEST, handler);
   return () => window.removeEventListener(TAB_REQUEST, handler);
 }
+
+const PLAYING_REQUEST = "harbor:game-library-playing";
+let pendingPlayingGame: string | null = null;
+
+/**
+ * Asks Currently Playing to show this game: its filter is selected and the card
+ * scrolled into view, now if the tab is open or when it next opens.
+ */
+export function requestPlayingGame(gameId: string): void {
+  pendingPlayingGame = gameId;
+  window.dispatchEvent(new CustomEvent<string>(PLAYING_REQUEST, { detail: gameId }));
+}
+
+/** The request waiting for the tab to open, taken once. */
+export function takePlayingRequest(): string | null {
+  const gameId = pendingPlayingGame;
+  pendingPlayingGame = null;
+  return gameId;
+}
+
+export function onPlayingRequest(listener: (gameId: string) => void): () => void {
+  const handler = (e: Event) => {
+    pendingPlayingGame = null;
+    listener((e as CustomEvent<string>).detail);
+  };
+  window.addEventListener(PLAYING_REQUEST, handler);
+  return () => window.removeEventListener(PLAYING_REQUEST, handler);
+}

@@ -2,6 +2,14 @@
 // leaf module so App.tsx, profiles.tsx and session.tsx pay for none of the
 // library. Everything else in the feature loads on demand.
 import { mergeLibrary } from "./merge.ts";
+import {
+  NOTES_PREFIX,
+  isEmptyNoteSafety,
+  mergeNoteSafety,
+  noteSafetyKey,
+  parseNoteSafety,
+  serializeNoteSafety,
+} from "./note-drafts.ts";
 import { emptyLibrary, sanitizeLibrary } from "./sanitize.ts";
 import type { GameLibraryData } from "./types.ts";
 
@@ -14,6 +22,8 @@ const LIBRARY_PREFIX = "harbor.games.library.v1.";
 // keeps them to this device.
 const HELD_PREFIX = "harbor.cloud.games.held.v1.";
 export const GAME_QUEUE_KEY = "harbor.cloud.games.queue.v1";
+// Unsaved and replaced note versions held through a wipe, the same way.
+const NOTES_HELD_PREFIX = "harbor.cloud.games.notes-held.v1.";
 
 export function libraryKey(profileId: string): string {
   return `${LIBRARY_PREFIX}${profileId}`;
@@ -21,6 +31,10 @@ export function libraryKey(profileId: string): string {
 
 function heldKey(userId: string, profileId: string): string {
   return `${HELD_PREFIX}${userId}.${profileId}`;
+}
+
+function notesHeldKey(userId: string, profileId: string): string {
+  return `${NOTES_HELD_PREFIX}${userId}.${profileId}`;
 }
 
 function keysWithPrefix(storage: KeyValueStore, prefix: string): string[] {
@@ -218,6 +232,20 @@ export function prepareGameHold(
     } catch (error) {
       console.error("[game-library] could not read unsynced games before a wipe", error);
     }
+    // Note text that isn't in any library: filed under this account and profile,
+    // so it can only come back to them.
+    try {
+      for (const key of keysWithPrefix(storage, NOTES_PREFIX)) {
+        const profileId = key.slice(NOTES_PREFIX.length);
+        const safety = parseNoteSafety(storage.getItem(key));
+        if (isEmptyNoteSafety(safety)) continue;
+        const target = notesHeldKey(ownerId, profileId);
+        const earlier = parseNoteSafety(storage.getItem(target));
+        held.set(target, serializeNoteSafety(mergeNoteSafety(earlier, safety)));
+      }
+    } catch (error) {
+      console.error("[game-library] could not read note drafts before a wipe", error);
+    }
   }
   return () => {
     for (const [key, value] of held) {
@@ -256,6 +284,22 @@ export function restoreHeldGames(userId: string, storage: KeyValueStore = localS
       console.error("[game-library] could not restore held games", error);
     }
   }
+  const notesPrefix = `${NOTES_HELD_PREFIX}${userId}.`;
+  for (const key of keysWithPrefix(storage, notesPrefix)) {
+    const profileId = key.slice(notesPrefix.length);
+    try {
+      const held = parseNoteSafety(storage.getItem(key));
+      const current = parseNoteSafety(storage.getItem(noteSafetyKey(profileId)));
+      storage.setItem(
+        noteSafetyKey(profileId),
+        serializeNoteSafety(mergeNoteSafety(current, held)),
+      );
+      storage.removeItem(key);
+      restored = true;
+    } catch (error) {
+      console.error("[game-library] could not restore held note drafts", error);
+    }
+  }
   return restored;
 }
 
@@ -273,7 +317,11 @@ export function onGameProfileForgotten(listener: (profileId: string) => void): v
 export function forgetGameProfile(profileId: string, storage: KeyValueStore = localStorage): void {
   try {
     storage.removeItem(libraryKey(profileId));
-    for (const key of keysWithPrefix(storage, HELD_PREFIX)) {
+    storage.removeItem(noteSafetyKey(profileId));
+    for (const key of [
+      ...keysWithPrefix(storage, HELD_PREFIX),
+      ...keysWithPrefix(storage, NOTES_HELD_PREFIX),
+    ]) {
       if (key.endsWith(`.${profileId}`)) storage.removeItem(key);
     }
     const ops = readQueuedOps(storage);

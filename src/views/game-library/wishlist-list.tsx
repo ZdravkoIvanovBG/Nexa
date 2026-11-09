@@ -143,6 +143,7 @@ export function WishlistList({
               openFranchise: def ? () => openGameFranchise(def.id) : null,
               newGames: additions.length,
               onReview: def ? () => openGameFranchise(def.id) : null,
+              nextUp: item.nextUp,
             });
           return (
             <li

@@ -7,6 +7,14 @@ import {
   addToBoard,
   applyPatch,
   backToWishlist,
+  beginPlaying,
+  chainChanges,
+  isPlaced,
+  playAgain,
+  playDates,
+  playStateOf,
+  restoreState,
+  wishlistNextUp,
   boardTier,
   catalogAdditions,
   clearStatus,
@@ -429,6 +437,155 @@ test("startedAt keeps the first start and completedAt survives playing again", (
   lib.run(setStatus, "rawg:1", "playing");
   assert.equal(lib.data.records["rawg:1"].startedAt, started);
   assert.equal(lib.data.records["rawg:1"].completedAt, completed);
+});
+
+test("starting again from the Wishlist is a new playthrough; resuming is not", () => {
+  const lib = library();
+  seededQueue(lib, 1);
+  lib.run(beginPlaying, "rawg:1");
+  const first = lib.data.records["rawg:1"].startedAt;
+  lib.run(setStatus, "rawg:1", "paused");
+  lib.run(beginPlaying, "rawg:1");
+  assert.equal(lib.data.records["rawg:1"].startedAt, first, "resume keeps the start");
+  lib.run(backToWishlist, "rawg:1");
+  lib.run(beginPlaying, "rawg:1");
+  assert.ok(lib.data.records["rawg:1"].startedAt > first, "a new start starts now");
+});
+
+test("playing a completed game again starts now and keeps the last finish as history", () => {
+  const lib = library();
+  lib.run(startGame, ref(1));
+  lib.run(setStatus, "rawg:1", "completed");
+  const finished = lib.data.records["rawg:1"].completedAt;
+  assert.deepEqual(playDates(lib.data.records["rawg:1"]).completed, finished);
+
+  lib.run(playAgain, "rawg:1");
+  const record = lib.data.records["rawg:1"];
+  assert.equal(record.status, "playing");
+  assert.ok(record.startedAt > finished);
+  assert.equal(record.completedAt, finished);
+  const dates = playDates(record);
+  assert.equal(dates.completed, null, "the old finish is not this run's");
+  assert.equal(dates.lastCompleted, finished);
+  assert.equal(dates.started, record.startedAt);
+
+  assert.ok(isEmptyPatch(lib.run(playAgain, "rawg:1")), "only a completed game is replayed");
+  lib.run(setStatus, "rawg:1", "completed");
+  assert.ok(lib.data.records["rawg:1"].completedAt > finished);
+});
+
+test("undo restores the exact status and dates, under a newer stamp", () => {
+  const lib = library();
+  lib.run(startGame, ref(1));
+  lib.run(setStatus, "rawg:1", "completed");
+  const before = lib.data.records["rawg:1"];
+  const previous = playStateOf(before);
+
+  for (const change of [
+    (d, c) => setStatus(d, "rawg:1", "dropped", c),
+    (d, c) => playAgain(d, "rawg:1", c),
+    (d, c) => clearStatus(d, "rawg:1", c),
+  ]) {
+    lib.run(change);
+    const changedAt = lib.data.records["rawg:1"].stateAt;
+    lib.run(restoreState, "rawg:1", previous);
+    const after = lib.data.records["rawg:1"];
+    assert.deepEqual(playStateOf(after), previous);
+    assert.ok(after.stateAt > changedAt, "an undo must beat the change on every device");
+  }
+  assert.ok(isEmptyPatch(lib.run(restoreState, "rawg:1", previous)));
+});
+
+test("undoing Back to Wishlist takes away the row it added and keeps an existing one", () => {
+  const lib = library();
+  seededQueue(lib, 1);
+  lib.run(startGame, ref(2));
+  const previous = playStateOf(lib.data.records["rawg:2"]);
+  const patch = lib.run(backToWishlist, "rawg:2");
+  const added = patch.queue.filter((e) => e.deletedAt === null).map((e) => e.entryId);
+  assert.deepEqual(added, ["g:rawg:2"]);
+  lib.run((d, c) =>
+    chainChanges(d, c, [
+      (dd, cc) => restoreState(dd, "rawg:2", previous, cc),
+      ...added.map((id) => (dd, cc) => removeEntry(dd, id, cc)),
+    ]),
+  );
+  assert.deepEqual(order(lib), ["rawg:1"]);
+  assert.equal(lib.data.records["rawg:2"].status, "playing");
+
+  // A started Wishlist game comes back to its own row, so nothing is added.
+  lib.run(setStatus, "rawg:1", "playing");
+  const again = lib.run(backToWishlist, "rawg:1");
+  assert.equal(again.queue.length, 0);
+});
+
+test("starting a game keeps its place, collections, notes, progress, rank and identity", () => {
+  const lib = library();
+  seededQueue(lib, 1, 2, 3);
+  lib.run(saveCollection, AC, [ref(2), ref(10)], []);
+  lib.run(setNotes, "rawg:2", "Remember the side quests.");
+  lib.run(setProgressEnabled, "rawg:2", true);
+  lib.run(setProgress, "rawg:2", 20);
+  lib.run(moveToTier, "rawg:2", "B", 0);
+  const queueBefore = structuredClone(lib.data.queue);
+  const record = structuredClone(lib.data.records["rawg:2"]);
+
+  const patch = lib.run(beginPlaying, "rawg:2");
+  assert.equal(patch.queue.length, 0, "no queue row is written");
+  assert.equal(patch.records.length, 1);
+  assert.deepEqual(lib.data.queue, queueBefore);
+  const after = lib.data.records["rawg:2"];
+  for (const field of [
+    "gameId",
+    "provider",
+    "rawgId",
+    "notes",
+    "notesAt",
+    "progress",
+    "progressEnabled",
+    "progressAt",
+    "tier",
+    "tierPosition",
+    "tierAt",
+    "metaAt",
+    "createdAt",
+  ]) {
+    assert.deepEqual(after[field], record[field], field);
+  }
+  assert.deepEqual(order(lib), ["rawg:1", "rawg:3", "c:ac"]);
+  assert.deepEqual(memberOrder(lib, "c:ac"), ["rawg:2", "rawg:10"], "still in its collection");
+  lib.run(backToWishlist, "rawg:2");
+  assert.deepEqual(order(lib), ["rawg:1", "rawg:2", "rawg:3", "c:ac"], "back in its old place");
+});
+
+test("starting the same game from another route never adds a second record", () => {
+  const lib = library();
+  seededQueue(lib, 1);
+  lib.run(startGame, ref(1));
+  lib.run(startGame, ref(1));
+  assert.deepEqual(Object.keys(lib.data.records), ["rawg:1"]);
+});
+
+test("a game counts as placed while it is on the Wishlist or in a collection", () => {
+  const lib = library();
+  lib.run(startGame, ref(1));
+  assert.equal(isPlaced(lib.data, "rawg:1"), false);
+  lib.run(saveCollection, AC, [ref(1)], []);
+  assert.equal(isPlaced(lib.data, "rawg:1"), true);
+  lib.run(removeEntry, "c:ac");
+  lib.run(saveGame, ref(1));
+  assert.equal(isPlaced(lib.data, "rawg:1"), true);
+});
+
+test("the Wishlist's next game is its first game or a collection's next up", () => {
+  const lib = library();
+  assert.equal(wishlistNextUp(lib.data), null);
+  lib.run(saveCollection, AC, [ref(10), ref(11)], []);
+  lib.run(setStatus, "rawg:10", "playing");
+  seededQueue(lib, 1);
+  assert.equal(wishlistNextUp(lib.data).gameId, "rawg:11");
+  lib.run(moveToTop, "g:rawg:1");
+  assert.equal(wishlistNextUp(lib.data).gameId, "rawg:1");
 });
 
 test("setting the same status again writes nothing", () => {

@@ -2,15 +2,18 @@ import {
   ArrowUpToLine,
   ChevronDown,
   ChevronUp,
+  Gamepad2,
   Info,
   Layers,
   ListStart,
+  Play,
   Sparkles,
   Trash2,
 } from "lucide-react";
 import type { CollectionMember } from "@/lib/game-library/rules";
 import type { GameRecord, QueueEntry } from "@/lib/game-library/types";
 import type { MenuItem } from "./action-menu";
+import { showInPlaying, startRecord } from "./play-actions";
 import { announce, focusHandle, removeWithUndo, shift, toNext, toTop } from "./wishlist-actions";
 
 type Translate = (key: string, vars?: Record<string, string | number>) => string;
@@ -77,6 +80,23 @@ function moveItems(
   return items;
 }
 
+/** Start playing, or, once started, a way to the game in Currently Playing. */
+function playItem(t: Translate, record: GameRecord): MenuItem {
+  return record.status === null
+    ? {
+        id: "start",
+        label: t("Start playing"),
+        icon: <Play {...ICON} />,
+        run: () => startRecord(record.gameId, record.name, t),
+      }
+    : {
+        id: "playing",
+        label: t("View in Currently Playing"),
+        icon: <Gamepad2 {...ICON} />,
+        run: () => showInPlaying(record.gameId),
+      };
+}
+
 export function gameMenu(
   t: Translate,
   entry: QueueEntry,
@@ -85,6 +105,7 @@ export function gameMenu(
   openDetails: () => void,
 ): MenuItem[] {
   return [
+    playItem(t, record),
     { id: "details", label: t("Open details"), icon: <Info {...ICON} />, run: openDetails },
     { id: "sep-1", separator: true },
     ...moveItems(t, entry, record.name, place, "queue"),
@@ -116,9 +137,20 @@ export function collectionMenu(
     openFranchise: (() => void) | null;
     newGames: number;
     onReview: (() => void) | null;
+    /** The collection's first game nobody has started. */
+    nextUp?: GameRecord | null;
   },
 ): MenuItem[] {
   const items: MenuItem[] = [];
+  const next = options.nextUp ?? null;
+  if (next) {
+    items.push({
+      id: "start-next",
+      label: t("Start {name}", { name: next.name }),
+      icon: <Play {...ICON} />,
+      run: () => startRecord(next.gameId, next.name, t),
+    });
+  }
   if (options.onToggle) {
     items.push({
       id: "toggle",
@@ -173,6 +205,7 @@ export function memberMenu(
   openDetails: () => void,
 ): MenuItem[] {
   return [
+    playItem(t, member.record),
     { id: "details", label: t("Open details"), icon: <Info {...ICON} />, run: openDetails },
     { id: "sep-1", separator: true },
     ...moveItems(t, member.entry, member.record.name, place, "collection"),

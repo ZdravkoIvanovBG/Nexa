@@ -8,7 +8,8 @@ import { useGameLibrary, useGameLibraryUnsaved } from "@/lib/game-library/store"
 import { useT } from "@/lib/i18n";
 import { useScrollMemory, useView } from "@/lib/view";
 import { GamesAttribution } from "./game-discovery/rawg-attribution";
-import { PlayingEmpty, TierListEmpty } from "./game-library/empty-states";
+import { TierListEmpty } from "./game-library/empty-states";
+import { PlayingTab } from "./game-library/playing-tab";
 import { onTabRequest, readSavedTab, saveTab, type GameLibraryTab } from "./game-library/tab";
 import { WishlistTab } from "./game-library/wishlist-tab";
 import { TabBtn } from "./library/shared";
@@ -107,7 +108,7 @@ export function GameLibraryView({
         </header>
         <UnsavedWarning />
         {tab === "wishlist" && <WishlistTab active={active} />}
-        {tab === "playing" && <PlayingEmpty />}
+        {tab === "playing" && <PlayingTab />}
         {tab === "tiers" && <TierListEmpty />}
         <footer className="mt-auto pt-6">
           <LibraryAttribution />
