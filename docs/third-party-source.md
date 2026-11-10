@@ -109,6 +109,10 @@ commit matched the resolved commit, and an extracted copy passed its own
    that is the case. Later releases with the same binaries may link to the same
    asset; releases with different binaries need a new bundle.
 
+0.11.0 ships the same four binaries as 0.10.0 (no pin changes), so its notices
+keep pointing at the `v0.10.0` asset; the identical tar is also attached to the
+`v0.11.0` release.
+
 ## Updating
 
 When mpv, the BtbN FFmpeg sidecar or their pins change:
