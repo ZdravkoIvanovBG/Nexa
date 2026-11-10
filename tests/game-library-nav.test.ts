@@ -191,6 +191,16 @@ test("only a lifted sort handle takes keys away from TV navigation", () => {
   // Escape puts a lifted game down; at rest it is left to Back.
   assert.match(parts, /if \(e\.key === "Escape" && lifted\)/);
 
+  // The Tier List's tiles follow the same rule: only a lifted tile takes the keys,
+  // and at rest Escape is left to Back (it is only handled in the lifted branch).
+  const tiles = readFileSync(
+    new URL("../src/views/game-library/tier-row.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(tiles, /data-tv-local-keys=\{lifted \? "true" : undefined\}/);
+  assert.match(tiles, /aria-pressed=\{lifted\}/);
+  assert.match(tiles, /if \(!lifted\) \{[\s\S]*?return;\s*\}[\s\S]*?case "Escape":/);
+
   // Nothing else in the app opts out of TV navigation this way.
   const users = [];
   const walk = (dir) => {
@@ -207,6 +217,7 @@ test("only a lifted sort handle takes keys away from TV navigation", () => {
   walk(new URL("../src", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
   assert.deepEqual(users.sort(), [
     "src/lib/keyboard-navigation.ts",
+    "src/views/game-library/tier-row.tsx",
     "src/views/game-library/wishlist-parts.tsx",
   ]);
 });

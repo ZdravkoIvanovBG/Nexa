@@ -59,3 +59,28 @@ export function onPlayingRequest(listener: (gameId: string) => void): () => void
   window.addEventListener(PLAYING_REQUEST, handler);
   return () => window.removeEventListener(PLAYING_REQUEST, handler);
 }
+
+const TIER_REQUEST = "harbor:game-library-tier";
+let pendingTierGame: string | null = null;
+
+/** Asks the Tier List to bring this game's tile into view and focus it. */
+export function requestTierGame(gameId: string): void {
+  pendingTierGame = gameId;
+  window.dispatchEvent(new CustomEvent<string>(TIER_REQUEST, { detail: gameId }));
+}
+
+/** The request waiting for the Tier List to open, taken once. */
+export function takeTierRequest(): string | null {
+  const gameId = pendingTierGame;
+  pendingTierGame = null;
+  return gameId;
+}
+
+export function onTierRequest(listener: (gameId: string) => void): () => void {
+  const handler = (e: Event) => {
+    pendingTierGame = null;
+    listener((e as CustomEvent<string>).detail);
+  };
+  window.addEventListener(TIER_REQUEST, handler);
+  return () => window.removeEventListener(TIER_REQUEST, handler);
+}

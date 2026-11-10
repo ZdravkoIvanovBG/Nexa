@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Sparkles,
   Trash2,
+  Trophy,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { emitListToast } from "@/components/lists/list-toast";
@@ -31,6 +32,7 @@ import {
 import {
   addCatalogGames,
   addMember,
+  boardTier,
   catalogAdditions,
   gameStage,
   isPlaced,
@@ -64,7 +66,8 @@ import {
   sendBackToWishlist,
   startPlaying,
 } from "../game-library/play-actions";
-import { requestPlayingGame, requestTab } from "../game-library/tab";
+import { requestPlayingGame, requestTab, requestTierGame } from "../game-library/tab";
+import { addToTierList } from "../game-library/tier-actions";
 import { removeWithUndo } from "../game-library/wishlist-actions";
 
 // Saving from Discovery. Everything saved is what's already on screen, so these
@@ -109,6 +112,15 @@ function useOpenWishlist(): () => void {
   };
 }
 
+function useOpenTiers(): (gameId: GameId) => void {
+  const { openLibrarySection } = useView();
+  return (gameId) => {
+    requestTierGame(gameId);
+    requestTab("tiers");
+    openLibrarySection("games");
+  };
+}
+
 function useOpenPlaying(): (gameId: GameId) => void {
   const { openLibrarySection } = useView();
   return (gameId) => {
@@ -140,6 +152,7 @@ function statusItems(
   status: GameStatus,
   placed: boolean,
   openPlaying: () => void,
+  board: { onBoard: boolean; open: () => void },
 ): MenuItem[] {
   const items: MenuItem[] = [
     {
@@ -191,6 +204,19 @@ function statusItems(
   }
   items.push(
     { id: "sep-wishlist", separator: true },
+    board.onBoard
+      ? {
+          id: "tiers",
+          label: t("View in Tier List"),
+          icon: <Trophy {...ICON} />,
+          run: board.open,
+        }
+      : {
+          id: "tiers",
+          label: t("Add to Tier List"),
+          icon: <Trophy {...ICON} />,
+          run: () => addToTierList(gameId, name, t, board.open),
+        },
     {
       id: "wishlist",
       label: t("Back to Wishlist"),
@@ -245,6 +271,7 @@ export function SaveGameButton({
   const menu = useActionMenu();
   const openWishlist = useOpenWishlist();
   const openPlaying = useOpenPlaying();
+  const openTiers = useOpenTiers();
   const own = useMemo(() => savableRef(game), [game]);
   // The same game already saved from another provider, by the curated catalog.
   const equivalent = own ? savedEquivalent(data, { gameId: game.id, slug: own.slug }) : null;
@@ -369,8 +396,15 @@ export function SaveGameButton({
     const status: GameStatus = stage;
     const Icon = STATUS_ICON[status];
     const dropped = status === "dropped";
-    const items = statusItems(t, gameId, name, status, isPlaced(data, gameId), () =>
-      openPlaying(gameId),
+    const record = data.records[gameId];
+    const items = statusItems(
+      t,
+      gameId,
+      name,
+      status,
+      isPlaced(data, gameId),
+      () => openPlaying(gameId),
+      { onBoard: !!record && boardTier(record) !== null, open: () => openTiers(gameId) },
     );
     return (
       <>

@@ -763,6 +763,115 @@ export function removeFromBoard(
   return patch;
 }
 
+/** The tier group's values, so a board change can be put back exactly (Undo). */
+export type TierState = Pick<GameRecord, "tier" | "tierPosition">;
+
+export function tierStateOf(record: GameRecord): TierState {
+  return { tier: record.tier, tierPosition: record.tierPosition };
+}
+
+/**
+ * Undo for a board change: writes back the tier and position it replaced under
+ * a fresh stamp. A `null` tier comes back as null, so a completed game returns
+ * to the derived Unranked rather than to a deliberate placement.
+ */
+export function restoreTier(
+  data: GameLibraryData,
+  gameId: GameId,
+  previous: TierState,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const record = data.records[gameId];
+  const patch = emptyPatch();
+  if (!record) return patch;
+  if (record.tier === previous.tier && record.tierPosition === previous.tierPosition) return patch;
+  patch.records.push({ ...record, ...previous, tierAt: nextStamp(record.tierAt, ctx.now) });
+  return patch;
+}
+
+/**
+ * Saved games that aren't on the board, for "Add games": finished ones first,
+ * then by name. A record left on no list and not started isn't offered: as far
+ * as the user can see, it isn't in their library.
+ */
+export function boardCandidates(data: GameLibraryData): GameRecord[] {
+  return Object.values(data.records)
+    .filter(
+      (record) =>
+        boardTier(record) === null && (record.status !== null || isPlaced(data, record.gameId)),
+    )
+    .sort(
+      (a, b) =>
+        Number(b.status === "completed") - Number(a.status === "completed") ||
+        a.name.localeCompare(b.name) ||
+        (a.gameId < b.gameId ? -1 : a.gameId > b.gameId ? 1 : 0),
+    );
+}
+
+/**
+ * The moveToTier index for a drop at `slot`, counted among the tier's tiles
+ * without the moving one. Unranked shows its placed tiles first, then the
+ * completed games waiting there with no position; a drop among those lands
+ * after the placed tiles, since the waiting ones have no place to be beside.
+ */
+export function boardDropIndex(
+  board: Record<Tier, BoardTile[]>,
+  gameId: GameId,
+  tier: Tier,
+  slot: number,
+): number {
+  const placed = board[tier].filter(
+    (tile) => tile.record.tier === tier && tile.record.gameId !== gameId,
+  ).length;
+  return Math.max(0, Math.min(slot, placed));
+}
+
+export type BoardStep = "left" | "right" | "up" | "down";
+
+/** Where a tile is on the board: its tier and its place among that tier's tiles. */
+export function boardPlace(
+  board: Record<Tier, BoardTile[]>,
+  gameId: GameId,
+): { tier: Tier; index: number; count: number } | null {
+  for (const tier of ALL_TIERS) {
+    const index = board[tier].findIndex((tile) => tile.record.gameId === gameId);
+    if (index >= 0) return { tier, index, count: board[tier].length };
+  }
+  return null;
+}
+
+/**
+ * The keyboard and menu way to rank: one place along the tier, or to the tier
+ * above or below at about the same place. Nothing at an edge.
+ */
+export function stepOnBoard(
+  data: GameLibraryData,
+  gameId: GameId,
+  step: BoardStep,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const board = tierBoard(data);
+  const place = boardPlace(board, gameId);
+  if (!place) return emptyPatch();
+  let tier = place.tier;
+  let slot = place.index;
+  if (step === "left" || step === "right") {
+    slot += step === "left" ? -1 : 1;
+    if (slot < 0 || slot >= place.count) return emptyPatch();
+  } else {
+    const at = ALL_TIERS.indexOf(place.tier) + (step === "up" ? -1 : 1);
+    if (at < 0 || at >= ALL_TIERS.length) return emptyPatch();
+    tier = ALL_TIERS[at];
+    slot = Math.min(place.index, board[tier].length);
+  }
+  const index = boardDropIndex(board, gameId, tier, slot);
+  // A completed game still waiting in Unranked has no place to step from: it
+  // can only join the placed tiles, which may not be the way it was asked to go.
+  if (step === "left" && index >= place.index) return emptyPatch();
+  if (step === "right" && index <= place.index) return emptyPatch();
+  return moveToTier(data, gameId, tier, index, ctx);
+}
+
 // ── views ───────────────────────────────────────────────────────────────────
 
 export function collectionSummary(data: GameLibraryData, collectionId: string): CollectionSummary {

@@ -1,4 +1,4 @@
-import { Compass, ListOrdered, Play, Search } from "lucide-react";
+import { Compass, Gamepad2, ListOrdered, Play, Plus, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -107,24 +107,17 @@ function EmptyState({
   sketch,
   title,
   body,
-  comingSoon = false,
   actions,
 }: {
   sketch: ReactNode;
   title: string;
   body: string;
-  comingSoon?: boolean;
   actions?: ReactNode;
 }) {
   const t = useT();
   return (
     <section className="animate-fade-in grid items-center gap-10 rounded-[20px] bg-surface/50 p-8 ring-1 ring-edge-soft md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:p-12">
       <div className="flex max-w-md flex-col items-start gap-3">
-        {comingSoon && (
-          <span className="rounded-full bg-accent/15 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-accent">
-            {t("Coming soon")}
-          </span>
-        )}
         <h2 className="font-display text-[28px] font-medium leading-[1.15] text-ink">{t(title)}</h2>
         <p className="text-[14px] leading-relaxed text-ink-muted">{t(body)}</p>
         {actions && <div className="mt-3 flex flex-wrap items-center gap-2.5">{actions}</div>}
@@ -220,13 +213,42 @@ export function PlayingEmpty({
   );
 }
 
-export function TierListEmpty() {
+export function TierListEmpty({
+  onOpenPlaying,
+  onAddGames,
+}: {
+  onOpenPlaying: () => void;
+  /** Only when the library has games that could be added. */
+  onAddGames: (() => void) | null;
+}) {
+  const t = useT();
   return (
     <EmptyState
-      comingSoon
       sketch={<TierSketch />}
       title="Rank the games you've finished"
-      body="Completed games will wait here until you decide where they belong, from S all the way down to F."
+      body="Finish a game and it waits here in Unranked until you decide where it belongs, from S all the way down to F. You can also add any saved game yourself."
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={onOpenPlaying}
+            className="flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-[14px] font-semibold text-canvas transition-opacity hover:opacity-90"
+          >
+            <Gamepad2 size={15} strokeWidth={2.3} />
+            {t("Open Currently Playing")}
+          </button>
+          {onAddGames && (
+            <button
+              type="button"
+              onClick={onAddGames}
+              className="flex h-11 items-center gap-2 rounded-full border border-edge px-5 text-[14px] font-medium text-ink transition-colors hover:bg-raised"
+            >
+              <Plus size={15} strokeWidth={2.3} />
+              {t("Add games")}
+            </button>
+          )}
+        </>
+      }
     />
   );
 }

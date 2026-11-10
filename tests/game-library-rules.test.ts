@@ -8,12 +8,18 @@ import {
   applyPatch,
   backToWishlist,
   beginPlaying,
+  boardCandidates,
+  boardDropIndex,
+  boardPlace,
   chainChanges,
   isPlaced,
   playAgain,
   playDates,
   playStateOf,
   restoreState,
+  restoreTier,
+  stepOnBoard,
+  tierStateOf,
   wishlistNextUp,
   boardTier,
   catalogAdditions,
@@ -45,6 +51,7 @@ import {
   wishlistView,
 } from "../src/lib/game-library/rules.ts";
 import { MAX_NOTES_LENGTH } from "../src/lib/game-library/types.ts";
+import { ALL_TIERS } from "../src/lib/tracking-tiers.ts";
 
 const ref = (rawgId, name = `Game ${rawgId}`) => ({
   provider: "rawg",
@@ -804,6 +811,178 @@ test("a ranked tile with no position still shows and a move repairs it", () => {
   lib.run(moveToTier, "rawg:2", "A", 1);
   assert.deepEqual(tierIds(lib, "A"), ["rawg:1", "rawg:2"]);
   assert.ok(lib.data.records["rawg:2"].tierPosition);
+});
+
+// ── Stage 2: the board ──────────────────────────────────────────────────────
+
+function finished(lib, ...ids) {
+  for (const id of ids) {
+    lib.run(saveGame, ref(id));
+    lib.run(startGame, ref(id));
+    lib.run(setStatus, `rawg:${id}`, "completed");
+  }
+}
+
+test("removing from the board can be undone exactly, back to the derived Unranked", () => {
+  const lib = library();
+  finished(lib, 1, 2);
+  const derived = tierStateOf(lib.data.records["rawg:1"]);
+  lib.run(removeFromBoard, "rawg:1");
+  assert.deepEqual(tierIds(lib, "unranked"), ["rawg:2"]);
+  const removedAt = lib.data.records["rawg:1"].tierAt;
+  lib.run(restoreTier, "rawg:1", derived);
+  assert.equal(lib.data.records["rawg:1"].tier, null);
+  assert.ok(lib.data.records["rawg:1"].tierAt > removedAt, "the undo beats the removal everywhere");
+  assert.deepEqual(tierIds(lib, "unranked"), ["rawg:1", "rawg:2"]);
+
+  lib.run(moveToTier, "rawg:2", "S", 0);
+  const ranked = tierStateOf(lib.data.records["rawg:2"]);
+  lib.run(removeFromBoard, "rawg:2");
+  lib.run(restoreTier, "rawg:2", ranked);
+  assert.deepEqual(tierIds(lib, "S"), ["rawg:2"]);
+  assert.equal(lib.data.records["rawg:2"].tierPosition, ranked.tierPosition);
+  assert.ok(isEmptyPatch(lib.run(restoreTier, "rawg:2", ranked)));
+});
+
+test("Add games offers saved games that aren't on the board, finished ones first", () => {
+  const lib = library();
+  lib.run(saveGame, ref(5, "Zelda"));
+  lib.run(saveGame, ref(6, "Alan Wake"));
+  finished(lib, 7);
+  lib.run(removeFromBoard, "rawg:7");
+  finished(lib, 8);
+  lib.run(startGame, ref(9, "Started from its page"));
+  lib.run(startGame, ref(10, "Left everywhere"));
+  lib.run(clearStatus, "rawg:10");
+  const offered = boardCandidates(lib.data).map((r) => r.gameId);
+  assert.deepEqual(offered, ["rawg:7", "rawg:6", "rawg:9", "rawg:5"]);
+  assert.ok(!offered.includes("rawg:8"), "already in Unranked");
+  assert.ok(!offered.includes("rawg:10"), "on no list and not started");
+  lib.run(addToBoard, "rawg:7");
+  assert.ok(!boardCandidates(lib.data).some((r) => r.gameId === "rawg:7"));
+});
+
+test("a drop among Unranked's waiting games lands after the placed ones", () => {
+  const lib = library();
+  finished(lib, 1, 2, 3);
+  lib.run(moveToTier, "rawg:3", "unranked", 0); // placed
+  const board = tierBoard(lib.data);
+  assert.deepEqual(tierIds(lib, "unranked"), ["rawg:3", "rawg:1", "rawg:2"]);
+  assert.equal(boardDropIndex(board, "rawg:2", "unranked", 2), 1);
+  assert.equal(boardDropIndex(board, "rawg:3", "unranked", 2), 0, "the moving tile isn't counted");
+  assert.equal(boardDropIndex(board, "rawg:1", "S", 5), 0);
+  assert.equal(boardDropIndex(board, "rawg:1", "S", -3), 0);
+});
+
+test("dragging lands at the marked slot, counted without the dragged tile", () => {
+  const lib = library();
+  finished(lib, 1, 2, 3, 4);
+  for (const id of [1, 2, 3, 4]) lib.run(moveToTier, `rawg:${id}`, "A", 99);
+  // Forward: the slot after rawg:3 among the others [1, 3, 4] is 2.
+  lib.run(moveToTier, "rawg:2", "A", boardDropIndex(tierBoard(lib.data), "rawg:2", "A", 2));
+  assert.deepEqual(tierIds(lib, "A"), ["rawg:1", "rawg:3", "rawg:2", "rawg:4"]);
+  // Backward to the front.
+  lib.run(moveToTier, "rawg:4", "A", boardDropIndex(tierBoard(lib.data), "rawg:4", "A", 0));
+  assert.deepEqual(tierIds(lib, "A"), ["rawg:4", "rawg:1", "rawg:3", "rawg:2"]);
+});
+
+test("keyboard steps move along a tier and between tiers, and stop at the edges", () => {
+  const lib = library();
+  finished(lib, 1, 2, 3);
+  lib.run(moveToTier, "rawg:1", "S", 0);
+  lib.run(moveToTier, "rawg:2", "S", 1);
+  lib.run(stepOnBoard, "rawg:1", "right");
+  assert.deepEqual(tierIds(lib, "S"), ["rawg:2", "rawg:1"]);
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:1", "right")), "already last");
+  lib.run(stepOnBoard, "rawg:1", "left");
+  assert.deepEqual(tierIds(lib, "S"), ["rawg:1", "rawg:2"]);
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:1", "left")), "already first");
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:1", "up")), "nothing above S");
+  lib.run(stepOnBoard, "rawg:2", "down");
+  assert.deepEqual(boardPlace(tierBoard(lib.data), "rawg:2"), { tier: "A", index: 0, count: 1 });
+  for (let i = 0; i < 5; i++) lib.run(stepOnBoard, "rawg:2", "down");
+  assert.equal(boardPlace(tierBoard(lib.data), "rawg:2").tier, "unranked");
+  assert.equal(lib.data.records["rawg:2"].tier, "unranked", "a deliberate placement now");
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:2", "down")), "nothing below Unranked");
+  // A waiting completed game can't step right: it can only join the placed tiles.
+  assert.deepEqual(tierIds(lib, "unranked"), ["rawg:2", "rawg:3"]);
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:3", "right")));
+  assert.ok(isEmptyPatch(lib.run(stepOnBoard, "rawg:9", "up")), "not on the board");
+});
+
+test("ranking never changes status, dates, notes, progress or the Wishlist", () => {
+  const lib = library();
+  seededQueue(lib, 1, 2);
+  lib.run(startGame, ref(1));
+  lib.run(setNotes, "rawg:1", "Boss rush next.");
+  lib.run(setProgressEnabled, "rawg:1", true);
+  lib.run(setProgress, "rawg:1", 70);
+  const queue = structuredClone(lib.data.queue);
+  const before = structuredClone(lib.data.records["rawg:1"]);
+  const steps = [
+    () => lib.run(addToBoard, "rawg:1"),
+    () => lib.run(moveToTier, "rawg:1", "S", 0),
+    () => lib.run(stepOnBoard, "rawg:1", "down"),
+    () => lib.run(removeFromBoard, "rawg:1"),
+    () => lib.run(restoreTier, "rawg:1", { tier: "B", tierPosition: null }),
+  ];
+  const fields = ["status", "startedAt", "completedAt", "stateAt", "notes", "notesAt", "progress"];
+  fields.push("progressEnabled", "progressAt", "metaAt", "gameId", "provider");
+  for (const step of steps) {
+    const patch = step();
+    assert.equal(patch.queue.length, 0, "no Wishlist row is written");
+    const after = lib.data.records["rawg:1"];
+    for (const field of fields) assert.deepEqual(after[field], before[field], field);
+  }
+  assert.deepEqual(lib.data.queue, queue);
+});
+
+test("a game in two collections and on the Wishlist has one tile and one rank", () => {
+  const lib = library();
+  lib.run(saveCollection, AC, [ref(10), ref(11)], []);
+  lib.run(saveCollection, { franchiseId: "ezio", title: "Ezio", image: null }, [ref(11)], []);
+  lib.run(saveGame, ref(11));
+  lib.run(startGame, ref(11));
+  lib.run(setStatus, "rawg:11", "completed");
+  lib.run(moveToTier, "rawg:11", "S", 0);
+  const all = ALL_TIERS.flatMap((tier) => tierIds(lib, tier));
+  assert.deepEqual(all, ["rawg:11"]);
+  assert.equal(placementsOf(lib.data, "rawg:11").collections.length, 2);
+  assert.equal(placementsOf(lib.data, "rawg:11").standalone, true);
+});
+
+test("RAWG and IGDB games rank side by side under their own ids", () => {
+  const lib = library();
+  finished(lib, 1);
+  const igdb = {
+    provider: "igdb",
+    igdbId: 77,
+    slug: "x",
+    name: "IGDB game",
+    released: null,
+    image: null,
+  };
+  lib.run(startGame, igdb);
+  lib.run(setStatus, "igdb:77", "completed");
+  lib.run(moveToTier, "igdb:77", "S", 0);
+  lib.run(moveToTier, "rawg:1", "S", 1);
+  assert.deepEqual(tierIds(lib, "S"), ["igdb:77", "rawg:1"]);
+  assert.equal(lib.data.records["igdb:77"].provider, "igdb");
+});
+
+test("a status change never moves a tile, and replaying keeps a rank", () => {
+  const lib = library();
+  finished(lib, 1, 2);
+  lib.run(moveToTier, "rawg:1", "A", 0);
+  lib.run(playAgain, "rawg:1");
+  assert.deepEqual(tierIds(lib, "A"), ["rawg:1"]);
+  assert.equal(tierBoard(lib.data).A[0].notCompleted, true);
+  lib.run(playAgain, "rawg:2");
+  assert.deepEqual(tierIds(lib, "unranked"), [], "an unranked replay leaves the derived Unranked");
+  lib.run(setStatus, "rawg:2", "completed");
+  assert.deepEqual(tierIds(lib, "unranked"), ["rawg:2"]);
+  lib.run(setStatus, "rawg:2", "dropped");
+  assert.deepEqual(tierIds(lib, "unranked"), []);
 });
 
 test("the library imports nothing from the movie stores or the movie sync", () => {

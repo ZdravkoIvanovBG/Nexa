@@ -12,10 +12,17 @@ import {
   Play,
   RotateCcw,
   Trash2,
+  Trophy,
 } from "lucide-react";
 import { useMemo } from "react";
 import { TIERS } from "@/lib/tracking-tiers";
-import { isPlaced, notesPreview, placementsOf, playDates } from "@/lib/game-library/rules";
+import {
+  boardTier,
+  isPlaced,
+  notesPreview,
+  placementsOf,
+  playDates,
+} from "@/lib/game-library/rules";
 import { snapshotSummary } from "@/lib/game-library/snapshot";
 import type { NoteDraft } from "@/lib/game-library/note-drafts";
 import type { GameLibraryData, GameRecord } from "@/lib/game-library/types";
@@ -35,6 +42,7 @@ import {
   setTracking,
 } from "./play-actions";
 import { ProgressControl } from "./progress-control";
+import { addToTierList, rankGame, showInTiers } from "./tier-actions";
 import { Dot, MoreButton, StatusChip, yearOf } from "./wishlist-parts";
 
 type Translate = (key: string, vars?: Record<string, string | number>) => string;
@@ -65,7 +73,7 @@ export function playingMenu(
   t: Translate,
   record: GameRecord,
   placed: boolean,
-  options: { openDetails: () => void; openNotes: () => void },
+  options: { openDetails: () => void; openNotes: () => void; onBoard: boolean },
 ): MenuItem[] {
   const { gameId, name, status } = record;
   const items: MenuItem[] = [
@@ -125,6 +133,19 @@ export function playingMenu(
   }
   items.push(
     { id: "sep-2", separator: true },
+    options.onBoard
+      ? {
+          id: "tiers",
+          label: t("View in Tier List"),
+          icon: <Trophy {...ICON} />,
+          run: () => showInTiers(gameId),
+        }
+      : {
+          id: "tiers",
+          label: t("Add to Tier List"),
+          icon: <Trophy {...ICON} />,
+          run: () => addToTierList(gameId, name, t, () => showInTiers(gameId)),
+        },
     {
       id: "wishlist",
       label: t("Back to Wishlist"),
@@ -185,7 +206,11 @@ export function PlayingCard({
   const ranked =
     record.tier && (TIERS as readonly string[]).includes(record.tier) ? record.tier : null;
   const openDetails = () => openGame(snapshotSummary(record));
-  const items = () => playingMenu(t, record, placed, { openDetails, openNotes: onOpenNotes });
+  const onBoard = boardTier(record) !== null;
+  // A completed card says it on its Rank button instead.
+  const rankBadge = ranked && status !== "completed" ? ranked : null;
+  const items = () =>
+    playingMenu(t, record, placed, { openDetails, openNotes: onOpenNotes, onBoard });
   const panelId = `playing-${gameId}`;
 
   const dateLine =
@@ -232,7 +257,7 @@ export function PlayingCard({
               {dateLine && <Dot />}
               {dateLine && <span>{dateLine}</span>}
             </p>
-            {(collections.length > 0 || ranked) && (
+            {(collections.length > 0 || rankBadge) && (
               <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11.5px] text-ink-subtle">
                 {collections.slice(0, 2).map((c) => (
                   <span
@@ -243,9 +268,9 @@ export function PlayingCard({
                     <span className="truncate">{t("In {name}", { name: c.title })}</span>
                   </span>
                 ))}
-                {ranked && (
+                {rankBadge && (
                   <span className="rounded-full bg-white/[0.05] px-2 py-0.5 font-semibold">
-                    {t("Ranked {tier}", { tier: ranked })}
+                    {t("Ranked {tier}", { tier: rankBadge })}
                   </span>
                 )}
               </p>
@@ -327,14 +352,24 @@ export function PlayingCard({
               </>
             )}
             {status === "completed" && (
-              <button
-                type="button"
-                onClick={() => replayGame(gameId, name, t)}
-                className={SECONDARY}
-              >
-                <RotateCcw size={14} strokeWidth={2.4} />
-                {t("Play again")}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => rankGame(data, gameId, name, t)}
+                  className={ranked ? SECONDARY : PRIMARY}
+                >
+                  <Trophy size={14} strokeWidth={2.4} />
+                  {ranked ? t("Ranked {tier}", { tier: ranked }) : t("Rank it")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => replayGame(gameId, name, t)}
+                  className={SECONDARY}
+                >
+                  <RotateCcw size={14} strokeWidth={2.4} />
+                  {t("Play again")}
+                </button>
+              </>
             )}
             {status === "dropped" && (
               <button type="button" onClick={() => resumeGame(gameId, name, t)} className={PRIMARY}>
