@@ -4,7 +4,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 // @ts-expect-error Node test types are intentionally outside the browser-only tsconfig.
 import test from "node:test";
-import { isTauriDragRegion, wouldTauriDragOrMaximize } from "../src/lib/drag-region.ts";
+import {
+  isTauriDragRegion,
+  titleBarMouseDown,
+  wouldTauriDragOrMaximize,
+} from "../src/lib/drag-region.ts";
 
 const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
 const fullscreenRs = read("src-tauri/src/fullscreen.rs");
@@ -191,9 +195,13 @@ test("every layout's Maximize/Restore button uses the shared action and icon sta
   assert.match(topbar, /useWindowRestoreIcon\(\)/);
 });
 
-test("the fullscreen drag guard is installed and only acts in fullscreen", () => {
+test("the window guard is installed, on Windows, with the title-bar rule", () => {
   assert.match(fullscreenState, /installFullscreenDragGuard\(document\.documentElement\)/);
-  assert.match(fullscreenState, /if \(!fullscreenBlocksWindowDrag\(\)\) return;/);
+  assert.match(fullscreenState, /if \(!isWindowsDesktop\(\)\) return;/);
+  assert.match(
+    fullscreenState,
+    /const action = titleBarMouseDown\(e, path as DragPathElement\[\], fullscreenBlocksWindowDrag\(\)\);\s*if \(action === "pass"\) return;\s*e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*if \(action === "exit-fullscreen"\) void exitWindowFullscreen\(\{ toNormal: true \}\);/,
+  );
   assert.match(fullscreenState, /return isWindowsDesktop\(\) && windowFullscreen;/);
   // Bubble phase on <html>: after the page's handlers, before Tauri's document listener.
   assert.match(fullscreenState, /root\.addEventListener\("mousedown", onMouseDown\);/);
@@ -211,4 +219,97 @@ test("fullscreen exits from Esc, the player and the layout editor go through the
     read("src/views/settings/player-layout-panel/editor-overlay.tsx"),
     /await toggleWindowFullscreen\(\);/,
   );
+});
+
+// --- double-click: only the title bar changes the window state ---------------
+
+const TB = "data-window-titlebar";
+const SPACE = "data-window-titlebar-space";
+const press = (detail: number) => ({ button: 0, detail });
+
+test("in a normal or maximized window, only a title-bar double-click maximizes or restores", () => {
+  const titleBar = [el("DIV", { [DRAG]: "" }), el("HEADER", { [TB]: "" }), el("BODY")];
+  const content = [el("DIV", { [DRAG]: "" }), el("MAIN"), el("BODY")];
+  const sidebarLogoStrip = [el("DIV", { [DRAG]: "" }), el("ASIDE"), el("BODY")];
+  // Title bar: Tauri drags on the first press and maximizes on the second.
+  assert.equal(titleBarMouseDown(press(1), titleBar, false), "pass");
+  assert.equal(titleBarMouseDown(press(2), titleBar, false), "pass");
+  // Content and sidebars: still drag the window, never resize it.
+  for (const path of [content, sidebarLogoStrip]) {
+    assert.equal(titleBarMouseDown(press(1), path, false), "pass", "single press still drags");
+    assert.equal(titleBarMouseDown(press(2), path, false), "block", "double-click does nothing");
+  }
+  // Not a drag region at all (cards, buttons, text): never touched.
+  const button = [el("BUTTON"), el("HEADER", { [TB]: "" })];
+  const card = [el("IMG"), el("BUTTON"), el("DIV", { [DRAG]: "" })];
+  for (const path of [button, card, [el("SPAN"), el("DIV", { [DRAG]: "" })]]) {
+    assert.equal(titleBarMouseDown(press(2), path, false), "pass");
+    assert.equal(titleBarMouseDown(press(2), path, true), "pass");
+  }
+  // Right button and triple clicks are Tauri's no-ops anyway.
+  assert.equal(titleBarMouseDown({ button: 2, detail: 2 }, content, false), "pass");
+  assert.equal(titleBarMouseDown(press(3), content, false), "pass");
+});
+
+test("in true fullscreen nothing drags; a title-bar double-click leaves to a normal window", () => {
+  const titleBar = [el("DIV", { [DRAG]: "" }), el("HEADER", { [TB]: "" })];
+  // The default top bar has no drag region in fullscreen, only the marker.
+  const defaultBarSpace = [el("DIV", { [SPACE]: "" }), el("HEADER", { [TB]: "" })];
+  const content = [el("DIV", { [DRAG]: "" }), el("MAIN")];
+  assert.equal(titleBarMouseDown(press(1), titleBar, true), "block", "no window drag");
+  assert.equal(titleBarMouseDown(press(2), titleBar, true), "exit-fullscreen");
+  assert.equal(
+    titleBarMouseDown(press(1), defaultBarSpace, true),
+    "pass",
+    "single click as before",
+  );
+  assert.equal(titleBarMouseDown(press(2), defaultBarSpace, true), "exit-fullscreen");
+  assert.equal(titleBarMouseDown(press(1), content, true), "block");
+  assert.equal(
+    titleBarMouseDown(press(2), content, true),
+    "block",
+    "content never leaves fullscreen",
+  );
+  // The marker counts only on the element clicked, like a plain drag region.
+  const insideSpace = [el("SPAN"), el("DIV", { [SPACE]: "" }), el("HEADER", { [TB]: "" })];
+  assert.equal(titleBarMouseDown(press(2), insideSpace, true), "pass");
+  // Outside the title bar the marker means nothing.
+  assert.equal(titleBarMouseDown(press(2), [el("DIV", { [SPACE]: "" })], true), "pass");
+});
+
+test("every layout's top bar is marked as the title bar, and nothing else is", () => {
+  for (const f of [
+    "src/chrome/topbar.tsx",
+    "src/chrome/royal-topbar.tsx",
+    "src/chrome/topdock.tsx",
+    "src/chrome/cinematic-overlay.tsx",
+    "src/chrome/minui-dock/floating-top.tsx",
+  ]) {
+    assert.equal((read(f).match(/data-window-titlebar\b(?!-)/g) ?? []).length, 1, f);
+  }
+  // Content pages, sidebars and the player keep their drag regions unmarked.
+  for (const f of [
+    "src/views/home.tsx",
+    "src/views/library.tsx",
+    "src/views/game-library.tsx",
+    "src/views/game-discovery.tsx",
+    "src/views/discover.tsx",
+    "src/views/detail.tsx",
+    "src/chrome/sidebar.tsx",
+    "src/components/player/transport.tsx",
+    "src/views/pip.tsx",
+  ]) {
+    assert.doesNotMatch(read(f), /data-window-titlebar/, f);
+  }
+  // The default bar: a drag region when windowed, the empty-space marker in fullscreen.
+  assert.match(
+    read("src/chrome/topbar.tsx"),
+    /const dragProps = !IS_TAURI\s*\? \{\}\s*: fullscreen\s*\? \{ "data-window-titlebar-space": true \}\s*: \{ "data-tauri-drag-region": true \};/,
+  );
+});
+
+test("the player's own double-click is a React handler, untouched by the window guard", () => {
+  const stage = read("src/views/player/drag-click-stage.tsx");
+  assert.match(stage, /onDoubleClick=\{\(e\) => \{/);
+  assert.doesNotMatch(stage, /data-tauri-drag-region/);
 });

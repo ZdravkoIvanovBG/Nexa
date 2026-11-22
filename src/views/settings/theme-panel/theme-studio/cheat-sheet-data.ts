@@ -274,6 +274,12 @@ export const STABLE_SELECTORS: HookSelector[] = [
     selector: "[data-tauri-drag-region]",
     where: "Window-drag areas. Keep one if you replace the title bar.",
   },
+  {
+    selector: "[data-window-titlebar]",
+    where:
+      "Your title bar. On Windows, double-clicking a drag area maximizes or restores only inside it.",
+    tip: "Without it, drag areas still move the window but a double-click does nothing.",
+  },
   { selector: "main", where: "The scrolling content area. Add padding for custom chrome." },
 ];
 

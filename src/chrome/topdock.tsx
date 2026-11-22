@@ -113,6 +113,7 @@ export function TopDock() {
   return (
     <>
       <header
+        data-window-titlebar
         aria-hidden={chromeHidden}
         className={`
           ${

@@ -46,9 +46,17 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const searchWidth = canGoBack
     ? "w-[14rem] sm:w-[18rem] lg:w-[22rem] xl:w-[24rem]"
     : "w-[14rem] sm:w-[20rem] lg:w-[24rem] xl:w-[28rem] hover:w-[18rem] sm:hover:w-[24rem] lg:hover:w-[28rem] xl:hover:w-[34rem] focus-within:w-[18rem] sm:focus-within:w-[24rem] lg:focus-within:w-[28rem] xl:focus-within:w-[34rem]";
-  const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
+  // In fullscreen the bar's empty space is no drag region (a drag would strand
+  // the window); it is marked instead, so a double-click there can leave
+  // fullscreen like the Maximize/Restore button (fullscreen-state.ts).
+  const dragProps = !IS_TAURI
+    ? {}
+    : fullscreen
+      ? { "data-window-titlebar-space": true }
+      : { "data-tauri-drag-region": true };
   return (
     <header
+      data-window-titlebar
       className={`fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}
     >
       <div

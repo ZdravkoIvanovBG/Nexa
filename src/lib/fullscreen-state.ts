@@ -1,6 +1,6 @@
 import { isWindowsDesktop } from "@/lib/platform";
 import { loadStoredSettings } from "@/lib/settings/load";
-import { type DragPathElement, wouldTauriDragOrMaximize } from "@/lib/drag-region";
+import { type DragPathElement, titleBarMouseDown } from "@/lib/drag-region";
 
 let windowFullscreen = false;
 // Bumped on every change, so an OS query that started before a change can be
@@ -209,25 +209,33 @@ export function fullscreenBlocksWindowDrag(): boolean {
 }
 
 /**
- * In true fullscreen a drag region must neither drag the window nor maximize it
- * on double-click: either one strands the window fullscreen-styled, without a
- * sizing border, Snap or resizing. Tauri's drag listener is on `document`, so
- * this listener on <html> runs after the page's own handlers (React, buttons)
- * and before Tauri's. It stops only the mousedowns Tauri itself would act on;
- * Tauri already ends propagation for those, so document/window listeners see
- * the same events as before.
+ * Windows. Decides what Tauri may do with a mousedown on a drag region
+ * (titleBarMouseDown):
+ * - In true fullscreen a drag region must neither drag the window nor maximize
+ *   it: either one strands the window fullscreen-styled, without a sizing
+ *   border, Snap or resizing. A double-click on the title bar instead leaves
+ *   fullscreen to a normal window, as the Maximize/Restore button does.
+ * - Otherwise only a double-click on the title bar maximizes or restores. Many
+ *   pages mark their own background as a drag region so it can move the window;
+ *   a double-click in a gap there must not resize Nexa.
+ * Tauri's drag listener is on `document`, so this listener on <html> runs after
+ * the page's own handlers (React, buttons) and before Tauri's. It stops only
+ * mousedowns Tauri itself would act on, which Tauri also stops, so
+ * document/window listeners see the same events as before.
  */
 export function installFullscreenDragGuard(root: HTMLElement): () => void {
   const onMouseDown = (e: MouseEvent) => {
-    if (!fullscreenBlocksWindowDrag()) return;
+    if (!isWindowsDesktop()) return;
     const path = e
       .composedPath()
       .filter(
         (n): n is HTMLElement => typeof HTMLElement !== "undefined" && n instanceof HTMLElement,
       );
-    if (!wouldTauriDragOrMaximize(e, path as DragPathElement[])) return;
+    const action = titleBarMouseDown(e, path as DragPathElement[], fullscreenBlocksWindowDrag());
+    if (action === "pass") return;
     e.preventDefault();
     e.stopPropagation();
+    if (action === "exit-fullscreen") void exitWindowFullscreen({ toNormal: true });
   };
   root.addEventListener("mousedown", onMouseDown);
   return () => root.removeEventListener("mousedown", onMouseDown);

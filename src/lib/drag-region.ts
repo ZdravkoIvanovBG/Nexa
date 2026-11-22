@@ -56,3 +56,45 @@ export function wouldTauriDragOrMaximize(
 ): boolean {
   return e.button === 0 && (e.detail === 1 || e.detail === 2) && isTauriDragRegion(path);
 }
+
+/**
+ * Marks a layout's title bar: the top bar of the default layout, Royal, Top
+ * Dock, Cinematic and MinUI. Only a double-click on a drag region inside one
+ * changes the window state; content and sidebars keep single-press dragging.
+ */
+export const WINDOW_TITLEBAR_ATTR = "data-window-titlebar";
+
+/**
+ * Empty title-bar space that isn't a drag region right now: the default top
+ * bar drops its drag region in fullscreen. Like a plain drag region, it counts
+ * only when it is the element clicked, never a child of it.
+ */
+export const TITLEBAR_SPACE_ATTR = "data-window-titlebar-space";
+
+/** What the window guard does with a mousedown, before Tauri's own listener sees it. */
+export type TitleBarAction = "pass" | "block" | "exit-fullscreen";
+
+/**
+ * Windows only (the guard's caller checks). Tauri turns a mousedown on a drag
+ * region into a window drag (first press) or maximize/restore (second press).
+ * - Not a drag region, or not the left button: untouched.
+ * - True fullscreen: never a drag; a double-click on the title bar leaves
+ *   fullscreen to a normal window, as the Maximize/Restore button does.
+ * - Normal or maximized: dragging is untouched; a double-click maximizes or
+ *   restores only on the title bar, never on content, sidebars or the player.
+ */
+export function titleBarMouseDown(
+  e: { button: number; detail: number },
+  path: readonly DragPathElement[],
+  fullscreen: boolean,
+): TitleBarAction {
+  const onTitleBar = path.some((el) => el.hasAttribute(WINDOW_TITLEBAR_ATTR));
+  const tauriActs = wouldTauriDragOrMaximize(e, path);
+  if (fullscreen) {
+    const emptySpace = tauriActs || (path.length > 0 && path[0].hasAttribute(TITLEBAR_SPACE_ATTR));
+    if (e.button === 0 && e.detail === 2 && onTitleBar && emptySpace) return "exit-fullscreen";
+    return tauriActs ? "block" : "pass";
+  }
+  if (!tauriActs) return "pass";
+  return e.detail === 2 && !onTitleBar ? "block" : "pass";
+}
