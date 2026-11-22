@@ -10,7 +10,7 @@ import { getThemeById } from "@/lib/theme";
 import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
+import { close, minimize, toggleMaximize, useWindowRestoreIcon } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
 import { NAV_ITEMS, applyNavCustomization, navFeaturesFor, type NavItem } from "@/chrome/nav-items";
 import { ProfileChipCompact } from "@/chrome/cinematic-overlay/profile-chip-compact";
@@ -24,7 +24,7 @@ export function CinematicOverlay() {
   const { setOpen: setSearchOpen } = useSearch();
   const t = useT();
   const [pinFor, setPinFor] = useState<View | null>(null);
-  const maxed = useMaximized();
+  const maxed = useWindowRestoreIcon();
 
   const themePreset =
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;

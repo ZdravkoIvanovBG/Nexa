@@ -12,7 +12,7 @@ import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
 import { getThemeById } from "@/lib/theme";
 import { useView } from "@/lib/view";
-import { close, minimize, toggleMaximize } from "@/lib/window";
+import { close, minimize, toggleMaximize, useWindowRestoreIcon } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -21,6 +21,7 @@ export function FloatingTop() {
   const { settings } = useSettings();
   const { setOpen: setSearchOpen } = useSearch();
   const t = useT();
+  const restoreIcon = useWindowRestoreIcon();
 
   const themePreset =
     settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
@@ -74,7 +75,10 @@ export function FloatingTop() {
             <WinBtn onClick={minimize} label={t("chrome.minimize")}>
               <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </WinBtn>
-            <WinBtn onClick={toggleMaximize} label={t("chrome.maximize")}>
+            <WinBtn
+              onClick={toggleMaximize}
+              label={restoreIcon ? t("chrome.restore") : t("chrome.maximize")}
+            >
               <rect
                 x="3"
                 y="3"

@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n";
 import { useParental } from "@/lib/parental";
 import { useView, type View } from "@/lib/view";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { close, minimize, toggleMaximize } from "@/lib/window";
+import { close, minimize, toggleMaximize, useWindowRestoreIcon } from "@/lib/window";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -24,6 +24,7 @@ export function SideRail() {
   const { locked, unlock, hiddenTabs } = useParental();
   const { setOpen: setSearchOpen } = useSearch();
   const t = useT();
+  const restoreIcon = useWindowRestoreIcon();
   const [pinFor, setPinFor] = useState<View | null>(null);
   const collapsed = settings.sidebarCollapsed;
 
@@ -170,7 +171,10 @@ export function SideRail() {
               <WinBtn onClick={minimize} label={t("chrome.minimize")}>
                 <path d="M3 6.5h7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </WinBtn>
-              <WinBtn onClick={toggleMaximize} label={t("chrome.maximize")}>
+              <WinBtn
+                onClick={toggleMaximize}
+                label={restoreIcon ? t("chrome.restore") : t("chrome.maximize")}
+              >
                 <rect
                   x="3"
                   y="3"

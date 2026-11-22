@@ -1,3 +1,5 @@
+import { fullscreenBlocksWindowDrag } from "@/lib/fullscreen-state";
+
 export function DragClickStage(props: {
   drawMode: boolean;
   pipMode: boolean;
@@ -31,6 +33,9 @@ export function DragClickStage(props: {
             dragStarted = true;
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
+            // Dragging a true-fullscreen window moves it off its monitor and
+            // leaves it without a sizing border.
+            if (fullscreenBlocksWindowDrag()) return;
             import("@tauri-apps/api/window")
               .then(({ getCurrentWindow }) => getCurrentWindow().startDragging())
               .catch(() => {});

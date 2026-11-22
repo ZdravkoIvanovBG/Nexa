@@ -2,12 +2,18 @@ import { openUrl as tauriOpenUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { getWindowFullscreen } from "@/lib/fullscreen-state";
-import { isMacDesktop } from "@/lib/platform";
+import {
+  exitWindowFullscreen,
+  getWindowFullscreen,
+  toggleWindowFullscreen,
+} from "@/lib/fullscreen-state";
+import { isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 
 const win: Window | null = isTauri() ? getCurrentWindow() : null;
 
 const IS_MAC = isMacDesktop();
+const IS_WINDOWS = isWindowsDesktop();
 
 function isTauri() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -22,7 +28,29 @@ export const toggleMaximize = async () => {
     await win.setFullscreen(!fs).catch(() => {});
     return;
   }
+  if (isWindowsDesktop()) {
+    // In true fullscreen the button leaves to a normal window; maximizing a
+    // fullscreen window would strand it without borders, Snap or resizing.
+    const fs = await win.isFullscreen().catch(() => getWindowFullscreen());
+    if (fs) {
+      await exitWindowFullscreen({ toNormal: true });
+      return;
+    }
+  }
   await win.toggleMaximize().catch(() => {});
+};
+
+/**
+ * The default title bar's Maximize/Restore button. Windows: leaves true
+ * fullscreen to a normal window, otherwise a real maximize/restore. Elsewhere
+ * it keeps toggling fullscreen as before.
+ */
+export const windowMaxButton = async () => {
+  if (isWindowsDesktop()) {
+    await toggleMaximize();
+    return;
+  }
+  await toggleWindowFullscreen();
 };
 
 export const close = () => win?.close();
@@ -77,6 +105,17 @@ export function useMaximized(): boolean {
     };
   }, []);
   return maxed;
+}
+
+/**
+ * Whether a Maximize/Restore button shows "Restore". On Windows that is
+ * maximized or true fullscreen (the button leaves fullscreen), the same in
+ * every layout.
+ */
+export function useWindowRestoreIcon(): boolean {
+  const maximized = useMaximized();
+  const fullscreen = useWindowFullscreen();
+  return IS_WINDOWS ? maximized || fullscreen : maximized;
 }
 
 export function openUrl(url: string) {

@@ -19,8 +19,8 @@ import { useTogether } from "@/lib/together/provider";
 import { useSelfIdentity } from "@/lib/together/use-self-identity";
 import { useView } from "@/lib/view";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
-import { toggleWindowFullscreen } from "@/lib/fullscreen-state";
-import { close, minimize } from "@/lib/window";
+import { isWindowsDesktop } from "@/lib/platform";
+import { close, minimize, useWindowRestoreIcon, windowMaxButton } from "@/lib/window";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
 import { SIDEBAR_OFFSET_CLASS } from "@/lib/chrome-metrics";
 
@@ -33,6 +33,10 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const t = useT();
   const [closeConfirm, setCloseConfirm] = useState(false);
   const fullscreen = useWindowFullscreen();
+  const restoreIcon = useWindowRestoreIcon();
+  // Windows: the button leaves true fullscreen to a normal window and is a real
+  // maximize/restore otherwise. Elsewhere it toggles fullscreen as before.
+  const showRestore = isWindowsDesktop() ? restoreIcon : fullscreen;
   if (chromeHidden && !connecting) return null;
   const sidebarHidden = connecting || view === "settings" || topKind === "picker";
   const hideSearch = view === "addons" || connecting || topKind === "picker";
@@ -84,11 +88,11 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
                 </svg>
               </Control>
               <Control
-                label={fullscreen ? t("chrome.restore") : t("chrome.maximize")}
-                onClick={() => void toggleWindowFullscreen()}
+                label={showRestore ? t("chrome.restore") : t("chrome.maximize")}
+                onClick={() => void windowMaxButton()}
               >
                 <svg width="18" height="18" viewBox="0 0 13 13" fill="none">
-                  {fullscreen ? (
+                  {showRestore ? (
                     <>
                       <rect
                         x="2.5"

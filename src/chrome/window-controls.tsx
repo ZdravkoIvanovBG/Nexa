@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
+import { close, minimize, toggleMaximize, useWindowRestoreIcon } from "@/lib/window";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 
@@ -7,7 +7,7 @@ const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in windo
 
 export function WindowControls() {
   const { settings } = useSettings();
-  const maximized = useMaximized();
+  const maximized = useWindowRestoreIcon();
   const t = useT();
   if (!IS_TAURI || settings.useNativeTitleBar) return null;
   return (

@@ -1,4 +1,6 @@
+import { isWindowsDesktop } from "@/lib/platform";
 import { loadStoredSettings } from "@/lib/settings/load";
+import { type DragPathElement, wouldTauriDragOrMaximize } from "@/lib/drag-region";
 
 let windowFullscreen = false;
 // Bumped on every change, so an OS query that started before a change can be
@@ -82,7 +84,11 @@ export async function enterWindowFullscreen(): Promise<void> {
   }
 }
 
-export async function exitWindowFullscreen(): Promise<void> {
+/**
+ * `toNormal`: leave as a normal, draggable window (the title-bar button)
+ * instead of returning to the pre-fullscreen state (F11, Esc, player).
+ */
+export async function exitWindowFullscreen(opts: { toNormal?: boolean } = {}): Promise<void> {
   if (suppressNextExit) {
     suppressNextExit = false;
     return;
@@ -94,6 +100,7 @@ export async function exitWindowFullscreen(): Promise<void> {
       const { invoke } = await import("@tauri-apps/api/core");
       await invoke("window_fullscreen_exit", {
         restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
+        toNormal: opts.toNormal === true,
       });
     } catch {
       /* ignore */
@@ -138,6 +145,26 @@ export async function exitAnyFullscreen(): Promise<void> {
   if (typeof document !== "undefined" && document.fullscreenElement) {
     await document.exitFullscreen().catch(() => {});
   }
+  if (isTauri() && isWindowsDesktop()) {
+    // Through the controller, so the window returns to its real pre-fullscreen
+    // state. Not via exitWindowFullscreen(): a pending suppressNextExit must not
+    // skip this one (see below).
+    transitionsInFlight++;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("window_fullscreen_exit", {
+        restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
+        toNormal: false,
+      });
+    } catch {
+      /* ignore */
+    } finally {
+      transitionsInFlight--;
+    }
+    setWindowFullscreen(false);
+    void reconcileWithOs();
+    return;
+  }
   if (isTauri()) {
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
@@ -176,7 +203,38 @@ async function reconcileWithOs(attempts = 3): Promise<void> {
   }
 }
 
+/** True while a drag or double-click on a drag region must not reach Tauri. */
+export function fullscreenBlocksWindowDrag(): boolean {
+  return isWindowsDesktop() && windowFullscreen;
+}
+
+/**
+ * In true fullscreen a drag region must neither drag the window nor maximize it
+ * on double-click: either one strands the window fullscreen-styled, without a
+ * sizing border, Snap or resizing. Tauri's drag listener is on `document`, so
+ * this listener on <html> runs after the page's own handlers (React, buttons)
+ * and before Tauri's. It stops only the mousedowns Tauri itself would act on;
+ * Tauri already ends propagation for those, so document/window listeners see
+ * the same events as before.
+ */
+export function installFullscreenDragGuard(root: HTMLElement): () => void {
+  const onMouseDown = (e: MouseEvent) => {
+    if (!fullscreenBlocksWindowDrag()) return;
+    const path = e
+      .composedPath()
+      .filter(
+        (n): n is HTMLElement => typeof HTMLElement !== "undefined" && n instanceof HTMLElement,
+      );
+    if (!wouldTauriDragOrMaximize(e, path as DragPathElement[])) return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  root.addEventListener("mousedown", onMouseDown);
+  return () => root.removeEventListener("mousedown", onMouseDown);
+}
+
 if (isTauri()) {
+  installFullscreenDragGuard(document.documentElement);
   void reconcileWithOs();
   // Rust announces every fullscreen change, including ones the frontend did not
   // start (e.g. restored window state).

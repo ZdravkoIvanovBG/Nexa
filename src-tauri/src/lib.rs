@@ -383,9 +383,9 @@ fn harbor_resume_webview(app: tauri::AppHandle) {
 /// rect and the next launch would open windowed at exactly screen size.
 #[cfg(desktop)]
 pub(crate) fn leave_fullscreen_before_exit(window: &tauri::WebviewWindow) {
-    if window.is_fullscreen().unwrap_or(false) {
-        let _ = window.set_fullscreen(false);
-    }
+    // Restores the pre-fullscreen placement (normal rect + maximized), so the
+    // plugin saves the window the user actually had.
+    fullscreen::exit_fullscreen_for_close(window);
 }
 
 fn ensure_window_on_screen(app: &tauri::AppHandle) {
@@ -607,6 +607,11 @@ pub fn run() {
             #[cfg(windows)]
             install_maximize_guard(&app.handle());
             ensure_window_on_screen(&app.handle());
+            // Once per installation: v0.11.0 and earlier could save a "normal"
+            // window exactly the size of a maximized one. Must run after the
+            // plugin's restore and before launch fullscreen captures placement.
+            #[cfg(windows)]
+            fullscreen::repair_legacy_window_state_once(app.handle());
             // Always launch fullscreen. Deliberately explicit rather than restored:
             // window-state no longer persists FULLSCREEN, and doing it here (after the
             // plugin's restore_state, before the window is shown) makes the launch

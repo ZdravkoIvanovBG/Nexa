@@ -1,6 +1,8 @@
 import { Film, Maximize, Minimize, Plus, Save, Tv, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getWindowFullscreen, toggleWindowFullscreen } from "@/lib/fullscreen-state";
+import { isWindowsDesktop } from "@/lib/platform";
 import {
   CONTROL_META,
   type ControlVariant,
@@ -216,6 +218,13 @@ export function EditorOverlay({
   };
 
   const toggleFullscreen = async () => {
+    if (isWindowsDesktop()) {
+      // Through the controller, so leaving restores the real window state.
+      const wasFs = getWindowFullscreen();
+      await toggleWindowFullscreen();
+      setIsFs(!wasFs);
+      return;
+    }
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();

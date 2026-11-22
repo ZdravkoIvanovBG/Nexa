@@ -20,6 +20,12 @@ struct WindowSnapshot {
     y: f64,
     always_on_top: bool,
     maximized: bool,
+    /// Exact pre-PiP placement (Windows). When present, exit restores it
+    /// instead of the logical size/position above, which drifted: they were
+    /// taken from the outer size but restored as the inner size.
+    placement: Option<crate::fullscreen::SavedPlacement>,
+    /// PiP started from true fullscreen; exit goes back to it.
+    was_fullscreen: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +196,32 @@ pub async fn window_pip_enter(
         .get_webview_window("main")
         .ok_or_else(|| "main window missing".to_string())?;
 
+    // A PiP window can't come from a fullscreen one (no sizing border, wrong
+    // saved size), so leave fullscreen first and remember it, then capture the
+    // exact placement to come back to. Windows only: macOS/Linux keep their
+    // own PiP window handling.
+    #[cfg(windows)]
+    let (placement, was_fullscreen) = {
+        let fs_state = app.state::<crate::fullscreen::FullscreenState>();
+        let mut was_fullscreen = false;
+        if main.is_fullscreen().unwrap_or(false) {
+            was_fullscreen = crate::fullscreen::exit_fullscreen(
+                &app,
+                &fs_state,
+                crate::fullscreen::ExitTarget::Previous,
+                true,
+            )
+            .await?;
+            if was_fullscreen {
+                let _ = app.emit_to("main", "fs://exited", ());
+            }
+        }
+        (crate::fullscreen::capture_placement(&main), was_fullscreen)
+    };
+    #[cfg(not(windows))]
+    let (placement, was_fullscreen): (Option<crate::fullscreen::SavedPlacement>, bool) =
+        (None, false);
+
     let scale = main.scale_factor().unwrap_or(1.0);
     let size = main
         .outer_size()
@@ -211,6 +243,8 @@ pub async fn window_pip_enter(
             y: pos.y,
             always_on_top: on_top,
             maximized,
+            placement,
+            was_fullscreen,
         });
     }
     state.window_pip_active.store(true, Ordering::SeqCst);
@@ -294,6 +328,27 @@ pub async fn window_pip_exit(
         g.take()
     };
     state.window_pip_active.store(false, Ordering::SeqCst);
+
+    #[cfg(windows)]
+    if let Some(WindowSnapshot {
+        placement: Some(p),
+        always_on_top,
+        was_fullscreen,
+        ..
+    }) = saved
+    {
+        let _ = main.set_always_on_top(always_on_top);
+        let _ = main.set_min_size(Some(LogicalSize::new(MAIN_MIN_W, MAIN_MIN_H)));
+        crate::fullscreen::apply_placement(&app, &main, p, p.maximized, false).await?;
+        if was_fullscreen {
+            let fs_state = app.state::<crate::fullscreen::FullscreenState>();
+            crate::fullscreen::enter_fullscreen_now(&app, &fs_state)?;
+            let _ = app.emit_to("main", "fs://entered", ());
+        }
+        let _ = main.set_focus();
+        let _ = app.emit_to("main", "pip://exited", ());
+        return Ok(());
+    }
 
     if let Some(s) = saved {
         #[cfg(desktop)]
