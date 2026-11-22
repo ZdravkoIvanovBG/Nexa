@@ -190,19 +190,46 @@ export function useGameBrowse(gate: Gate, filter: GameListFilter, enabled: boole
   });
 }
 
+function franchiseQueryOptions(
+  qc: QueryClient,
+  provider: GameMetadataProvider,
+  def: FranchiseDef | null,
+) {
+  return {
+    queryKey: gameKeys.franchise(provider, def?.id ?? ""),
+    queryFn: async ({ signal }: { signal: AbortSignal }): Promise<FranchiseData> => {
+      if (!def) throw new Error("unknown franchise");
+      return provider.franchise(def, cachedLookup(qc, provider), signal);
+    },
+    ...DETAIL,
+    ...NO_RETRY,
+  };
+}
+
 export function useFranchiseGames(gate: Gate, def: FranchiseDef | null, enabled: boolean) {
   const qc = useQueryClient();
   const provider = useGameProvider(gate);
   return useQuery({
-    queryKey: gameKeys.franchise(provider, def?.id ?? ""),
-    queryFn: async ({ signal }): Promise<FranchiseData> => {
-      if (!def) throw new Error("unknown franchise");
-      return provider.franchise(def, cachedLookup(qc, provider), signal);
-    },
+    ...franchiseQueryOptions(qc, provider, def),
     enabled: enabled && gate.ready && def !== null && providerFeatures(provider.id).franchises,
-    ...DETAIL,
-    ...NO_RETRY,
   });
+}
+
+/**
+ * A franchise's games for an action taken away from its page (a franchise
+ * card's menu): the page's own cached query when there is one, else that same
+ * query, fetched once. Null when the provider has no franchises.
+ */
+export function useFranchiseGamesLoader(
+  gate: Gate,
+): ((def: FranchiseDef) => Promise<FranchiseData>) | null {
+  const qc = useQueryClient();
+  const provider = useGameProvider(gate);
+  const usable = gate.ready && providerFeatures(provider.id).franchises;
+  return useMemo(
+    () => (usable ? (def) => qc.fetchQuery(franchiseQueryOptions(qc, provider, def)) : null),
+    [usable, qc, provider],
+  );
 }
 
 export function resolveFranchiseData(data: FranchiseData, sort: FranchiseSort): ResolvedFranchise {

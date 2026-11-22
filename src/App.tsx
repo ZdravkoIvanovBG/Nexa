@@ -130,6 +130,7 @@ const importGameDetail = () => import("@/views/game-discovery/game-detail");
 const importGameFranchise = () => import("@/views/game-discovery/franchise-view");
 const importGameBrowse = () => import("@/views/game-discovery/browse-view");
 const importGameLibrary = () => import("@/views/game-library");
+const importGameCardMenu = () => import("@/views/game-discovery/game-card-menu");
 
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
@@ -166,6 +167,9 @@ const GameFranchiseView = lazy(() =>
   importGameFranchise().then((m) => ({ default: m.GameFranchiseView })),
 );
 const GameBrowseView = lazy(() => importGameBrowse().then((m) => ({ default: m.GameBrowseView })));
+const GameCardMenuHost = lazy(() =>
+  importGameCardMenu().then((m) => ({ default: m.GameCardMenuHost })),
+);
 const GameLibraryView = lazy(() =>
   importGameLibrary().then((m) => ({ default: m.GameLibraryView })),
 );
@@ -1298,6 +1302,12 @@ function Shell({ onReady }: { onReady?: () => void }) {
         </Suspense>
       )}
       <CustomCodeMount />
+      {/* One right-click menu for every game card, only while a Games page is open. */}
+      {gamesOn && (gamesAlive || gameAlive || gameBrowseAlive || gameFranchiseAlive) && (
+        <Suspense fallback={null}>
+          <GameCardMenuHost />
+        </Suspense>
+      )}
       <MemoryHud />
       {!player && <OfflineBanner />}
     </div>

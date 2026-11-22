@@ -16,7 +16,7 @@ import {
   Trash2,
   Trophy,
 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { emitListToast } from "@/components/lists/list-toast";
 import type { FranchiseDef } from "@/lib/game-discovery/franchises";
 import { providerOf, type GameProvider } from "@/lib/game-discovery/game-id";
@@ -34,7 +34,9 @@ import {
   addMember,
   boardTier,
   catalogAdditions,
+  franchiseCollection,
   gameStage,
+  isEmptyPatch,
   isPlaced,
   liveCollections,
   placementsOf,
@@ -44,11 +46,12 @@ import {
   savedCollection,
 } from "@/lib/game-library/rules";
 import { snapshotSummary } from "@/lib/game-library/snapshot";
-import { changeGameLibrary, useGameLibrary } from "@/lib/game-library/store";
+import { activeGameProfile, changeGameLibrary, useGameLibrary } from "@/lib/game-library/store";
 import {
   memberEntryId,
   rootEntryId,
   type GameId,
+  type GameLibraryData,
   type GameRecord,
   type GameStatus,
 } from "@/lib/game-library/types";
@@ -59,6 +62,7 @@ import { useActionMenu, type MenuItem } from "../game-library/action-menu";
 import {
   completeGame,
   dropGame,
+  markGamePlayed,
   pauseGame,
   removeFromPlaying,
   replayGame,
@@ -94,17 +98,30 @@ const BUTTON =
   "flex h-12 items-center gap-2.5 rounded-full px-6 text-[14.5px] font-medium backdrop-blur-sm transition-colors duration-200";
 const PRIMARY = `${BUTTON} bg-ink text-canvas hover:opacity-90`;
 const SAVED = `${BUTTON} border border-accent/40 bg-accent/12 text-ink hover:bg-accent/20`;
-const SECONDARY = `${BUTTON} border border-edge bg-canvas/50 text-ink hover:bg-canvas/70`;
+
+// A game page's actions use the Movie/Show detail page's pills and round
+// buttons (views/detail.tsx), class for class.
+export const PILL =
+  "flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98]";
+/** Not yet done: Add to Watchlist, Mark as watched. */
+export const PILL_IDLE =
+  "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95";
+/** Saved for later: In Watchlist. */
+export const PILL_SAVED = "border-ink bg-ink/10 text-ink hover:bg-ink/20";
+/** Done: Watched. */
+export const PILL_ON = "border-accent/55 bg-accent/15 text-accent hover:bg-accent/22";
+export const ROUND =
+  "group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94]";
 const NOTE = "flex items-center gap-1.5 text-[12.5px] text-ink-muted";
 
 /** Kid profiles can't open the library, so they get nothing to save into it. */
-function useCanSave(): boolean {
+export function useCanSave(): boolean {
   const { activeProfile } = useProfiles();
   const { ready } = useGameLibrary();
   return ready && !activeProfile?.kid;
 }
 
-function useOpenWishlist(): () => void {
+export function useOpenWishlist(): () => void {
   const { openGameLibrary } = useView();
   return () => {
     requestTab("wishlist");
@@ -112,7 +129,7 @@ function useOpenWishlist(): () => void {
   };
 }
 
-function useOpenTiers(): (gameId: GameId) => void {
+export function useOpenTiers(): (gameId: GameId) => void {
   const { openGameLibrary } = useView();
   return (gameId) => {
     requestTierGame(gameId);
@@ -121,7 +138,7 @@ function useOpenTiers(): (gameId: GameId) => void {
   };
 }
 
-function useOpenPlaying(): (gameId: GameId) => void {
+export function useOpenPlaying(): (gameId: GameId) => void {
   const { openGameLibrary } = useView();
   return (gameId) => {
     requestPlayingGame(gameId);
@@ -145,7 +162,7 @@ const STATUS_ICON = {
 } as const;
 
 /** Where a started game can go from the status it has. Mirrors the Currently Playing menu. */
-function statusItems(
+export function statusItems(
   t: (key: string, vars?: Record<string, string | number>) => string,
   gameId: GameId,
   name: string,
@@ -189,7 +206,7 @@ function statusItems(
   } else {
     items.push({
       id: "complete",
-      label: t("Mark completed"),
+      label: t("Mark as Played"),
       icon: <CircleCheckBig {...ICON} />,
       run: () => completeGame(gameId, name, t),
     });
@@ -256,6 +273,47 @@ function yearOf(record: Pick<GameRecord, "released">): string {
   return record.released ? record.released.slice(0, 4) : "";
 }
 
+/** Adds a game to the Wishlist from Discovery: a game page or a card's menu. */
+export function saveToWishlist(
+  own: GameRef,
+  name: string,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  view: { label: string; run: () => void },
+): void {
+  changeGameLibrary((d, ctx) => saveGame(d, libraryRef(d, own), ctx));
+  emitListToast(t("Added {name} to your Wishlist", { name }), view);
+}
+
+/**
+ * What Discovery knows about a game's place in the library: the record it is
+ * saved under (its own, or the same game saved from the other provider by the
+ * curated catalog), its stage, and a maybe-the-same game when it isn't saved.
+ */
+export function libraryStateOf(data: GameLibraryData, game: GameSummary, own: GameRef) {
+  const equivalent = savedEquivalent(data, { gameId: game.id, slug: own.slug });
+  const gameId = equivalent?.gameId ?? game.id;
+  const stage = gameStage(data, gameId);
+  const record = data.records[gameId];
+  const match =
+    stage === "none"
+      ? (possibleMatches(data, {
+          gameId: game.id,
+          slug: own.slug,
+          name: game.name,
+          released: game.released,
+        })[0] ?? null)
+      : null;
+  return {
+    equivalent,
+    gameId,
+    name: equivalent?.name ?? game.name,
+    stage,
+    match,
+    standalone: placementsOf(data, gameId).standalone,
+    onBoard: !!record && boardTier(record) !== null,
+  };
+}
+
 export function SaveGameButton({
   game,
   franchise,
@@ -273,14 +331,12 @@ export function SaveGameButton({
   const openPlaying = useOpenPlaying();
   const openTiers = useOpenTiers();
   const own = useMemo(() => savableRef(game), [game]);
-  // The same game already saved from another provider, by the curated catalog.
-  const equivalent = own ? savedEquivalent(data, { gameId: game.id, slug: own.slug }) : null;
-  const gameId = equivalent?.gameId ?? game.id;
-  const name = equivalent?.name ?? game.name;
-  const stage = gameStage(data, gameId);
-  const placed = useMemo(() => placementsOf(data, gameId), [data, gameId]);
   if (!canSave || !own) return null;
 
+  const state = libraryStateOf(data, game, own);
+  const { equivalent, gameId, name, stage, match } = state;
+  const status = data.records[gameId]?.status ?? null;
+  const gamePlaced = placementsOf(data, gameId);
   const view = { label: t("View in Wishlist"), run: openWishlist };
   // Through libraryRef inside the change, like a save: a game already saved
   // from the other provider is started on that record, never a second one.
@@ -289,6 +345,19 @@ export function SaveGameButton({
       label: t("View in Currently Playing"),
       run: () => openPlaying(gameId),
     });
+  const played = () => markGamePlayed(own, name, t);
+  const save = () => saveToWishlist(own, name, t, view);
+  const addToCollection = (collectionId: string, title: string) => {
+    changeGameLibrary((d, ctx) => addMember(d, collectionId, libraryRef(d, own), ctx));
+    emitListToast(t("Added {name} to {collection}", { name, collection: title }), view);
+  };
+  const statusMenu = (s: GameStatus) =>
+    statusItems(t, gameId, name, s, isPlaced(data, gameId), () => openPlaying(gameId), {
+      onBoard: state.onBoard,
+      open: () => openTiers(gameId),
+    });
+  const openMenu = (button: HTMLElement, items: MenuItem[]) => menu.openFromButton(button, items);
+
   const savedFrom = equivalent && (
     <span
       className={NOTE}
@@ -299,41 +368,16 @@ export function SaveGameButton({
       {t("Saved from {provider}", { provider: PROVIDER_NAME[equivalent.provider] })}
     </span>
   );
-  const save = () => {
-    changeGameLibrary((d, ctx) => saveGame(d, libraryRef(d, own), ctx));
-    emitListToast(t("Added {name} to your Wishlist", { name }), view);
-  };
-  const addToCollection = (collectionId: string, title: string) => {
-    changeGameLibrary((d, ctx) => addMember(d, collectionId, libraryRef(d, own), ctx));
-    emitListToast(t("Added {name} to {collection}", { name, collection: title }), view);
-  };
-  const collectionItems: MenuItem[] = liveCollections(data)
-    .filter((c) => !placed.collections.some((p) => p.entryId === c.entryId))
-    .sort((a, b) =>
-      a.franchiseId === franchise?.id ? -1 : b.franchiseId === franchise?.id ? 1 : 0,
-    )
-    .slice(0, 6)
-    .map((c) => ({
-      id: `add-${c.entryId}`,
-      label: t("Add to {name}", { name: c.title }),
-      icon: <FolderPlus {...ICON} />,
-      run: () => addToCollection(c.entryId, c.title),
-    }));
 
+  // ── Wishlist: what's planned. A started game leaves it (its row is kept,
+  // hidden), so the Wishlist button is only shown until a game is started.
+  let wishlist: ReactNode = null;
   if (stage === "none") {
-    const ownCollection = franchise ? savedCollection(data, franchise.id) : null;
-    // Same title and year from another provider, outside the catalog: maybe the
-    // same game, maybe not, so the user decides. Nothing is linked either way.
-    const maybe = possibleMatches(data, {
-      gameId: game.id,
-      slug: own.slug,
-      name: game.name,
-      released: game.released,
-    });
-    const match = maybe[0] ?? null;
     const onAdd = (button: HTMLElement) => {
+      // Same title and year from another provider, outside the catalog: maybe
+      // the same game, maybe not, so the user decides. Nothing is linked.
       if (!match) return save();
-      menu.openFromButton(button, [
+      openMenu(button, [
         {
           id: "save-anyway",
           label: t("Add this version anyway"),
@@ -350,157 +394,235 @@ export function SaveGameButton({
         },
       ]);
     };
-    return (
-      <>
-        <button
-          type="button"
-          aria-haspopup={match ? "menu" : undefined}
-          onClick={(e) => onAdd(e.currentTarget)}
-          className={PRIMARY}
-        >
-          <Plus size={17} strokeWidth={2.4} />
-          {t("Add to Wishlist")}
-        </button>
-        {ownCollection && (
-          <button
-            type="button"
-            onClick={() => addToCollection(ownCollection.entryId, ownCollection.title)}
-            className={SECONDARY}
-          >
-            <FolderPlus size={16} strokeWidth={2} />
-            {t("Add to {name}", { name: ownCollection.title })}
-          </button>
-        )}
-        {!match && (
-          <button type="button" onClick={start} className={SECONDARY}>
-            <Play size={16} strokeWidth={2.2} />
-            {t("Start playing")}
-          </button>
-        )}
-        {match && (
-          <span className={NOTE}>
-            <CircleHelp size={14} strokeWidth={2.2} />
-            {t("You may already have {name} ({year}) from {provider}.", {
-              name: match.name,
-              year: yearOf(match),
-              provider: PROVIDER_NAME[match.provider],
-            })}
-          </span>
-        )}
-        {menu.element}
-      </>
+    wishlist = (
+      <button
+        type="button"
+        aria-haspopup={match ? "menu" : undefined}
+        onClick={(e) => onAdd(e.currentTarget)}
+        className={`${PILL} ${PILL_IDLE}`}
+      >
+        <Plus size={18} strokeWidth={2} />
+        {t("Add to Wishlist")}
+      </button>
     );
-  }
-
-  if (stage !== "wishlist" && stage !== "collection") {
-    const status: GameStatus = stage;
-    const Icon = STATUS_ICON[status];
-    const dropped = status === "dropped";
-    const record = data.records[gameId];
-    const items = statusItems(
-      t,
-      gameId,
-      name,
-      status,
-      isPlaced(data, gameId),
-      () => openPlaying(gameId),
-      { onBoard: !!record && boardTier(record) !== null, open: () => openTiers(gameId) },
-    );
-    return (
-      <>
-        <button
-          type="button"
-          aria-haspopup="menu"
-          onClick={(e) => menu.openFromButton(e.currentTarget, items)}
-          className={dropped ? SECONDARY : SAVED}
-        >
-          <Icon size={17} strokeWidth={2.4} className={dropped ? "" : "text-accent"} />
-          {t(STATUS_LABEL[status])}
-        </button>
-        {savedFrom}
-        {menu.element}
-      </>
-    );
-  }
-
-  const inCollection = placed.collections[0] ?? null;
-  const label =
-    stage === "wishlist"
-      ? t("In Wishlist")
-      : t("In {name}", { name: inCollection?.title ?? t("a collection") });
-  const items: MenuItem[] = [
-    {
-      id: "start",
-      label: t("Start playing"),
-      icon: <Play {...ICON} />,
-      run: start,
-    },
-    {
-      id: "view",
-      label: t("View in Wishlist"),
-      icon: <ListOrdered {...ICON} />,
-      run: openWishlist,
-    },
-  ];
-  if (stage === "collection") {
-    items.push({
-      id: "standalone",
-      label: t("Also add on its own"),
-      icon: <Plus {...ICON} />,
-      run: save,
-    });
-  }
-  if (collectionItems.length > 0) {
-    items.push({ id: "sep-collections", separator: true }, ...collectionItems);
-  }
-  if (stage === "wishlist") {
-    items.push(
-      { id: "sep-remove", separator: true },
+  } else if (stage === "wishlist" || stage === "collection") {
+    const inCollection = gamePlaced.collections[0] ?? null;
+    const collectionItems: MenuItem[] = liveCollections(data)
+      .filter((c) => !gamePlaced.collections.some((p) => p.entryId === c.entryId))
+      .sort((a, b) =>
+        a.franchiseId === franchise?.id ? -1 : b.franchiseId === franchise?.id ? 1 : 0,
+      )
+      .slice(0, 6)
+      .map((c) => ({
+        id: `add-${c.entryId}`,
+        label: t("Add to {name}", { name: c.title }),
+        icon: <FolderPlus {...ICON} />,
+        run: () => addToCollection(c.entryId, c.title),
+      }));
+    const items: MenuItem[] = [
       {
-        id: "remove",
-        label: t("Remove from Wishlist"),
-        icon: <Trash2 {...ICON} />,
-        danger: true,
-        run: () =>
-          removeWithUndo(rootEntryId(gameId), t("Removed {name} from your Wishlist", { name }), t),
+        id: "view",
+        label: t("View in Wishlist"),
+        icon: <ListOrdered {...ICON} />,
+        run: openWishlist,
       },
-    );
-  } else if (inCollection) {
-    items.push(
-      { id: "sep-remove", separator: true },
-      {
-        id: "remove-member",
-        label: t("Remove from {name}", { name: inCollection.title }),
-        icon: <Trash2 {...ICON} />,
-        danger: true,
-        run: () =>
-          removeWithUndo(
-            memberEntryId(inCollection.entryId, gameId),
-            t("Removed {name} from {collection}", {
-              name,
-              collection: inCollection.title,
-            }),
-            t,
-          ),
-      },
-    );
-  }
-
-  return (
-    <>
+    ];
+    if (stage === "collection") {
+      items.push({
+        id: "standalone",
+        label: t("Also add on its own"),
+        icon: <Plus {...ICON} />,
+        run: save,
+      });
+    }
+    if (collectionItems.length > 0) {
+      items.push({ id: "sep-collections", separator: true }, ...collectionItems);
+    }
+    if (stage === "wishlist") {
+      items.push(
+        { id: "sep-remove", separator: true },
+        {
+          id: "remove",
+          label: t("Remove from Wishlist"),
+          icon: <Trash2 {...ICON} />,
+          danger: true,
+          run: () =>
+            removeWithUndo(
+              rootEntryId(gameId),
+              t("Removed {name} from your Wishlist", { name }),
+              t,
+            ),
+        },
+      );
+    } else if (inCollection) {
+      items.push(
+        { id: "sep-remove", separator: true },
+        {
+          id: "remove-member",
+          label: t("Remove from {name}", { name: inCollection.title }),
+          icon: <Trash2 {...ICON} />,
+          danger: true,
+          run: () =>
+            removeWithUndo(
+              memberEntryId(inCollection.entryId, gameId),
+              t("Removed {name} from {collection}", {
+                name,
+                collection: inCollection.title,
+              }),
+              t,
+            ),
+        },
+      );
+    }
+    wishlist = (
       <button
         type="button"
         aria-haspopup="menu"
-        onClick={(e) => menu.openFromButton(e.currentTarget, items)}
-        className={SAVED}
+        onClick={(e) => openMenu(e.currentTarget, items)}
+        className={`${PILL} ${PILL_SAVED}`}
       >
-        <Check size={17} strokeWidth={2.4} className="text-accent" />
-        {label}
+        <Check size={18} strokeWidth={2.4} />
+        {stage === "wishlist"
+          ? t("In Wishlist")
+          : t("In {name}", { name: inCollection?.title ?? t("a collection") })}
       </button>
+    );
+  }
+
+  // ── Playing: start it, or its current playthrough's status and menu.
+  let playing: ReactNode = null;
+  if (status === null) {
+    // A maybe-the-same game is decided from the Wishlist button first.
+    if (!match) {
+      playing = (
+        <button type="button" onClick={start} className={`${PILL} ${PILL_IDLE}`}>
+          <Play size={17} strokeWidth={2.2} />
+          {t("Start Playing")}
+        </button>
+      );
+    }
+  } else if (status === "completed") {
+    playing = (
+      <button
+        type="button"
+        onClick={() => replayGame(gameId, name, t)}
+        className={`${PILL} ${PILL_IDLE}`}
+      >
+        <RotateCcw size={17} strokeWidth={2.2} />
+        {t("Play again")}
+      </button>
+    );
+  } else {
+    const Icon = STATUS_ICON[status];
+    playing = (
+      <button
+        type="button"
+        aria-haspopup="menu"
+        onClick={(e) => openMenu(e.currentTarget, statusMenu(status))}
+        className={`${PILL} ${status === "dropped" ? PILL_IDLE : PILL_ON}`}
+      >
+        <Icon size={17} strokeWidth={2.4} />
+        {status === "playing" ? t("Playing") : t(STATUS_LABEL[status])}
+        {status === "playing" && <Check size={16} strokeWidth={2.6} aria-hidden />}
+      </button>
+    );
+  }
+
+  // ── Played: the Completed status, from anywhere.
+  let playedButton: ReactNode = null;
+  if (status === "completed") {
+    playedButton = (
+      <button
+        type="button"
+        aria-haspopup="menu"
+        onClick={(e) => openMenu(e.currentTarget, statusMenu("completed"))}
+        className={`${PILL} ${PILL_ON}`}
+      >
+        <CircleCheckBig size={17} strokeWidth={2.4} />
+        {t("Played")}
+        <Check size={16} strokeWidth={2.6} aria-hidden />
+      </button>
+    );
+  } else if (!match) {
+    playedButton = (
+      <button type="button" onClick={played} className={`${PILL} ${PILL_IDLE}`}>
+        <CircleCheckBig size={17} strokeWidth={2.2} />
+        {t("Mark as Played")}
+      </button>
+    );
+  }
+
+  const ownCollection = stage === "none" && franchise ? savedCollection(data, franchise.id) : null;
+
+  return (
+    <>
+      {wishlist}
+      {playing}
+      {playedButton}
+      {ownCollection && (
+        <button
+          type="button"
+          onClick={() => addToCollection(ownCollection.entryId, ownCollection.title)}
+          aria-label={t("Add to {name}", { name: ownCollection.title })}
+          title={t("Add to {name}", { name: ownCollection.title })}
+          className={`${ROUND} ${PILL_IDLE}`}
+        >
+          <FolderPlus size={19} strokeWidth={1.9} />
+        </button>
+      )}
+      {match && (
+        <span className={NOTE}>
+          <CircleHelp size={14} strokeWidth={2.2} />
+          {t("You may already have {name} ({year}) from {provider}.", {
+            name: match.name,
+            year: yearOf(match),
+            provider: PROVIDER_NAME[match.provider],
+          })}
+        </span>
+      )}
       {savedFrom}
       {menu.element}
     </>
   );
+}
+
+/**
+ * Adds a franchise's main series to the Wishlist as one collection: the
+ * franchise page's button and a franchise card's menu both come here. Nothing
+ * happens when the collection is already saved, or when the profile changed
+ * since the action began (`profileId`). Returns whether it was added.
+ */
+export function saveCollectionToWishlist(
+  def: FranchiseDef,
+  memberRefs: readonly GameRef[],
+  image: string | null,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  view: { label: string; run: () => void },
+  options: { profileId?: string } = {},
+): boolean {
+  if (options.profileId !== undefined && activeGameProfile() !== options.profileId) return false;
+  const patch = changeGameLibrary((d, ctx) =>
+    saveCollection(
+      d,
+      { franchiseId: def.id, title: def.name, image },
+      libraryRefs(d, memberRefs),
+      def.mainline,
+      ctx,
+    ),
+  );
+  if (!patch || isEmptyPatch(patch)) return false;
+  emitListToast(t("Added the {name} collection to your Wishlist", { name: def.name }), view);
+  return true;
+}
+
+/** A franchise's collection in the library, for its card's menu: whether it is saved, and the game it would start next. */
+export function franchiseCollectionStateOf(
+  data: GameLibraryData,
+  franchiseId: string,
+): { saved: boolean; nextUp: { gameId: GameId; name: string } | null } {
+  const found = franchiseCollection(data, franchiseId);
+  const next = found?.nextUp ?? null;
+  return { saved: found !== null, nextUp: next ? { gameId: next.gameId, name: next.name } : null };
 }
 
 export function SaveCollectionButton({
@@ -534,18 +656,7 @@ export function SaveCollectionButton({
   const view = { label: t("View in Wishlist"), run: openWishlist };
 
   if (!saved) {
-    const save = () => {
-      changeGameLibrary((d, ctx) =>
-        saveCollection(
-          d,
-          { franchiseId: def.id, title: def.name, image: image ?? games[0].image },
-          libraryRefs(d, memberRefs),
-          def.mainline,
-          ctx,
-        ),
-      );
-      emitListToast(t("Added the {name} collection to your Wishlist", { name: def.name }), view);
-    };
+    const save = () => saveCollectionToWishlist(def, memberRefs, image ?? games[0].image, t, view);
     return (
       <button type="button" onClick={save} className={PRIMARY}>
         <Plus size={17} strokeWidth={2.4} />

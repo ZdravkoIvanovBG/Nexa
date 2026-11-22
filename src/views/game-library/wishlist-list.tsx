@@ -10,7 +10,8 @@ import { announceMove, collectionMenu, gameMenu } from "./entry-menus";
 import { CollectionArt, collectionImage, GameArt, type GameArtShape } from "./game-art";
 import { usePointerSort } from "./use-pointer-sort";
 import { moveTo } from "./wishlist-actions";
-import { Dot, MoreButton, ReorderButtons, SortHandle, yearOf } from "./wishlist-parts";
+import { startRecord } from "./play-actions";
+import { Dot, MoreButton, ReorderButtons, SortHandle, StartButton, yearOf } from "./wishlist-parts";
 
 const ROW =
   "group/row flex items-center gap-3 rounded-2xl bg-surface/60 py-2.5 ps-2 pe-3 ring-1 ring-edge-soft transition-[background-color,box-shadow] duration-200 hover:bg-surface";
@@ -120,6 +121,11 @@ export function WishlistList({
                     name={record.name}
                     index={index}
                     count={count}
+                  />
+                  <StartButton
+                    label={t("Start Playing")}
+                    title={t("Start {name}", { name: record.name })}
+                    onStart={() => startRecord(record.gameId, record.name, t)}
                   />
                   <MoreButton
                     label={t("More options for {name}", { name: record.name })}
@@ -234,6 +240,17 @@ export function WishlistList({
                   index={index}
                   count={count}
                 />
+                {/* A collection starts its next game nobody has started, as its menu does. */}
+                {item.nextUp && (
+                  <StartButton
+                    label={t("Start Playing")}
+                    title={t("Start {name}", { name: item.nextUp.name })}
+                    onStart={() => {
+                      const next = item.nextUp;
+                      if (next) startRecord(next.gameId, next.name, t);
+                    }}
+                  />
+                )}
                 <MoreButton
                   label={t("More options for {name}", { name: entry.title })}
                   onOpen={(button) => menu.openFromButton(button, menuItems())}

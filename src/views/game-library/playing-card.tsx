@@ -377,6 +377,18 @@ export function PlayingCard({
                 {t("Resume")}
               </button>
             )}
+            {(status === "playing" || status === "paused") && (
+              // The ⋯ menu's Back to Wishlist, on the card: the same action and Undo.
+              <button
+                type="button"
+                data-back-to-wishlist
+                onClick={() => sendBackToWishlist(gameId, name, t)}
+                className={SECONDARY}
+              >
+                <ListOrdered size={14} strokeWidth={2.2} />
+                {t("Back to Wishlist")}
+              </button>
+            )}
             <button
               type="button"
               aria-expanded={expanded}

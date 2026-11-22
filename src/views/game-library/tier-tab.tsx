@@ -8,12 +8,11 @@ import { ALL_TIERS, type Tier } from "@/lib/tracking-tiers";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
-import { useActionMenu } from "./action-menu";
 import { BoardPicker } from "./board-picker";
 import { TierListEmpty } from "./empty-states";
 import { onTierRequest, requestTab, takeTierRequest } from "./tab";
-import { dropTile, focusTile } from "./tier-actions";
-import { BOARD_HINT_ID, GameTierRow, GameTierTile, tileMenu } from "./tier-row";
+import { dropTile, focusTile, removeTile } from "./tier-actions";
+import { BOARD_HINT_ID, GameTierRow, GameTierTile } from "./tier-row";
 import { useBoardDrag, type BoardDrop } from "./use-board-drag";
 import { announce, onAnnounce } from "./wishlist-actions";
 
@@ -51,7 +50,6 @@ function TierContent({ data }: { data: GameLibraryData }) {
   const { openGame } = useView();
   const board = useMemo(() => tierBoard(data), [data]);
   const candidates = useMemo(() => boardCandidates(data), [data]);
-  const menu = useActionMenu();
   const [picker, setPicker] = useState(false);
   const [lifted, setLifted] = useState<string | null>(null);
   // A "Rank it" or "View in Tier List" made before the tab opened.
@@ -125,7 +123,7 @@ function TierContent({ data }: { data: GameLibraryData }) {
         </p>
         <div className="flex items-center gap-3">
           <span className="hidden text-[12px] text-ink-subtle md:inline">
-            {t("Drag games into tiers, or use the ⋯ menu.")}
+            {t("Drag games into tiers to rank them.")}
           </span>
           <button
             type="button"
@@ -152,7 +150,6 @@ function TierContent({ data }: { data: GameLibraryData }) {
               {tiles.map((tile, index) => {
                 const { gameId } = tile.record;
                 const openDetails = () => openGame(snapshotSummary(tile.record));
-                const items = () => tileMenu(t, data, tile, tier, openDetails);
                 return (
                   <GameTierTile
                     key={gameId}
@@ -167,9 +164,11 @@ function TierContent({ data }: { data: GameLibraryData }) {
                     onClick={() => {
                       if (!drag.consumeClick()) openDetails();
                     }}
-                    onMenu={(target) => {
-                      if (target instanceof HTMLElement) menu.openFromButton(target, items());
-                      else menu.openAtPointer(target, items());
+                    onRemove={(fromKeyboard) => {
+                      // A keyboard user carries on from the tile beside it.
+                      const neighbour = tiles[index + 1] ?? tiles[index - 1] ?? null;
+                      removeTile(gameId, tile.record.name, t);
+                      if (fromKeyboard && neighbour) focusTile(neighbour.record.gameId);
                     }}
                   />
                 );
@@ -180,7 +179,6 @@ function TierContent({ data }: { data: GameLibraryData }) {
       </div>
 
       {picker && <BoardPicker candidates={candidates} onClose={() => setPicker(false)} />}
-      {menu.element}
     </>
   );
 }

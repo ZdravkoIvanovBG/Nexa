@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Ellipsis, GripVertical } from "lucide-react";
+import { ChevronDown, ChevronUp, Ellipsis, GripVertical, Play } from "lucide-react";
 import { useState } from "react";
 import type { GameRecord, GameStatus } from "@/lib/game-library/types";
 import { useT } from "@/lib/i18n";
@@ -132,6 +132,35 @@ export function ReorderButtons({
         <ChevronDown size={16} strokeWidth={2.2} />
       </button>
     </span>
+  );
+}
+
+/**
+ * A row's Start Playing, beside its ⋯ menu: the same start the menu offers.
+ * The label folds to the icon on narrow windows; the name stays in its title.
+ */
+export function StartButton({
+  label,
+  title,
+  onStart,
+}: {
+  label: string;
+  /** Names the game, for screen readers and the tooltip. */
+  title: string;
+  onStart: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-start-playing
+      aria-label={title}
+      title={title}
+      onClick={onStart}
+      className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-ink px-2.5 text-[12.5px] font-semibold text-canvas transition-opacity duration-200 hover:opacity-90 sm:px-3.5"
+    >
+      <Play size={12} strokeWidth={2.6} fill="currentColor" aria-hidden />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 }
 

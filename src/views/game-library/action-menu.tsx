@@ -31,6 +31,18 @@ function isAction(item: MenuItem): item is Extract<MenuItem, { run: () => void }
 }
 
 /**
+ * Whether a contextmenu event came from the Menu key or Shift+F10 rather than
+ * a right-click: those report no pointer type (or, without PointerEvent, no
+ * coordinates). Such a menu opens below its element, not at the pointer.
+ */
+export function isKeyboardContextMenu(event: React.MouseEvent): boolean {
+  const native = event.nativeEvent;
+  return typeof PointerEvent !== "undefined" && native instanceof PointerEvent
+    ? native.pointerType === ""
+    : event.clientX === 0 && event.clientY === 0;
+}
+
+/**
  * Opens the menu below a button, or at the pointer for a right-click. A
  * keyboard-triggered click reports no coordinates, so a button is always
  * placed from its own rectangle.
@@ -68,6 +80,14 @@ export function useActionMenu() {
     setState({ items, trigger, anchor: { x: event.clientX, y: event.clientY, alignEnd: false } });
   }, []);
 
+  /** At a point, for a right-click that was handled elsewhere (a game card's). */
+  const openAt = useCallback(
+    (x: number, y: number, trigger: HTMLElement | null, items: MenuItem[]) => {
+      setState({ items, trigger, anchor: { x, y, alignEnd: false } });
+    },
+    [],
+  );
+
   const close = useCallback(() => setState(null), []);
 
   const element = state ? (
@@ -82,7 +102,7 @@ export function useActionMenu() {
     />
   ) : null;
 
-  return { openFromButton, openAtPointer, close, element, isOpen: state !== null };
+  return { openFromButton, openAtPointer, openAt, close, element, isOpen: state !== null };
 }
 
 function ActionMenuPopover({

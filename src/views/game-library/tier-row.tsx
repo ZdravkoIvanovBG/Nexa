@@ -1,25 +1,11 @@
-import { ChevronLeft, ChevronRight, Gamepad2, Hourglass, Info, Trash2 } from "lucide-react";
+import { Hourglass, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Poster } from "@/components/poster";
 import { coverImage, gameImage, gameImageKind } from "@/lib/game-discovery/game-image";
 import type { BoardTile } from "@/lib/game-library/rules";
-import type { GameLibraryData } from "@/lib/game-library/types";
-import { ALL_TIERS, type Tier } from "@/lib/tracking-tiers";
+import { type Tier } from "@/lib/tracking-tiers";
 import { useT } from "@/lib/i18n";
-import type { MenuItem } from "./action-menu";
-import { showInPlaying } from "./play-actions";
-import {
-  canStep,
-  dropTile,
-  focusTile,
-  moveTileTo,
-  removeTile,
-  stepTile,
-  tierName,
-} from "./tier-actions";
-import { MoreButton } from "./wishlist-parts";
-
-type Translate = (key: string, vars?: Record<string, string | number>) => string;
+import { dropTile, focusTile, stepTile, tierName } from "./tier-actions";
 
 /**
  * The movie Tier List's colours (src/views/library/tier-row.tsx), repeated
@@ -36,76 +22,7 @@ export const TIER_STYLE: Record<Tier, string> = {
   unranked: "bg-elevated text-ink-muted",
 };
 
-/** The colour swatch in the "Move to" menu items. */
-const SWATCH: Record<Tier, string> = {
-  S: "bg-rose-500",
-  A: "bg-amber-500",
-  B: "bg-yellow-400",
-  C: "bg-emerald-500",
-  D: "bg-sky-500",
-  F: "bg-purple-500",
-  unranked: "bg-ink-subtle/50",
-};
-
-const ICON = { size: 14, strokeWidth: 2 } as const;
-
 export const BOARD_HINT_ID = "game-tier-hint";
-
-export function tileMenu(
-  t: Translate,
-  data: GameLibraryData,
-  tile: BoardTile,
-  tier: Tier,
-  openDetails: () => void,
-): MenuItem[] {
-  const { gameId, name, status } = tile.record;
-  const refocus = (moved: boolean) => moved && focusTile(gameId);
-  const items: MenuItem[] = ALL_TIERS.map((target) => ({
-    id: `to-${target}`,
-    label: t("Move to {tier}", { tier: tierName(t, target) }),
-    icon: <span className={`h-3 w-3 rounded-[4px] ${SWATCH[target]}`} />,
-    disabled: target === tier,
-    run: () => refocus(moveTileTo(gameId, target, t)),
-  }));
-  items.push(
-    { id: "sep-steps", separator: true },
-    {
-      id: "left",
-      label: t("Move left"),
-      icon: <ChevronLeft {...ICON} />,
-      disabled: !canStep(data, gameId, "left"),
-      run: () => refocus(stepTile(gameId, "left", t)),
-    },
-    {
-      id: "right",
-      label: t("Move right"),
-      icon: <ChevronRight {...ICON} />,
-      disabled: !canStep(data, gameId, "right"),
-      run: () => refocus(stepTile(gameId, "right", t)),
-    },
-    { id: "sep-open", separator: true },
-    { id: "details", label: t("Open details"), icon: <Info {...ICON} />, run: openDetails },
-  );
-  if (status !== null) {
-    items.push({
-      id: "playing",
-      label: t("View in Currently Playing"),
-      icon: <Gamepad2 {...ICON} />,
-      run: () => showInPlaying(gameId),
-    });
-  }
-  items.push(
-    { id: "sep-remove", separator: true },
-    {
-      id: "remove",
-      label: t("Remove from Tier List"),
-      icon: <Trash2 {...ICON} />,
-      danger: true,
-      run: () => removeTile(gameId, name, t),
-    },
-  );
-  return items;
-}
 
 export function GameTierRow({
   tier,
@@ -160,7 +77,7 @@ export function GameTierTile({
   onLift,
   onPointerDown,
   onClick,
-  onMenu,
+  onRemove,
 }: {
   tile: BoardTile;
   tier: Tier;
@@ -171,18 +88,17 @@ export function GameTierTile({
   onLift: (lifted: boolean) => void;
   onPointerDown: (e: React.PointerEvent<HTMLElement>) => void;
   onClick: () => void;
-  onMenu: (target: HTMLElement | React.MouseEvent) => void;
+  /** Takes the game off the board only; its status, notes and progress stay. */
+  onRemove: (fromKeyboard: boolean) => void;
 }) {
   const t = useT();
   const { record, notCompleted } = tile;
   const { gameId, name } = record;
+  // The movie Tier List's remove control (src/views/library/tier-tile.tsx):
+  // an X on hover, a red Remove to confirm, and leaving it cancels.
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
-      e.preventDefault();
-      onMenu(e.currentTarget);
-      return;
-    }
     if (!lifted) {
       if (e.key !== " ") return; // Enter opens the game, like any button
       e.preventDefault();
@@ -227,7 +143,8 @@ export function GameTierTile({
   return (
     <li
       data-board-tile={gameId}
-      onContextMenu={(e) => onMenu(e)}
+      // Tiles have no menu of their own; the browser's has nothing for them.
+      onContextMenu={(e) => e.preventDefault()}
       className="group/tile relative w-[64px] select-none"
     >
       <button
@@ -277,16 +194,51 @@ export function GameTierTile({
           <Hourglass size={9} strokeWidth={2.6} aria-hidden />
         </span>
       )}
-      <span
-        className="absolute end-1 top-1 opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100"
+      <button
+        type="button"
+        data-tile-remove={gameId}
         onPointerDown={(e) => e.stopPropagation()}
+        onMouseLeave={() => setConfirmRemove(false)}
+        // Only a real move of focus (Tab away) cancels. With TV navigation on,
+        // every pointerdown is followed by a programmatic blur() a frame later
+        // (keyboard-navigation.ts), between the press and its click; cancelling
+        // on that would undo the confirmation before Remove could be clicked.
+        onBlur={(e) => {
+          if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget))
+            setConfirmRemove(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && confirmRemove) {
+            e.preventDefault();
+            e.stopPropagation();
+            setConfirmRemove(false);
+          }
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirmRemove) {
+            setConfirmRemove(false);
+            // A keyboard press reports no clicks; focus then moves on to a neighbour.
+            onRemove(e.detail === 0);
+          } else {
+            setConfirmRemove(true);
+          }
+        }}
+        title={confirmRemove ? undefined : t("Remove from Tier List")}
+        aria-label={
+          confirmRemove
+            ? t("Confirm remove {name} from Tier List", { name })
+            : t("Remove {name} from Tier List", { name })
+        }
+        className={`absolute end-1 top-1 flex h-6 items-center justify-center gap-1 rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
+          confirmRemove
+            ? "bg-danger px-2 text-[10px] font-semibold"
+            : "w-6 bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 focus-visible:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100"
+        }`}
       >
-        <MoreButton
-          label={t("More options for {name}", { name })}
-          onOpen={(button) => onMenu(button)}
-          className="h-6 w-6 bg-canvas/80 hover:bg-canvas [&_svg]:h-3.5 [&_svg]:w-3.5"
-        />
-      </span>
+        <X size={12} strokeWidth={2.4} />
+        {confirmRemove && t("Remove")}
+      </button>
     </li>
   );
 }

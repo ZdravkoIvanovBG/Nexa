@@ -38,7 +38,7 @@ import {
   VARIANT_LABEL,
 } from "./format";
 import { MetacriticBadge, PortraitFill } from "./game-card";
-import { SaveGameButton, useRefreshSavedGame } from "./save-controls";
+import { PILL, PILL_IDLE, SaveGameButton, useRefreshSavedGame } from "./save-controls";
 import { cardShapeOf, GameRail, GameRowSkeleton } from "./game-row";
 import { GamesFrame } from "./games-frame";
 import { GamesErrorState, GamesNotice } from "./games-state";
@@ -156,19 +156,13 @@ function OtherProviderGame({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <SaveGameButton game={seed} franchise={null} />
               {linked && (
-                <button
-                  onClick={() => openGame(linked)}
-                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
-                >
+                <button onClick={() => openGame(linked)} className={`${PILL} ${PILL_IDLE}`}>
                   <Layers size={16} strokeWidth={2} />
                   {t("Open IGDB details")}
                 </button>
               )}
               {link && (
-                <button
-                  onClick={() => openUrl(link)}
-                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
-                >
+                <button onClick={() => openUrl(link)} className={`${PILL} ${PILL_IDLE}`}>
                   <ExternalLink size={16} strokeWidth={2} />
                   {t("View on {provider}", { provider: PROVIDER_NAME[source] })}
                 </button>
@@ -287,10 +281,7 @@ function GameDetailBody({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <SaveGameButton game={game} franchise={franchise} />
               {page && (
-                <button
-                  onClick={() => openUrl(page)}
-                  className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/50 px-6 text-[14.5px] font-medium text-ink backdrop-blur-sm transition-colors duration-200 hover:bg-canvas/70"
-                >
+                <button onClick={() => openUrl(page)} className={`${PILL} ${PILL_IDLE}`}>
                   <ExternalLink size={16} strokeWidth={2} />
                   {igdb ? t("View on IGDB") : t("View on RAWG")}
                 </button>

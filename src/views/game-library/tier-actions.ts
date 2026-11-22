@@ -1,22 +1,27 @@
-// What the Tier List's drag, keys and menus do. Every change goes through
-// changeGameLibrary and writes only the tier group, so ranking never touches a
-// game's status, dates, notes, progress or Wishlist place.
+// What the Tier List's drag, keys and X do. Every change goes through
+// changeGameLibrary. Ranking writes only the tier group, so it never touches a
+// game's status, dates, notes, progress or Wishlist place; Remove also clears a
+// completed game's status, as the movie Tier List does (removeFromTierList).
 import { emitListToast } from "@/components/lists/list-toast";
 import {
   addToBoard,
   applyPatch,
+  chainChanges,
   boardDropIndex,
   boardPlace,
   boardTier,
   isEmptyPatch,
   moveToTier,
-  removeFromBoard,
+  playStateOf,
+  removeFromTierList,
+  restoreState,
   restoreTier,
   stepOnBoard,
   tierBoard,
   tierStateOf,
   type BoardStep,
   type ChangeContext,
+  type PlayState,
   type TierState,
 } from "@/lib/game-library/rules";
 import { activeGameProfile, changeGameLibrary } from "@/lib/game-library/store";
@@ -92,25 +97,34 @@ export function canStep(data: GameLibraryData, gameId: GameId, step: BoardStep):
   return !isEmptyPatch(stepOnBoard(data, gameId, step, { now: Date.now() }));
 }
 
-/** Off the board without losing anything: status, notes and progress stay, and Undo puts it back. */
+/**
+ * The X's Remove: off the board, and a completed game is no longer completed
+ * (removeFromTierList). Notes, progress and the Wishlist place stay. Undo puts
+ * back the exact status, dates, tier and position, in one write.
+ */
 export function removeTile(gameId: GameId, name: string, t: Translate): void {
   const profileId = activeGameProfile();
-  let previous: TierState | null = null;
+  let previous: { play: PlayState; tier: TierState } | null = null;
   const patch = changeGameLibrary((data, ctx) => {
     const record = data.records[gameId];
-    previous = record ? tierStateOf(record) : null;
-    return removeFromBoard(data, gameId, ctx);
+    previous = record ? { play: playStateOf(record), tier: tierStateOf(record) } : null;
+    return removeFromTierList(data, gameId, ctx);
   });
   if (!patch || isEmptyPatch(patch) || !previous || !profileId) return;
-  const before: TierState = previous;
+  const before: { play: PlayState; tier: TierState } = previous;
   const message = t("Removed {name} from your Tier List", { name });
   announce(message);
   emitListToast(message, {
     label: t("Undo"),
     run: () => {
-      const restored = changeGameLibrary((data, ctx) => restoreTier(data, gameId, before, ctx), {
-        profileId,
-      });
+      const restored = changeGameLibrary(
+        (data, ctx) =>
+          chainChanges(data, ctx, [
+            (d, c) => restoreState(d, gameId, before.play, c),
+            (d, c) => restoreTier(d, gameId, before.tier, c),
+          ]),
+        { profileId },
+      );
       if (restored && !isEmptyPatch(restored)) announce(t("Restored"));
     },
   });

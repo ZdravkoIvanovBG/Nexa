@@ -504,6 +504,23 @@ export function startGame(data: GameLibraryData, ref: GameRef, ctx: ChangeContex
 }
 
 /**
+ * "Mark as Played" from anywhere, including a game that was never saved or
+ * started: the existing Completed status, finished now. Like any status change
+ * it writes only the state group, so notes, progress, rank and the Wishlist
+ * place stay as they are. A game that was never started keeps no start date.
+ */
+export function markPlayed(data: GameLibraryData, ref: GameRef, ctx: ChangeContext): LibraryPatch {
+  const gameId = gameIdOfRef(ref);
+  const record = data.records[gameId] ?? newRecord(ref, ctx.now);
+  return setStatus(
+    { ...data, records: { ...data.records, [gameId]: record } },
+    gameId,
+    "completed",
+    ctx,
+  );
+}
+
+/**
  * A new playthrough of a finished game. It starts now, so the card never shows
  * the earlier run's dates as this one's; the last finish is kept as history.
  */
@@ -763,6 +780,42 @@ export function removeFromBoard(
   return patch;
 }
 
+/**
+ * The Tier List's X → Remove, as on the movie Tier List, where removing a
+ * watched film also marks it unwatched. The game leaves the board, and a
+ * completed game is no longer completed: its status and completion date are
+ * cleared, so it leaves Currently Playing's Completed list and loses its Played
+ * tick. Its start date stays, as does a game's Playing, Paused or Dropped status
+ * when it was ranked before it was finished.
+ *
+ * The tier is cleared rather than hidden: with no status the game can't appear
+ * in Unranked, and finishing it again later puts it there like any newly
+ * completed game. One record write; the state and tier groups get fresh stamps,
+ * so the removal wins over older copies on every device (merge.ts and the
+ * server's game_records rule), and notes, progress and Wishlist rows are
+ * untouched. Undo is restoreState + restoreTier.
+ */
+export function removeFromTierList(
+  data: GameLibraryData,
+  gameId: GameId,
+  ctx: ChangeContext,
+): LibraryPatch {
+  const record = data.records[gameId];
+  const patch = emptyPatch();
+  if (!record || boardTier(record) === null) return patch;
+  const completed = record.status === "completed";
+  patch.records.push({
+    ...record,
+    tier: null,
+    tierPosition: null,
+    tierAt: nextStamp(record.tierAt, ctx.now),
+    ...(completed
+      ? { status: null, completedAt: null, stateAt: nextStamp(record.stateAt, ctx.now) }
+      : {}),
+  });
+  return patch;
+}
+
 /** The tier group's values, so a board change can be put back exactly (Undo). */
 export type TierState = Pick<GameRecord, "tier" | "tierPosition">;
 
@@ -885,6 +938,18 @@ export function collectionSummary(data: GameLibraryData, collectionId: string): 
     completed: members.filter((m) => m.record.status === "completed").length,
     nextUp: members.find((m) => m.record.status === null)?.record ?? null,
   };
+}
+
+/**
+ * A franchise's saved collection, if any, and the game it would start next
+ * (its first member not yet started), as the Wishlist's collection row shows.
+ */
+export function franchiseCollection(
+  data: GameLibraryData,
+  franchiseId: string,
+): { entry: QueueEntry; nextUp: GameRecord | null } | null {
+  const entry = savedCollection(data, franchiseId);
+  return entry ? { entry, nextUp: collectionSummary(data, entry.entryId).nextUp } : null;
 }
 
 export function wishlistView(data: GameLibraryData): WishlistItem[] {

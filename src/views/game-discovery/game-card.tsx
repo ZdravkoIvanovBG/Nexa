@@ -1,10 +1,14 @@
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { Poster } from "@/components/poster";
 import { coverImage, gameImage } from "@/lib/game-discovery/game-image";
 import type { GameSummary } from "@/lib/game-discovery/types";
+import { isGamePlayed } from "@/lib/game-library/played";
+import { useGameLibrary } from "@/lib/game-library/store";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
 import { criticScoreOf, metacriticTone, platformLabels, releaseYear, shortGenre } from "./format";
+import { openGameCardMenu } from "./game-card-menu";
 
 /** A critic score badge (Metacritic's colour bands). `title` names the source. */
 export function MetacriticBadge({
@@ -90,6 +94,27 @@ export function LandscapeFill({ src }: { src: string }) {
  */
 export type GameCardShape = "landscape" | "cover";
 
+/** Played (Completed) in the library: its own record or the same game from the other provider. */
+function useGamePlayed(game: GameSummary): boolean {
+  const { data, ready } = useGameLibrary();
+  return ready && isGamePlayed(data, { gameId: game.id, slug: game.slug });
+}
+
+/** The Movie/Show cards' Watched tick (pick-card.tsx), for a game marked Played. */
+function PlayedBadge() {
+  const t = useT();
+  return (
+    <span
+      data-played-badge
+      className="pointer-events-none absolute bottom-1.5 start-1.5 z-[1] flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 text-white ring-1 ring-emerald-300/40 backdrop-blur-sm"
+      title={t("Played")}
+      aria-label={t("Played")}
+    >
+      <Check size={12} strokeWidth={3} />
+    </span>
+  );
+}
+
 const CARD_FRAME =
   "harbor-card-ring rounded-[var(--poster-radius,12px)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] transition-[box-shadow] duration-300 group-hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)]";
 const CARD_LIFT =
@@ -123,9 +148,11 @@ function CoverCard({ game }: { game: GameSummary }) {
   const year = releaseYear(game);
   const genre = game.genres[0] ? shortGenre(game.genres[0].name) : null;
   const critic = criticScoreOf(game);
+  const played = useGamePlayed(game);
   return (
     <button
       onClick={() => openGame(game)}
+      onContextMenu={(e) => openGameCardMenu(e, game)}
       data-media-card
       title={game.name}
       className="group relative z-0 flex w-full min-w-0 flex-col gap-2.5 text-start"
@@ -142,10 +169,13 @@ function CoverCard({ game }: { game: GameSummary }) {
         >
           {landscape && !failed && <LandscapeFill src={landscape} />}
           {titled && (
-            <span className="absolute inset-0 flex items-end bg-gradient-to-t from-black/55 to-transparent p-3 text-[14px] font-semibold leading-snug text-white/90 [text-wrap:balance]">
+            <span
+              className={`absolute inset-0 flex items-end bg-gradient-to-t from-black/55 to-transparent p-3 text-[14px] font-semibold leading-snug text-white/90 [text-wrap:balance] ${played ? "ps-10" : ""}`}
+            >
               {game.name}
             </span>
           )}
+          {played && <PlayedBadge />}
         </Poster>
       </div>
       <div className="flex min-w-0 flex-col gap-1 px-0.5">
@@ -181,9 +211,11 @@ function LandscapeCard({ game }: { game: GameSummary }) {
   const year = releaseYear(game);
   const platforms = platformLabels(game.platformFamilies);
   const critic = criticScoreOf(game);
+  const played = useGamePlayed(game);
   return (
     <button
       onClick={() => openGame(game)}
+      onContextMenu={(e) => openGameCardMenu(e, game)}
       data-media-card
       className="group relative z-0 flex w-full min-w-0 flex-col gap-2.5 text-start"
     >
@@ -198,10 +230,13 @@ function LandscapeCard({ game }: { game: GameSummary }) {
         >
           {portrait && game.image && <PortraitFill src={game.image} />}
           {!game.image && (
-            <span className="absolute inset-0 flex items-end p-3 text-[13px] font-medium leading-snug text-ink/85">
+            <span
+              className={`absolute inset-0 flex items-end p-3 text-[13px] font-medium leading-snug text-ink/85 ${played ? "ps-10" : ""}`}
+            >
               {game.name}
             </span>
           )}
+          {played && <PlayedBadge />}
         </Poster>
       </div>
       <div className="flex min-w-0 flex-col gap-1 px-0.5">

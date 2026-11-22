@@ -4,7 +4,7 @@
 // writes only the state or progress group, so notes, rank and the Wishlist
 // place of a game are never touched by a status change.
 import { emitListToast } from "@/components/lists/list-toast";
-import type { GameRef } from "@/lib/game-discovery/types";
+import { gameIdOfRef, type GameRef } from "@/lib/game-discovery/types";
 import { libraryRef } from "@/lib/game-library/identity";
 import {
   backToWishlist,
@@ -12,6 +12,7 @@ import {
   chainChanges,
   clearStatus,
   isEmptyPatch,
+  markPlayed,
   playAgain,
   playStateOf,
   removeEntry,
@@ -98,6 +99,31 @@ export function startPlaying(
   const message = t("Started playing {name}", { name });
   announce(message);
   emitListToast(message, view ?? undefined);
+  return true;
+}
+
+const NEVER_PLAYED: PlayState = { status: null, startedAt: null, completedAt: null };
+
+/**
+ * "Mark as Played" (Completed) from Discovery: a game page or a card's menu,
+ * saved or not. Like a save, the ref goes through libraryRef inside the change,
+ * so a game already saved from the other provider is marked on that record.
+ * Undo puts back the exact earlier status and dates.
+ */
+export function markGamePlayed(ref: GameRef, name: string, t: Translate): boolean {
+  const seen: { gameId?: GameId; previous?: PlayState } = {};
+  const patch = changeGameLibrary((data, ctx) => {
+    const target = libraryRef(data, ref);
+    const gameId = gameIdOfRef(target);
+    const record = data.records[gameId];
+    seen.gameId = gameId;
+    seen.previous = record ? playStateOf(record) : NEVER_PLAYED;
+    return markPlayed(data, target, ctx);
+  });
+  if (!patch || isEmptyPatch(patch) || !seen.gameId || !seen.previous) return false;
+  const message = t("Marked {name} as played", { name });
+  announce(message);
+  offerUndo(seen.gameId, { previous: seen.previous, patch }, message, t);
   return true;
 }
 
