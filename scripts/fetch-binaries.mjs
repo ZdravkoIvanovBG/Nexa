@@ -41,7 +41,7 @@
  *
  * Extraction tools (documented external dependency):
  *   .tar.xz -> `tar -xJf`  (linux; GNU tar + xz-utils)
- *   .zip    -> macOS: `unzip`   windows: PowerShell Expand-Archive   (both built in)
+ *   .zip    -> macOS: `unzip`   windows: in-process (scripts/lib/zip.mjs)
  *
  * Env overrides (mirrors / air-gapped): HARBOR_YTDLP_URL, HARBOR_FFMPEG_URL,
  * HARBOR_FFPROBE_URL replace the resolved URL for the current platform (and
@@ -75,6 +75,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { downloadWithRetry, isValidBinary } from "./lib/download.mjs";
 import { WIN64_FFMPEG, YTDLP_BASE, YTDLP_SHA256 } from "./lib/sidecar-pins.mjs";
+import { extractZipMember, listZip } from "./lib/zip.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const binDir = join(root, "src-tauri", "binaries");
@@ -219,16 +220,18 @@ function extractArchive(url, buf, kind) {
   if (kind === "tar.xz") {
     execFileSync("tar", ["-xJf", archive, "-C", outDir], { stdio: "inherit" });
   } else if (process.platform === "win32") {
-    execFileSync(
-      "powershell",
-      [
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        `Expand-Archive -LiteralPath "${archive}" -DestinationPath "${outDir}" -Force`,
-      ],
-      { stdio: "inherit" },
-    );
+    // In-process, like fetch-libmpv/fetch-mpv. GitHub's Windows runners can load
+    // PowerShell 7's Archive module into powershell.exe, whose Expand-Archive
+    // then fails ("Cannot find an overload for ExtractToDirectory").
+    const members = listZip(buf);
+    for (const name of members.keys()) {
+      if (name.endsWith("/")) continue;
+      const parts = name.split("/");
+      if (parts.some((p) => p === ".." || p === "") || /^[a-zA-Z]:/.test(name)) continue;
+      const dest = join(outDir, ...parts);
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, extractZipMember(buf, name, members));
+    }
   } else {
     execFileSync("unzip", ["-oq", archive, "-d", outDir], { stdio: "inherit" });
   }
