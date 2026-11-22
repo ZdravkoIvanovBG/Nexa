@@ -75,13 +75,12 @@ export function useAddons(settings: Settings): {
         if (existingTorboxIdx >= 0) {
           const existing = list[existingTorboxIdx];
           if (existing.transportUrl !== torbox.transportUrl) {
-            console.info(
-              `[picker] overriding stale TorBox URL: ${existing.transportUrl} → ${torbox.transportUrl}`,
-            );
+            // No URLs: addon transport URLs can carry API keys.
+            console.info("[picker] overriding stale TorBox addon URL");
             list[existingTorboxIdx] = torbox;
           }
         } else {
-          console.info(`[picker] auto-adding TorBox addon: ${torbox.transportUrl}`);
+          console.info("[picker] auto-adding TorBox addon");
           list.push(torbox);
         }
       }

@@ -1,5 +1,13 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Addon } from "./addons";
+import {
+  enabledAddonRows,
+  type InstallPlanOptions,
+  managedAddonRows,
+  parseAddonUrl,
+  planAddonInstall,
+  withAddonEnabled,
+} from "./addon-install-plan";
 import { applyOrderToItems } from "./addons-store/reorder";
 import { applyRemote, mirrorAddons } from "./cloud/mirror";
 
@@ -233,11 +241,10 @@ export function isAddonEnabled(transportUrl: string): boolean {
   return !loadDisabledAddons().has(transportUrl);
 }
 
+/** Turns one addon on or off. The row stays installed either way. */
 export function setAddonEnabled(transportUrl: string, enabled: boolean): void {
-  const set = loadDisabledAddons();
-  if (enabled) set.delete(transportUrl);
-  else set.add(transportUrl);
-  saveDisabledAddons(set);
+  const next = withAddonEnabled(loadInstalled(), transportUrl, enabled, Date.now());
+  if (next) saveInstalled(next);
 }
 
 export function filterEnabled<T extends { transportUrl: string }>(items: T[]): T[] {
@@ -268,41 +275,8 @@ export function findHostnameMatch(transportUrl: string): InstalledAddon | null {
   return loadInstalled().find((a) => transportHost(a.transportUrl) === host) ?? null;
 }
 
-export type AddonUrlParse = { kind: "ok"; url: string } | { kind: "error"; message: string };
-
-/** Matches the user_addons.addon_url length constraint. */
-export const MAX_ADDON_URL_LENGTH = 2000;
-
-export function parseAddonUrl(input: string): AddonUrlParse {
-  let raw = input.trim();
-  if (!raw) return { kind: "error", message: "Paste a manifest URL or stremio:// link." };
-  if (raw.startsWith("stremio://")) raw = "https://" + raw.slice("stremio://".length);
-  raw = raw.replace(/\/#\/configure\/?$/, "");
-  raw = raw.replace(/\/configure\/?$/, "");
-  raw = raw.replace(/\/+$/, "");
-  if (!/^https?:\/\//i.test(raw)) {
-    return { kind: "error", message: "URL must start with https:// or stremio://" };
-  }
-  if (!/manifest\.json(\?.*)?$/i.test(raw)) {
-    raw = raw + "/manifest.json";
-  }
-  try {
-    new URL(raw);
-  } catch {
-    return { kind: "error", message: "That doesn't look like a valid URL." };
-  }
-  // Mirrors the user_addons.addon_url check constraint. Comet and AIOStreams
-  // bake a base64 config blob into the path; past ~2704 bytes the server's btree
-  // index rejects the row, which would surface as a non-auth failure and retry
-  // forever. Fail here, where the message can actually say what is wrong.
-  if (raw.length > MAX_ADDON_URL_LENGTH) {
-    return {
-      kind: "error",
-      message: `That manifest URL is too long (${raw.length} characters, limit ${MAX_ADDON_URL_LENGTH}). Reconfigure the addon with fewer options.`,
-    };
-  }
-  return { kind: "ok", url: raw };
-}
+export { MAX_ADDON_URL_LENGTH, parseAddonUrl } from "./addon-install-plan";
+export type { AddonUrlParse } from "./addon-install-plan";
 
 function validateManifest(
   m: unknown,
@@ -354,25 +328,16 @@ export async function installAddon(id: string, transportUrl: string): Promise<Ad
 
 export async function installFromUrl(
   rawUrl: string,
-  options: { replaceId?: string } = {},
+  options: InstallPlanOptions = {},
 ): Promise<InstallResult> {
   const parsed = parseAddonUrl(rawUrl);
   if (parsed.kind === "error") throw new Error(parsed.message);
   const manifest = await fetchManifestAt(parsed.url);
   const id = manifest.id;
-  const before = loadInstalled();
-  const replaceId = options.replaceId && options.replaceId !== id ? options.replaceId : null;
-  const replacedById = before.some((a) => a.id === id);
-  const replacedByOld = replaceId != null && before.some((a) => a.id === replaceId);
-  // A reconfiguration changes the URL, so carry the old row's enabled state and
-  // position across instead of silently resetting both.
-  const previous =
-    before.find((a) => a.transportUrl === parsed.url) ??
-    (replaceId ? before.find((a) => a.id === replaceId) : undefined) ??
-    before.find((a) => a.id === id);
-  const next = before.filter(
-    (a) => a.transportUrl !== parsed.url && (!replaceId || a.id !== replaceId),
-  );
+  // A reconfiguration changes the URL: the new row takes the old one's place
+  // and enabled state instead of being added beside it (see planAddonInstall).
+  const { keep, previous, replaced } = planAddonInstall(loadInstalled(), parsed.url, id, options);
+  const next = [...keep];
   next.push({
     id,
     transportUrl: parsed.url,
@@ -385,7 +350,7 @@ export async function installFromUrl(
   });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
-  return { addon, replaced: replacedById || replacedByOld };
+  return { addon, replaced };
 }
 
 export async function uninstallAddon(id: string, transportUrl?: string): Promise<void> {
@@ -406,7 +371,40 @@ export async function uninstallAddon(id: string, transportUrl?: string): Promise
 
 /** Installed, enabled, in display order -- the shared basis for both accessors below. */
 function orderedEnabledEntries(): InstalledAddon[] {
-  return filterEnabled(loadInstalled()).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return enabledAddonRows(loadInstalled());
+}
+
+/** Resolves rows to addons, fetching and caching any manifest the store lacks. */
+async function resolveEntries(entries: InstalledAddon[]): Promise<Addon[]> {
+  if (entries.length === 0) return [];
+  const results = await Promise.all(
+    entries.map(async (entry): Promise<Addon | null> => {
+      if (entry.manifest) {
+        return { manifest: entry.manifest, transportUrl: entry.transportUrl };
+      }
+      try {
+        const manifest = await fetchManifestAt(entry.transportUrl);
+        saveInstalled(
+          loadInstalled().map((e) =>
+            e.transportUrl === entry.transportUrl ? { ...e, manifest } : e,
+          ),
+        );
+        return { manifest, transportUrl: entry.transportUrl };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return results.filter((a): a is Addon => a !== null);
+}
+
+/**
+ * Every installed addon, disabled ones included, in display order: the list the
+ * Addons screens show and mark as "Installed". Not for querying content -- use
+ * installedAddons()/installedAddonsResolved(), which skip disabled addons.
+ */
+export async function managedAddonsResolved(): Promise<Addon[]> {
+  return resolveEntries(managedAddonRows(loadInstalled()));
 }
 
 /**
@@ -426,23 +424,7 @@ export function installedAddons(): Addon[] {
 
 /** installedAddons(), but manifests missing from the store are fetched and cached first. */
 export async function installedAddonsResolved(): Promise<Addon[]> {
-  const entries = orderedEnabledEntries();
-  if (entries.length === 0) return [];
-  const results = await Promise.all(
-    entries.map(async (entry): Promise<Addon | null> => {
-      if (entry.manifest) {
-        return { manifest: entry.manifest, transportUrl: entry.transportUrl };
-      }
-      try {
-        const manifest = await fetchManifestAt(entry.transportUrl);
-        saveInstalled(loadInstalled().map((e) => (e.id === entry.id ? { ...e, manifest } : e)));
-        return { manifest, transportUrl: entry.transportUrl };
-      } catch {
-        return null;
-      }
-    }),
-  );
-  return results.filter((a): a is Addon => a !== null);
+  return resolveEntries(orderedEnabledEntries());
 }
 
 export async function fetchInstalledAddons(): Promise<Addon[]> {

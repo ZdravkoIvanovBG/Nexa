@@ -38,7 +38,7 @@ export function AddonInstallModal({
   onClose: () => void;
   onInstall: (
     rawUrl: string,
-    opts: { replaceId?: string },
+    opts: { replaceId?: string; replaceTransportUrl?: string },
   ) => Promise<{ replaced: boolean; addon: Addon } | null>;
 }) {
   const t = useT();
@@ -126,6 +126,9 @@ export function AddonInstallModal({
     try {
       const result = await onInstall(resolved.url, {
         replaceId: resolved.replaceId ?? undefined,
+        // Managing a specific installation replaces exactly that one, even when
+        // another row shares its manifest id.
+        replaceTransportUrl: mode.kind === "manage" ? mode.existing.transportUrl : undefined,
       });
       setInstallStage((s) => (s ? s.map((x, i) => (i === 2 ? { ...x, done: true } : x)) : s));
       await new Promise((r) => setTimeout(r, 280));
@@ -207,6 +210,7 @@ export function AddonInstallModal({
                       manifestToConfigureUrl(mode.existing.transportUrl),
                       mode.existing.name,
                       mode.existing.logo ?? null,
+                      { replaceTransportUrl: mode.existing.transportUrl },
                     );
                     onClose();
                   }}

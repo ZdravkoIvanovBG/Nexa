@@ -16,6 +16,7 @@ mod fullscreen;
 mod hdr_overlay;
 mod http_fetch;
 mod igdb;
+mod installer_capture;
 mod local_lib;
 mod modal_overlay;
 // libmpv is desktop-only (see Cargo.toml). `mpv_stub` mirrors `mpv`'s command
@@ -547,6 +548,7 @@ pub fn run() {
         .manage(modal_overlay_state)
         .manage(discord_rp::DiscordState::new())
         .manage(download::DownloadState::new())
+        .manage(installer_capture::InstallerCaptureState::default())
         .manage(igdb::production_state());
 
     #[cfg(target_os = "macos")]
@@ -604,6 +606,10 @@ pub fn run() {
             // Recover from WebView2 render-process death by reloading in place,
             // instead of leaving a blank window until app restart.
             webview_helpers::install_process_failure_watchdog(&app.handle(), "main");
+            // Addon setup: catch the installer iframe's stremio:// Install link
+            // in-process instead of letting the CSP turn it into an error page.
+            #[cfg(windows)]
+            installer_capture::install(&app.handle());
             #[cfg(windows)]
             install_maximize_guard(&app.handle());
             ensure_window_on_screen(&app.handle());
@@ -813,6 +819,8 @@ pub fn run() {
             pip::window_pip_exit,
             fullscreen::window_fullscreen_enter,
             fullscreen::window_fullscreen_exit,
+            installer_capture::installer_capture_arm,
+            installer_capture::installer_capture_disarm,
             browser::browser_open,
             browser::browser_close,
             thumbs::thumbs_set_url,

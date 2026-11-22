@@ -12,9 +12,20 @@ import { InstallOverlay } from "./installer-viewport/install-overlay";
 
 const EVENT = "harbor:open-installer";
 
-type InstallerDetail = { url: string; title?: string; logo?: string | null };
+type InstallerDetail = {
+  url: string;
+  title?: string;
+  logo?: string | null;
+  /** The installed row this setup reconfigures; replaced instead of duplicated. */
+  replaceTransportUrl?: string;
+};
 
-export function openInstallerViewport(url: string, title?: string, logo?: string | null): void {
+export function openInstallerViewport(
+  url: string,
+  title?: string,
+  logo?: string | null,
+  opts: { replaceTransportUrl?: string } = {},
+): void {
   if (typeof window === "undefined") return;
   // Linux: the in-page iframe can't capture the addon's stremio:// install link
   // (WebKitGTK refuses the scheme). Route through the Nexa Browser window, where
@@ -25,7 +36,7 @@ export function openInstallerViewport(url: string, title?: string, logo?: string
         window.__harborInstallerOpen = true;
         window.dispatchEvent(
           new CustomEvent<InstallerDetail>(EVENT, {
-            detail: { url, title, logo },
+            detail: { url, title, logo, replaceTransportUrl: opts.replaceTransportUrl },
           }),
         );
       });
@@ -33,7 +44,11 @@ export function openInstallerViewport(url: string, title?: string, logo?: string
     return;
   }
   window.__harborInstallerOpen = true;
-  window.dispatchEvent(new CustomEvent<InstallerDetail>(EVENT, { detail: { url, title, logo } }));
+  window.dispatchEvent(
+    new CustomEvent<InstallerDetail>(EVENT, {
+      detail: { url, title, logo, replaceTransportUrl: opts.replaceTransportUrl },
+    }),
+  );
 }
 
 export function InstallerViewportRoot() {
@@ -52,6 +67,7 @@ export function InstallerViewportRoot() {
       url={request.url}
       title={request.title ?? new URL(request.url).hostname}
       logo={request.logo ?? null}
+      replaceTransportUrl={request.replaceTransportUrl}
       onClose={() => setRequest(null)}
     />
   );
@@ -64,6 +80,21 @@ type Phase =
   | { kind: "error"; message: string };
 
 const STREMIO_PROTO = "stremio://";
+
+/** Prefix of the installer iframe's name; the rest is the session's capture token. */
+export const INSTALLER_FRAME_PREFIX = "harbor-installer-";
+const CAPTURE_EVENT = "harbor://installer-stremio-capture";
+
+/**
+ * A fresh random token per installer session. The native side only forwards a
+ * stremio:// Install link from the iframe named with it, while it is armed, so
+ * no other embedded page can start an install.
+ */
+function newCaptureToken(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function normalizeInstallUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -81,13 +112,16 @@ function InstallerViewport({
   url,
   title,
   logo,
+  replaceTransportUrl,
   onClose,
 }: {
   url: string;
   title: string;
   logo: string | null;
+  replaceTransportUrl?: string;
   onClose: () => void;
 }) {
+  const [captureToken] = useState(newCaptureToken);
   const [pasteValue, setPasteValue] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [loaded, setLoaded] = useState(false);
@@ -176,7 +210,7 @@ function InstallerViewport({
       }
       setPhase({ kind: "installing", name: null });
       try {
-        const result = await installFromUrl(normalized);
+        const result = await installFromUrl(normalized, { replaceTransportUrl });
         const name = result.addon.manifest.name ?? "Addon";
         const logo = result.addon.manifest.logo ?? null;
         const id = result.addon.manifest.id;
@@ -194,7 +228,7 @@ function InstallerViewport({
         setPhase({ kind: "error", message: msg });
       }
     },
-    [onClose],
+    [onClose, replaceTransportUrl],
   );
 
   useEffect(() => {
@@ -208,12 +242,52 @@ function InstallerViewport({
   const submitRef = useRef(submit);
   submitRef.current = submit;
 
+  // Arms native capture of this session's iframe (Windows: the iframe's own
+  // stremio:// navigation is cancelled and handed here). Disarmed on close.
+  useEffect(() => {
+    if (isWeb()) return;
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    void (async () => {
+      try {
+        const [{ invoke }, { listen }] = await Promise.all([
+          import("@tauri-apps/api/core"),
+          import("@tauri-apps/api/event"),
+        ]);
+        const off = await listen<{ token?: unknown; url?: unknown }>(CAPTURE_EVENT, (e) => {
+          const { token, url: captured } = e.payload ?? {};
+          if (token !== captureToken || typeof captured !== "string") return;
+          if (phaseRef.current.kind === "installing" || phaseRef.current.kind === "success") return;
+          void submitRef.current(captured);
+        });
+        if (disposed) {
+          off();
+          return;
+        }
+        unlisten = off;
+        await invoke("installer_capture_arm", { token: captureToken });
+      } catch {
+        /* capture unavailable: paste and From clipboard still work */
+      }
+    })();
+    return () => {
+      disposed = true;
+      unlisten?.();
+      void import("@tauri-apps/api/core")
+        .then(({ invoke }) => invoke("installer_capture_disarm", { token: captureToken }))
+        .catch(() => {});
+    };
+  }, [captureToken]);
+
   useEffect(() => {
     const isBusy = () =>
       phaseRef.current.kind === "installing" || phaseRef.current.kind === "success";
 
     const onMessage = (e: MessageEvent) => {
       if (isBusy()) return;
+      // Only this installer's own iframe may hand over an install link.
+      const frame = iframeRef.current?.contentWindow;
+      if (!frame || e.source !== frame) return;
       const data = e.data;
       if (!data) return;
       const candidate =
@@ -377,6 +451,7 @@ function InstallerViewport({
           key={reloadKey}
           ref={iframeRef}
           src={url}
+          name={`${INSTALLER_FRAME_PREFIX}${captureToken}`}
           title={title}
           onLoad={handleIframeLoad}
           className="h-full w-full border-0"

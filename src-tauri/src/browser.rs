@@ -114,16 +114,21 @@ pub async fn browser_open(app: AppHandle, url: String) -> Result<(), String> {
         // fires for them. On Linux, STREMIO_CAPTURE_SCRIPT above rewrites clicks and
         // window.open() calls into a top-level location change so this actually
         // sees them; on Windows/macOS a stremio:// click is normally handed to the
-        // OS by WebView2/WKWebView before on_navigation runs, so the OS-level
-        // `stremio` deep-link (see tauri.conf.json) is the real capture path there
-        // -- this hook still catches a bare /manifest.json navigation on every
+        // OS by WebView2/WKWebView before on_navigation runs. On Windows the
+        // in-app installer iframe is captured by installer_capture.rs instead;
+        // this hook still catches a bare /manifest.json navigation on every
         // platform.
         {
             let nav_app = app_for_main.clone();
             builder = builder.on_navigation(move |url| {
                 let s = url.as_str();
                 if url.scheme() == "stremio" || s.contains("/manifest.json") {
-                    eprintln!("[browser] captured install link: {}", s);
+                    // Scheme and host only: the path can carry debrid keys.
+                    eprintln!(
+                        "[browser] captured install link: {}://{}",
+                        url.scheme(),
+                        url.host_str().unwrap_or("?")
+                    );
                     let _ = nav_app.emit("harbor://browser-stremio-capture", s.to_string());
                     return false;
                 }

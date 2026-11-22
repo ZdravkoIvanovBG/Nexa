@@ -26,7 +26,12 @@ export async function installBundle(
         results.push({ item, status: "failed", message: parsed.message });
         continue;
       }
-      const alreadyInstalled = loadInstalled().some((a) => a.transportUrl === parsed.url);
+      // Any installation of this addon counts: a bundle must neither add a second
+      // copy nor overwrite the user's own configuration (e.g. a debrid key)
+      // with the bundle's default one.
+      const alreadyInstalled = loadInstalled().some(
+        (a) => a.transportUrl === parsed.url || a.id === item.id,
+      );
       if (alreadyInstalled) {
         results.push({ item, status: "already" });
         continue;

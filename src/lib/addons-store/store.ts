@@ -2,7 +2,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import type { Addon } from "@/lib/addons";
 import { useProfiles } from "@/lib/profiles";
-import { installedAddonsResolved } from "@/lib/addon-store";
+import { managedAddonsResolved } from "@/lib/addon-store";
 import { listAddons } from "@/lib/providers/stremio-addons";
 import { queryKeys } from "@/lib/query/keys";
 import { isAdultText } from "./adult-filter";
@@ -206,9 +206,12 @@ function finalizeCatalog(
   return map;
 }
 
-/** The user's installed addons. Shared by store + prefetch. */
+/**
+ * The user's installed addons, disabled ones included: the Installed tab lists
+ * them with their switch off. Shared by store + prefetch.
+ */
 export async function fetchInstalledAddonsList(): Promise<Addon[]> {
-  return installedAddonsResolved().catch(() => [] as Addon[]);
+  return managedAddonsResolved().catch(() => [] as Addon[]);
 }
 
 /** Community + stremio-addons directories, in parallel. Shared by store + prefetch. */

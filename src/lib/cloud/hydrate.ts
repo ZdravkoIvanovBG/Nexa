@@ -9,6 +9,7 @@ import {
 import { readLocalEntries, replaceWatchlist, type LocalEntry } from "@/lib/watchlist";
 import { supabase } from "@/lib/supabase";
 import { loadInstalled, replaceInstalled, type InstalledAddon } from "@/lib/addon-store";
+import { localAddonIsNewer } from "@/lib/addon-install-plan";
 import {
   ensureLocalProfile,
   isAutoCreatedProfile,
@@ -244,7 +245,7 @@ function mergeAddons(o: Owner, rows: UserAddonRow[], now: number): void {
       byUrl.set(r.addon_url, remote);
       continue;
     }
-    if ((mine.updatedAt ?? 0) > (remote.updatedAt ?? 0)) uploads.push(mine);
+    if (localAddonIsNewer(mine, remote)) uploads.push(mine);
     else byUrl.set(r.addon_url, { ...remote, manifest: remote.manifest ?? mine.manifest });
   }
 
