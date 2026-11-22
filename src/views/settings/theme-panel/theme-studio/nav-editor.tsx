@@ -25,7 +25,7 @@ export function NavEditor({ layout }: { layout: ThemeLayout }) {
 
   const byId = new Map<string, NavItem>(NAV_ITEMS.map((it) => [it.id, it]));
   const rows = effectiveNavOrder(cfg)
-    .filter((id) => id !== "games" || settings.gamesEnabled)
+    .filter((id) => (id !== "games" && id !== "game-library") || settings.gamesEnabled)
     .map((id) => byId.get(id)!);
   const renamable = !ICON_ONLY.has(layout);
   const hasChanges =

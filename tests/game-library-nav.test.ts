@@ -2,71 +2,175 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
-import {
-  currentLibrarySection,
-  hasLibrarySection,
-  withoutGameFrames,
-} from "../src/lib/library-frames.ts";
+import { hasGameLibraryFrame, withoutGameFrames } from "../src/lib/library-frames.ts";
+import { navFeatureAllows } from "../src/chrome/nav-order.ts";
+import { pathFromView, viewFromPath } from "../src/router/paths.ts";
 
 const source = (path) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+const exists = (path) => {
+  try {
+    statSync(new URL(`../src/${path}`, import.meta.url));
+    return true;
+  } catch {
+    return false;
+  }
+};
 
-const ROOT = { kind: "library" };
-const MOVIES = { kind: "library", section: "movies" };
-const GAMES = { kind: "library", section: "games" };
+const LIBRARY = { kind: "library" };
+const GAME_LIBRARY = { kind: "game-library" };
+const SETTINGS = { kind: "settings" };
 
-test("a plain library frame has no section", () => {
-  assert.equal(currentLibrarySection([ROOT]), null);
-  assert.equal(hasLibrarySection([ROOT]), false);
-  assert.equal(hasLibrarySection([{ kind: "home" }]), false);
-  assert.equal(currentLibrarySection([{ kind: "home" }]), null);
+// ── stack rules ─────────────────────────────────────────────────────────────
+
+test("only a game-library frame counts as the Game Library", () => {
+  assert.equal(hasGameLibraryFrame([GAME_LIBRARY]), true);
+  assert.equal(hasGameLibraryFrame([{ kind: "game" }, GAME_LIBRARY]), true);
+  assert.equal(hasGameLibraryFrame([LIBRARY]), false);
+  assert.equal(hasGameLibraryFrame([{ kind: "games" }, { kind: "game" }]), false);
+  assert.equal(hasGameLibraryFrame([{ kind: "home" }]), false);
 });
 
-test("the top library frame decides what the library layer shows", () => {
-  assert.equal(currentLibrarySection([ROOT, GAMES]), "games");
-  assert.equal(currentLibrarySection([ROOT, MOVIES]), "movies");
-  assert.equal(currentLibrarySection([ROOT, MOVIES, { kind: "meta" }]), "movies");
-  assert.equal(hasLibrarySection([ROOT, GAMES, { kind: "game" }]), true);
+test("turning Games off on the Game Library lands on My Library", () => {
+  assert.deepEqual(withoutGameFrames([GAME_LIBRARY], LIBRARY), [LIBRARY]);
 });
 
-test("turning Games off inside the Game Library lands on the Movie Library", () => {
-  assert.deepEqual(withoutGameFrames([ROOT, GAMES], ROOT), [ROOT]);
-  assert.deepEqual(withoutGameFrames([ROOT, MOVIES], ROOT), [ROOT]);
+test("Settings stays open when Games is turned off from it, and Back leads to My Library", () => {
+  assert.deepEqual(withoutGameFrames([GAME_LIBRARY, SETTINGS], LIBRARY), [LIBRARY, SETTINGS]);
 });
 
-test("Settings stays open when Games is turned off from it", () => {
-  const settings = { kind: "settings" };
-  assert.deepEqual(withoutGameFrames([ROOT, GAMES, settings], ROOT), [ROOT, settings]);
+test("a Game Library opened from a game page goes, game pages and all", () => {
+  const stack = [{ kind: "games" }, { kind: "game" }, GAME_LIBRARY];
+  assert.deepEqual(withoutGameFrames(stack, LIBRARY), [LIBRARY]);
+  assert.deepEqual(withoutGameFrames([...stack, SETTINGS], LIBRARY), [LIBRARY, SETTINGS]);
+  assert.deepEqual(withoutGameFrames([GAME_LIBRARY, { kind: "game" }], LIBRARY), [LIBRARY]);
 });
 
-test("game pages above the library go too, and nothing unrelated does", () => {
+test("nothing unrelated is touched, and the stack is never left empty", () => {
   const meta = { kind: "meta" };
-  assert.deepEqual(withoutGameFrames([ROOT, GAMES, { kind: "game" }], ROOT), [ROOT]);
-  assert.deepEqual(withoutGameFrames([ROOT, MOVIES, meta], ROOT), [ROOT, meta]);
-});
-
-test("reaching the library from Discovery still leaves a working stack", () => {
-  const stack = [{ kind: "games" }, { kind: "game" }, GAMES, { kind: "settings" }];
-  assert.deepEqual(withoutGameFrames(stack, ROOT), [ROOT, { kind: "settings" }]);
-  assert.deepEqual(withoutGameFrames([{ kind: "games" }, GAMES], ROOT), [ROOT]);
-});
-
-test("the stack is never left empty", () => {
-  assert.deepEqual(withoutGameFrames([{ kind: "games" }], ROOT), [ROOT]);
+  assert.deepEqual(withoutGameFrames([LIBRARY, meta], LIBRARY), [LIBRARY, meta]);
+  assert.deepEqual(withoutGameFrames([{ kind: "home" }, meta], LIBRARY), [{ kind: "home" }, meta]);
+  assert.deepEqual(withoutGameFrames([{ kind: "games" }], LIBRARY), [LIBRARY]);
 });
 
 test("frames are not modified in place", () => {
-  const stack = [ROOT, GAMES];
-  withoutGameFrames(stack, ROOT);
-  assert.deepEqual(stack, [ROOT, GAMES]);
+  const stack = [GAME_LIBRARY, SETTINGS];
+  withoutGameFrames(stack, LIBRARY);
+  assert.deepEqual(stack, [GAME_LIBRARY, SETTINGS]);
 });
 
-// ── Games off keeps today's behaviour ───────────────────────────────────────
+// ── My Library and the Game Library are separate pages ──────────────────────
 
-test("with Games off, App renders the Movie Library directly", () => {
+test("My Library always renders the Movie/Show Library, Games on or off", () => {
+  const app = source("App.tsx");
+  assert.match(
+    app,
+    /\{libraryAlive && \(\s*<div className=\{layer\(libraryTop\)\}>\s*<Suspense fallback=\{null\}>\s*<LibraryView active=\{libraryTop\} \/>\s*<\/Suspense>/,
+  );
+  assert.doesNotMatch(app, /LibraryGate|library-gate|LibraryChooser/);
+});
+
+test("the chooser is gone", () => {
+  for (const file of [
+    "views/library-gate.tsx",
+    "views/library-chooser.tsx",
+    "views/library-chooser",
+  ]) {
+    assert.equal(exists(file), false, file);
+  }
+  assert.doesNotMatch(source("lib/view.tsx"), /librarySection|openLibrarySection|LibrarySection/);
+});
+
+test("the Game Library is its own page, rendered only with Games on", () => {
+  const app = source("App.tsx");
+  assert.match(app, /const gameLibraryTop = topKind === "game-library";/);
+  assert.match(
+    app,
+    /\{gamesOn && gameLibraryAlive && \(\s*<div className=\{layer\(gameLibraryTop\)\}>\s*<Suspense fallback=\{null\}>\s*<GameLibraryView\s+active=\{gameLibraryTop\}/,
+  );
+  assert.match(app, /const importGameLibrary = \(\) => import\("@\/views\/game-library"\);/);
+});
+
+test("the Game Library has its own route, and My Library keeps its route", () => {
+  assert.equal(pathFromView("library"), "/library");
+  assert.equal(pathFromView("game-library"), "/game-library");
+  assert.equal(viewFromPath("/game-library"), "game-library");
+  assert.equal(viewFromPath("/library"), "library");
+  assert.match(source("router/router.tsx"), /tabRoute\("\/game-library"\),/);
+  const view = source("lib/view.tsx");
+  assert.match(view, /library: "library",/);
+  assert.match(view, /"game-library": "game-library",/);
+  assert.match(view, /return \[\{ kind: "library" \}\];/, "the sidebar resets the stack");
+  assert.match(view, /return \[\{ kind: "game-library" \}\];/, "and for the Game Library too");
+});
+
+test("a game page's links push the Game Library, so Back returns to the game", () => {
+  assert.match(
+    source("lib/view.tsx"),
+    /const openGameLibrary = useCallback\(\(\) => \{\s*setNavStack\(\(cur\) => \{\s*const t = cur\[cur\.length - 1\];\s*if \(t\.kind === "game-library"\) return cur;\s*return pushFrame\(cur, \{ kind: "game-library" \}\);/,
+  );
+  const save = source("views/game-discovery/save-controls.tsx");
+  assert.equal(save.match(/openGameLibrary\(\);/g)?.length, 3);
+  for (const tab of ["wishlist", "tiers", "playing"]) {
+    assert.match(save, new RegExp(`requestTab\\("${tab}"\\);\\s*openGameLibrary\\(\\);`), tab);
+  }
+});
+
+test("turning Games off leaves the Game Library for My Library, other game pages for Home", () => {
+  const sync = source("router/sync.tsx");
+  assert.match(sync, /const gamesEnabled = gamesFeatureEnabled\(settings\);/);
+  assert.match(
+    sync,
+    /if \(gamesEnabled\) return;\s*if \(hasGameLibraryFrames\) \{\s*setNavStack\(\(stack\) => withoutGameFrames\(stack, \{ kind: "library" \}\)\);\s*\} else if \(onGamesFrame\) \{\s*setView\("home"\);/,
+  );
+  // Forward can't lead back into it either.
+  assert.match(
+    source("lib/view.tsx"),
+    /const hasGameLibraryFrames = hasGameLibraryFrame\(stack\) \|\| hasGameLibraryFrame\(forwardStack\);/,
+  );
+  assert.match(source("App.tsx"), /const gamesOn = gamesFeatureEnabled\(settings\);/);
+});
+
+test("the sidebar item follows the Games switch and My Library's parental lock", () => {
+  assert.equal(navFeatureAllows("game-library", undefined), false);
+  assert.equal(navFeatureAllows("game-library", { games: false }), false);
+  assert.equal(navFeatureAllows("game-library", { games: true }), true);
+  assert.equal(navFeatureAllows("library", undefined), true);
+  assert.match(
+    source("chrome/nav-items.tsx"),
+    /id: "game-library",\s*label: "nav\.gameLibrary",\s*render: \(active\) => <GameLibraryIcon active=\{active\} \/>,\s*view: "game-library",\s*parentalKey: "library",/,
+  );
+  assert.match(
+    source("views/settings/theme-panel/theme-studio/nav-editor.tsx"),
+    /\(id !== "games" && id !== "game-library"\) \|\| settings\.gamesEnabled/,
+  );
+});
+
+test("the Game Library header no longer points back into My Library", () => {
+  const page = source("views/game-library.tsx");
+  assert.doesNotMatch(page, /setView\("library"\)|t\("My library"\)/);
+  assert.match(page, /\{t\("Game Library"\)\}/);
+});
+
+test("Back appears on the Game Library and game pages in the floating-button layouts", () => {
+  const back = source("chrome/floating-back.tsx");
+  for (const kind of ["game-library", "game", "game-franchise", "game-browse"]) {
+    assert.ok(back.includes(`topKind === "${kind}"`), kind);
+  }
+  // The Game Library pads for it only when Back is actually showing.
   assert.match(
     source("App.tsx"),
-    /\{gamesOn \? \(\s*<LibraryGate[\s\S]*?\/>\s*\) : \(\s*<LibraryView active=\{libraryTop\} \/>\s*\)\}/,
+    /backFloatsOverPage=\{\s*canGoBack &&\s*\(layout === "topdock" \|\| layout === "cinematic" \|\| layout === "royal"\)\s*\}/,
   );
+});
+
+test("kid profiles still can't reach the Game Library", () => {
+  // App's kid allow-list sends every other page back to Kids.
+  const app = source("App.tsx");
+  const end = app.indexOf('if (!allowed) setView("kids");');
+  assert.ok(end > 0);
+  const allow = app.slice(app.lastIndexOf("const allowed", end), end);
+  assert.match(allow, /topKind === "kids"/);
+  assert.doesNotMatch(allow, /game/);
 });
 
 test("the Movie Library's existing preload is untouched", () => {
@@ -74,31 +178,58 @@ test("the Movie Library's existing preload is untouched", () => {
   assert.match(source("App.tsx"), /void importLibrary\(\);/);
 });
 
-test("the gate uses the same Games switch as the rest of the app", () => {
-  assert.match(source("App.tsx"), /const gamesOn = gamesFeatureEnabled\(settings\);/);
-  const sync = source("router/sync.tsx");
-  assert.match(sync, /const gamesEnabled = gamesFeatureEnabled\(settings\);/);
-  assert.match(sync, /if \(gamesEnabled\) return;/);
-});
-
-test("a library section only exists above a plain library frame's route", () => {
-  const view = source("lib/view.tsx");
-  assert.match(view, /library: "library",/, "the route is unchanged");
-  assert.match(view, /return \[\{ kind: "library" \}\];/, "the sidebar still resets the stack");
-  assert.match(view, /return f\.section \? `library:\$\{f\.section\}` : "library";/);
-});
-
-test("Back appears on library and game pages in the floating-button layouts", () => {
-  const back = source("chrome/floating-back.tsx");
-  for (const kind of ["library", "game", "game-franchise", "game-browse"]) {
-    assert.ok(back.includes(`topKind === "${kind}"`), kind);
-  }
-});
-
-test("Movie Library files stay independent of the new screens", () => {
+test("Movie Library files stay independent of the Game Library", () => {
   for (const file of ["views/library.tsx", "views/library/watchlist-tab.tsx"]) {
     assert.doesNotMatch(source(file), /library-gate|library-chooser|game-library/, file);
   }
+});
+
+// ── custom-HTML layouts (Feishin) ───────────────────────────────────────────
+
+test("Feishin has a Game Library button directly below its Library button", () => {
+  const theme = source("lib/theme.ts");
+  const library = theme.indexOf(
+    `<button data-harbor-nav="library" onclick="window.harbor.navigate('library')">`,
+  );
+  const game = theme.indexOf(
+    `<button data-harbor-nav="game-library" onclick="window.harbor.navigate('game-library')">`,
+  );
+  assert.ok(library > 0 && game > library, "both buttons exist, Game Library second");
+  // Nothing sits between them but the Library button's own markup.
+  assert.doesNotMatch(theme.slice(library, game), /<button[\s\S]*<button/);
+  assert.match(theme.slice(game, game + 900), /<span>Game Library<\/span>/);
+  // The Library button still opens My Library.
+  assert.match(theme.slice(library, game), /<span>Library<\/span>/);
+});
+
+test("Feishin shows the Game Library button only while Nexa says it is available", () => {
+  const theme = source("lib/theme.ts");
+  assert.match(
+    theme,
+    /html\[data-theme-layout="custom"\]:not\(\[data-game-library="on"\]\) \.fsh-nav \[data-harbor-nav="game-library"\] \{ display: none; \}/,
+  );
+  // Its highlight is the same data-active rule every Feishin item uses.
+  assert.match(theme, /\.fsh-nav button\[data-active\] \{ color: #3574FC; \}/);
+});
+
+test("the root flag follows Games, kid profiles and the My Library parental lock", () => {
+  const app = source("App.tsx");
+  assert.match(
+    app,
+    /const gameLibraryNav = gamesOn && !kid && !\(parentalLocked && hiddenTabs\.library\);/,
+  );
+  assert.match(
+    app,
+    /document\.documentElement\.dataset\.gameLibrary = gameLibraryNav \? "on" : "off";/,
+  );
+  // Same attribute App uses to highlight every layout's items, Feishin's included.
+  assert.match(app, /el\.getAttribute\("data-harbor-nav"\) === topKind/);
+});
+
+test("the theme documentation lists the new flag and view", () => {
+  const sheet = source("views/settings/theme-panel/theme-studio/cheat-sheet-data.ts");
+  assert.match(sheet, /attr: "data-game-library",\s*values: \["on", "off"\],/);
+  assert.match(sheet, /\{ id: "game-library", label: "Game Library \(only with Games on\)" \},/);
 });
 
 // ── what the new screens can reach ──────────────────────────────────────────
@@ -109,16 +240,10 @@ function sourcesUnder(path) {
   return readdirSync(url).flatMap((name) => sourcesUnder(`${path}/${name}`));
 }
 
-const NEW_SCREENS = [
-  "views/library-gate.tsx",
-  "views/library-chooser.tsx",
-  "views/library-chooser",
-  "views/game-library.tsx",
-  "views/game-library",
-].flatMap(sourcesUnder);
+const NEW_SCREENS = ["views/game-library.tsx", "views/game-library"].flatMap(sourcesUnder);
 
-test("the new screens send RAWG no requests and need no key", () => {
-  assert.ok(NEW_SCREENS.length >= 6);
+test("the Game Library sends RAWG no requests and needs no key", () => {
+  assert.ok(NEW_SCREENS.length >= 4);
   for (const file of NEW_SCREENS) {
     // rawg/image only rewrites saved image URLs; it sends nothing.
     assert.doesNotMatch(
@@ -126,16 +251,6 @@ test("the new screens send RAWG no requests and need no key", () => {
       /providers\/rawg(?!\/image)|game-discovery\/(queries|use-rawg|status|gates)|games-frame|useQuery/,
       file,
     );
-  }
-});
-
-test("the chooser can't touch game data, so choosing a library changes nothing", () => {
-  for (const file of [
-    ...sourcesUnder("views/library-chooser"),
-    "views/library-chooser.tsx",
-    "views/library-gate.tsx",
-  ]) {
-    assert.doesNotMatch(source(file), /game-library\/|changeGameLibrary|supabase/, file);
   }
 });
 
@@ -147,20 +262,6 @@ test("the Game Library changes data only through changeGameLibrary", () => {
       file,
     );
   }
-});
-
-test("the chooser ships no third-party artwork", () => {
-  const art = source("views/library-chooser/art.ts");
-  assert.match(art, /movies: null,/);
-  assert.match(art, /games: null,/);
-  assert.doesNotMatch(
-    source("views/library-chooser/scenes.tsx"),
-    /<image|href=|https?:\/\/(?!www\.w3)/,
-  );
-});
-
-test("the chooser avoids aspect-ratio, which collapses on older WebView2 builds", () => {
-  assert.doesNotMatch(source("views/library-chooser.tsx"), /aspect-\[/);
 });
 
 test("the sync code sets up no polling or realtime channel", () => {

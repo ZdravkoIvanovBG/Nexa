@@ -86,7 +86,7 @@ import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@
 import type { MetaType } from "@/lib/cinemeta";
 import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
 import { Home } from "@/views/home";
-import { ParentalProvider } from "@/lib/parental";
+import { ParentalProvider, useParental } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
@@ -129,6 +129,7 @@ const importGameDiscovery = () => import("@/views/game-discovery");
 const importGameDetail = () => import("@/views/game-discovery/game-detail");
 const importGameFranchise = () => import("@/views/game-discovery/franchise-view");
 const importGameBrowse = () => import("@/views/game-discovery/browse-view");
+const importGameLibrary = () => import("@/views/game-library");
 
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
@@ -157,9 +158,6 @@ const ServiceView = lazy(() => importService().then((m) => ({ default: m.Service
 const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings })));
 const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
-const LibraryGate = lazy(() =>
-  import("@/views/library-gate").then((m) => ({ default: m.LibraryGate })),
-);
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const GamesView = lazy(() => importGameDiscovery().then((m) => ({ default: m.GamesView })));
@@ -168,6 +166,9 @@ const GameFranchiseView = lazy(() =>
   importGameFranchise().then((m) => ({ default: m.GameFranchiseView })),
 );
 const GameBrowseView = lazy(() => importGameBrowse().then((m) => ({ default: m.GameBrowseView })));
+const GameLibraryView = lazy(() =>
+  importGameLibrary().then((m) => ({ default: m.GameLibraryView })),
+);
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -432,7 +433,7 @@ function TogetherLocationPublisher() {
       if (topKind === "discover") return { kind: "discover" };
       if (topKind === "queue") return { kind: "queue" };
       if (topKind === "addons") return { kind: "addons" };
-      if (topKind === "library") return { kind: "home" };
+      if (topKind === "library" || topKind === "game-library") return { kind: "home" };
       if (topKind === "settings") return { kind: "settings" };
       return null;
     }
@@ -929,6 +930,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const gameTop = topKind === "game";
   const gameFranchiseTop = topKind === "game-franchise";
   const gameBrowseTop = topKind === "game-browse";
+  const gameLibraryTop = topKind === "game-library";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -936,6 +938,15 @@ function Shell({ onReady }: { onReady?: () => void }) {
       root.dataset.chromeHidden = "true";
     else delete root.dataset.chromeHidden;
   }, [playerActive, pickerTop, settingsTop, chromeHidden]);
+
+  // Custom-HTML layouts (Feishin, community themes) can't read settings, so the
+  // root says whether a Game Library nav item belongs on screen: Games on, not a
+  // kid profile, and not hidden by the parental lock on My Library.
+  const { locked: parentalLocked, hiddenTabs } = useParental();
+  const gameLibraryNav = gamesOn && !kid && !(parentalLocked && hiddenTabs.library);
+  useEffect(() => {
+    document.documentElement.dataset.gameLibrary = gameLibraryNav ? "on" : "off";
+  }, [gameLibraryNav]);
 
   useEffect(() => {
     document.querySelectorAll("[data-harbor-nav]").forEach((el) => {
@@ -975,6 +986,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
   const gamesAlive = useIdleEvict(gamesTop);
+  const gameLibraryAlive = useIdleEvict(gameLibraryTop);
   const gameAlive = useKeepAlive(gameTop, !!game, stackKinds.includes("game"));
   const gameFranchiseAlive = useKeepAlive(
     gameFranchiseTop,
@@ -1080,16 +1092,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
         {libraryAlive && (
           <div className={layer(libraryTop)}>
             <Suspense fallback={null}>
-              {gamesOn ? (
-                <LibraryGate
-                  active={libraryTop}
-                  backFloatsOverPage={
-                    layout === "topdock" || layout === "cinematic" || layout === "royal"
-                  }
-                />
-              ) : (
-                <LibraryView active={libraryTop} />
-              )}
+              <LibraryView active={libraryTop} />
             </Suspense>
           </div>
         )}
@@ -1111,6 +1114,21 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(gamesTop)}>
             <Suspense fallback={null}>
               <GamesView active={gamesTop} />
+            </Suspense>
+          </div>
+        )}
+        {gamesOn && gameLibraryAlive && (
+          <div className={layer(gameLibraryTop)}>
+            <Suspense fallback={null}>
+              <GameLibraryView
+                active={gameLibraryTop}
+                // Back floats over the page header in these layouts, and only
+                // shows when the library was opened from a game page.
+                backFloatsOverPage={
+                  canGoBack &&
+                  (layout === "topdock" || layout === "cinematic" || layout === "royal")
+                }
+              />
             </Suspense>
           </div>
         )}

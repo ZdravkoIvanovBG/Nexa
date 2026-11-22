@@ -105,28 +105,28 @@ function useCanSave(): boolean {
 }
 
 function useOpenWishlist(): () => void {
-  const { openLibrarySection } = useView();
+  const { openGameLibrary } = useView();
   return () => {
     requestTab("wishlist");
-    openLibrarySection("games");
+    openGameLibrary();
   };
 }
 
 function useOpenTiers(): (gameId: GameId) => void {
-  const { openLibrarySection } = useView();
+  const { openGameLibrary } = useView();
   return (gameId) => {
     requestTierGame(gameId);
     requestTab("tiers");
-    openLibrarySection("games");
+    openGameLibrary();
   };
 }
 
 function useOpenPlaying(): (gameId: GameId) => void {
-  const { openLibrarySection } = useView();
+  const { openGameLibrary } = useView();
   return (gameId) => {
     requestPlayingGame(gameId);
     requestTab("playing");
-    openLibrarySection("games");
+    openGameLibrary();
   };
 }
 

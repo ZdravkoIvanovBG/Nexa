@@ -204,6 +204,13 @@ export const ROOT_DATA_ATTRS: DataAttr[] = [
     example: 'html[data-theme-bokeh="on"] .bokeh-orb { display: block; }',
   },
   {
+    attr: "data-game-library",
+    values: ["on", "off"],
+    desc: "Whether the Game Library is available: Games is on and the profile may open it. Hide a Game Library nav item unless it is on.",
+    example:
+      'html:not([data-game-library="on"]) [data-harbor-nav="game-library"] { display: none; }',
+  },
+  {
     attr: "data-chrome-hidden",
     values: ["present", "absent"],
     desc: "Present on <html> while the player, play picker, or immersive Live TV is active. Use it to hide custom chrome during playback.",
@@ -331,6 +338,7 @@ export const VIEW_NAMES: ViewName[] = [
   { id: "shows", label: "Shows" },
   { id: "calendar", label: "Calendar" },
   { id: "library", label: "My Library" },
+  { id: "game-library", label: "Game Library (only with Games on)" },
   { id: "settings", label: "Settings" },
 ];
 

@@ -46,6 +46,7 @@ const routeTree = rootRoute.addChildren([
   tabRoute("/vod"),
   tabRoute("/calendar"),
   tabRoute("/library"),
+  tabRoute("/game-library"),
   tabRoute("/downloads"),
   tabRoute("/addons"),
   tabRoute("/settings"),

@@ -1,5 +1,5 @@
 /** Nav ids that, when missing from a saved custom order, slot in after their default neighbour. */
-export const NEIGHBOUR_PLACED_NAV_IDS: ReadonlySet<string> = new Set(["games"]);
+export const NEIGHBOUR_PLACED_NAV_IDS: ReadonlySet<string> = new Set(["games", "game-library"]);
 
 /**
  * Merges a saved custom nav order with the default order. Unknown saved ids are
@@ -38,12 +38,15 @@ export function mergeNavOrder(
   return [...out, ...appended];
 }
 
-/** Setting-gated entries. Games is opt-in: hidden unless a caller explicitly enables it. */
+/**
+ * Setting-gated entries. Games and the Game Library are opt-in: hidden unless a
+ * caller explicitly enables Games.
+ */
 export function navFeatureAllows(
   id: string,
   features: { downloads?: boolean; games?: boolean } | undefined,
 ): boolean {
   if (id === "downloads") return features?.downloads !== false;
-  if (id === "games") return features?.games === true;
+  if (id === "games" || id === "game-library") return features?.games === true;
   return true;
 }

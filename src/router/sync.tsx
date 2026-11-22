@@ -13,8 +13,7 @@ import { metaPath, pathFromView, viewFromPath } from "./paths";
 export function ViewRouterSync() {
   const router = useRouter();
   const { settings } = useSettings();
-  const { view, setView, topKind, meta, stackKinds, hasLibrarySectionFrames, setNavStack } =
-    useView();
+  const { view, setView, topKind, meta, stackKinds, hasGameLibraryFrames, setNavStack } = useView();
   const downloadsEnabled = settings.showDownloadsNav;
   const gamesEnabled = gamesFeatureEnabled(settings);
   const onGamesFrame =
@@ -73,16 +72,16 @@ export function ViewRouterSync() {
   }, [view, downloadsEnabled, setView]);
 
   // Games is opt-in too: leave any Games view or frame as soon as it is turned
-  // off. From inside My Library that means staying in the library, which is the
-  // Movie Library again with Games off, rather than going Home.
+  // off. From the Game Library that means My Library, the Movie/Show Library,
+  // rather than Home.
   useEffect(() => {
     if (gamesEnabled) return;
-    if (hasLibrarySectionFrames) {
+    if (hasGameLibraryFrames) {
       setNavStack((stack) => withoutGameFrames(stack, { kind: "library" }));
     } else if (onGamesFrame) {
       setView("home");
     }
-  }, [hasLibrarySectionFrames, onGamesFrame, gamesEnabled, setView, setNavStack]);
+  }, [hasGameLibraryFrames, onGamesFrame, gamesEnabled, setView, setNavStack]);
 
   return null;
 }

@@ -10,6 +10,7 @@ import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { KidsIcon } from "@/components/icons/kids-icon";
 import { GamepadIcon } from "@/components/icons/gamepad-icon";
+import { GameLibraryIcon } from "@/components/icons/game-library-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import { gamesFeatureEnabled } from "@/lib/game-discovery/gates";
 import type { LockableTab } from "@/lib/parental";
@@ -27,6 +28,7 @@ export type NavItemId =
   | "vod"
   | "calendar"
   | "library"
+  | "game-library"
   | "downloads"
   | "addons"
   | "settings";
@@ -94,6 +96,15 @@ export const NAV_ITEMS: NavItem[] = [
     label: "nav.library",
     render: (active) => <LibraryIcon active={active} />,
     view: "library",
+    parentalKey: "library",
+  },
+  {
+    // Shown only with Games on (see navFeatureAllows). It shares My Library's
+    // parental lock: the Game Library used to be reached through My Library.
+    id: "game-library",
+    label: "nav.gameLibrary",
+    render: (active) => <GameLibraryIcon active={active} />,
+    view: "game-library",
     parentalKey: "library",
   },
   {

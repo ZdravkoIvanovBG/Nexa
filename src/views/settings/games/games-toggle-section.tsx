@@ -31,7 +31,7 @@ export function GamesToggleSection() {
       <ToggleRow
         label={t("Enable Games")}
         sub={t(
-          "Adds Games to the sidebar and a Game Library to My Library. Turning it off hides them and keeps your credentials and saved games.",
+          "Adds Games and the Game Library to the sidebar. Turning it off hides them and keeps your credentials and saved games.",
         )}
         value={settings.gamesEnabled}
         onChange={(v) => update({ gamesEnabled: v })}

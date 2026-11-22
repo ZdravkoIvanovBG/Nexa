@@ -1227,6 +1227,8 @@ html[data-theme-layout="custom"] .fsh-nav button:hover { background: rgba(255,25
 html[data-theme-layout="custom"] .fsh-nav .fsh-ico { width: 15px; height: 15px; flex-shrink: 0; }
 html[data-theme-layout="custom"] .fsh-nav button[data-active] { color: #3574FC; }
 html[data-theme-layout="custom"] .fsh-nav button[data-active] .fsh-ico { stroke: #3574FC; }
+/* Game Library only while Nexa says it is available (Games on, profile allowed). */
+html[data-theme-layout="custom"]:not([data-game-library="on"]) .fsh-nav [data-harbor-nav="game-library"] { display: none; }
 html[data-theme-layout="custom"] .fsh-nav button:focus-visible { outline: none; border-color: #3574FC; }
 
 /* ===== SHIFT MAIN CONTENT for rail ===== */
@@ -1339,6 +1341,10 @@ const feishinHtml = `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-re
         <button data-harbor-nav="library" onclick="window.harbor.navigate('library')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4z"></path><path d="m17 5 3.5 1-3 14-3.4-1z"></path></svg>
           <span>Library</span>
+        </button>
+        <button data-harbor-nav="game-library" onclick="window.harbor.navigate('game-library')">
+          <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4.5v-.6q0-.9.9-.9h9.7q.9 0 .9.9v12.7q0 .9-.9.9H18"></path><rect x="4.5" y="6.5" width="12" height="14.5" rx="1"></rect><path d="M11 11.75v3.5M9.25 13.5h3.5"></path></svg>
+          <span>Game Library</span>
         </button>
         <button data-harbor-nav="calendar" onclick="window.harbor.navigate('calendar')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>

@@ -6,7 +6,7 @@ import { useActiveGameProvider } from "@/lib/game-discovery/use-active-provider"
 import { requestGameLibrarySync } from "@/lib/game-library/cloud/sync";
 import { useGameLibrary, useGameLibraryUnsaved } from "@/lib/game-library/store";
 import { useT } from "@/lib/i18n";
-import { useScrollMemory, useView } from "@/lib/view";
+import { useScrollMemory } from "@/lib/view";
 import { GamesAttribution } from "./game-discovery/rawg-attribution";
 import { PlayingTab } from "./game-library/playing-tab";
 import { onTabRequest, readSavedTab, saveTab, type GameLibraryTab } from "./game-library/tab";
@@ -35,7 +35,6 @@ export function GameLibraryView({
   backFloatsOverPage: boolean;
 }) {
   const t = useT();
-  const { setView } = useView();
   const [tab, setTab] = useState<GameLibraryTab>(readSavedTab);
   const scrollRef = useRef<HTMLElement>(null);
   useScrollMemory("game-library", scrollRef, active);
@@ -66,24 +65,9 @@ export function GameLibraryView({
       <div data-tauri-drag-region className="flex flex-1 flex-col gap-7">
         <header className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
-            <nav
-              aria-label={t("Breadcrumb")}
-              className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle"
-            >
-              <button
-                type="button"
-                onClick={() => setView("library")}
-                className="uppercase tracking-[0.28em] transition-colors hover:text-ink"
-              >
-                {t("My library")}
-              </button>
-              <span aria-hidden className="opacity-50">
-                /
-              </span>
-              <span aria-current="page" className="text-ink-muted">
-                {t("Game Library")}
-              </span>
-            </nav>
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">
+              {t("Game Library")}
+            </p>
             <h1 className="font-display text-[44px] font-medium leading-[1.05] text-ink">
               {t("Your gaming journey.")}
             </h1>

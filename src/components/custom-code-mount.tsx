@@ -86,12 +86,16 @@ export function CustomCodeMount() {
   }, [themeExt?.js]);
 
   const html = `${settings.customHtml ?? ""}${themeExt?.html ?? ""}`;
+  // A new object each render makes React rewrite innerHTML, which rebuilt the
+  // theme's nav on every navigation: it lost the data-active highlight App had
+  // just set, keyboard focus, and anything the theme's script attached.
+  const inner = useMemo(() => ({ __html: html }), [html]);
   return (
     <div
       id={OVERLAY_ID}
       aria-hidden
       className={`pointer-events-none fixed inset-0 z-[100] ${player ? "hidden" : ""}`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={inner}
     />
   );
 }
