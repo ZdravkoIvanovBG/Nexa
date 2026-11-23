@@ -110,4 +110,4 @@ jobs:
 
       - name: Verify bundled mpv binaries
         if: matrix.platform.name == 'Windows'
-        run: node scripts/verify-mpv-bundle.mjs src-tauri/target/release x64
+        run: node scripts/verify-mpv-bundle.mjs src-tauri/target/release x64 --no-bundle
